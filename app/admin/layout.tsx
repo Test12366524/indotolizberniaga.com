@@ -1,0 +1,429 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  Database,
+  Store,
+  ShoppingCart,
+  Users,
+  Package,
+  Tag,
+  BookDashed,
+  Wallet,
+  Landmark,
+  FileText,
+  LineChart,
+  ClipboardList,
+  Wrench,
+  Settings,
+  UserCheck,
+  GalleryVertical,
+  Newspaper,
+  BookUser,
+  CreditCard,
+  Building,
+} from "lucide-react";
+import Header from "@/components/admin-components/header";
+import Sidebar from "@/components/admin-components/sidebar";
+import { AdminLayoutProps, MenuItem } from "@/types";
+import { FaMoneyBillWave, FaCoins } from "react-icons/fa";
+import { useSession } from "next-auth/react";
+import type { User } from "@/types/user";
+
+const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { data: session } = useSession();
+  const user = session?.user as User | undefined;
+
+  // Close sidebar when screen size changes to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  let menuItems: MenuItem[] = [];
+
+  // Menu items untuk superadmin (semua menu)
+  const superadminMenuItems: MenuItem[] = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <BookDashed className="h-5 w-5" />,
+      href: "/admin/dashboard",
+    },
+    {
+      id: "anggota",
+      label: "Anggota",
+      icon: <Users className="h-5 w-5" />,
+      href: "/admin/anggota",
+    },
+    {
+      id: "simpanan",
+      label: "Simpanan",
+      icon: <FaCoins className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "simpanan/simpanan-anggota",
+          label: "Simpanan Anggota",
+          href: "/admin/simpanan/simpanan-anggota",
+        },
+        {
+          id: "simpanan/kategori",
+          label: "Kategori Simpanan",
+          href: "/admin/simpanan/kategori",
+        },
+      ],
+    },
+    {
+      id: "pinjaman",
+      label: "Pinjaman",
+      icon: <FaMoneyBillWave className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "pinjaman/pinjaman-anggota",
+          label: "Pinjaman Anggota",
+          href: "/admin/pinjaman/pinjaman-anggota",
+        },
+        {
+          id: "pinjaman/kategori",
+          label: "Kategori Pinjaman",
+          href: "/admin/pinjaman/pinjaman-kategori",
+        },
+      ],
+    },
+    {
+      id: "penarikan-simpanan",
+      label: "Penarikan Simpanan",
+      icon: <CreditCard className="h-5 w-5" />,
+      href: "/admin/penarikan-simpanan",
+    },
+    {
+      id: "data-keuangan",
+      label: "Data Keuangan",
+      icon: <Landmark className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "data-keuangan/saldo-simpanan",
+          label: "Saldo Simpanan",
+          href: "/admin/data-keuangan/saldo-simpanan",
+        },
+        {
+          id: "data-keuangan/pemotongan-gaji",
+          label: "Data Pemotongan Gaji",
+          href: "/admin/data-keuangan/pemotongan-gaji",
+        },
+        {
+          id: "data-keuangan/angsuran-pinjaman",
+          label: "Update Angsuran Pinjaman",
+          href: "/admin/data-keuangan/angsuran-pinjaman",
+        },
+      ],
+    },
+    {
+      id: "anggota-meninggal",
+      label: "Anggota Meninggal",
+      icon: <ClipboardList className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "anggota-meninggal/status-anggota",
+          label: "Status Anggota",
+          href: "/admin/anggota-meninggal/status-anggota",
+        },
+        {
+          id: "anggota-meninggal/status-pinjaman",
+          label: "Status Pinjaman",
+          href: "/admin/anggota-meninggal/status-pinjaman",
+        },
+        {
+          id: "anggota-meninggal/pembayaran-anggota",
+          label: "Pembayaran Anggota",
+          href: "/admin/anggota-meninggal/pembayaran-anggota",
+        },
+      ],
+    },
+    {
+      id: "akuntansi",
+      label: "Akuntansi",
+      icon: <FileText className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "akuntansi/jurnal-transaksi",
+          label: "Jurnal Transaksi",
+          href: "/admin/akuntansi/jurnal-transaksi",
+        },
+        {
+          id: "akuntansi/saldo-coa",
+          label: "Saldo COA",
+          href: "/admin/akuntansi/saldo-coa",
+        },
+        {
+          id: "akuntansi/buku-besar",
+          label: "Buku Besar",
+          href: "/admin/akuntansi/buku-besar",
+        },
+      ],
+    },
+    {
+      id: "laporan",
+      label: "Laporan",
+      icon: <LineChart className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "laporan/pengajuan-pinjaman",
+          label: "Pengajuan Pinjaman",
+          href: "/admin/laporan/pengajuan-pinjaman",
+        },
+        {
+          id: "laporan/nominatif-pinjaman",
+          label: "Nominatif Pinjaman",
+          href: "/admin/laporan/nominatif-pinjaman",
+        },
+        {
+          id: "laporan/nominatif-simpanan",
+          label: "Nominatif Simpanan",
+          href: "/admin/laporan/nominatif-simpanan",
+        },
+        {
+          id: "laporan/anggota-meninggal-dunia",
+          label: "Anggota Meninggal Dunia",
+          href: "/admin/laporan/anggota-meninggal-dunia",
+        },
+        {
+          id: "laporan/sisa-hasil-usaha",
+          label: "Sisa Hasil Usaha",
+          href: "/admin/laporan/sisa-hasil-usaha",
+        },
+      ],
+    },
+    {
+      id: "konfigurasi",
+      label: "Konfigurasi",
+      icon: <Settings className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "konfigurasi/jenis-marketing",
+          label: "Jenis Marketing",
+          href: "/admin/konfigurasi/jenis-marketing",
+        },
+        {
+          id: "konfigurasi/marketing",
+          label: "Marketing",
+          href: "/admin/konfigurasi/marketing",
+        },
+        {
+          id: "konfigurasi/suku-bunga",
+          label: "Suku Bunga",
+          href: "/admin/konfigurasi/suku-bunga",
+        },
+        {
+          id: "konfigurasi/coa-induk",
+          label: "COA Induk",
+          href: "/admin/konfigurasi/coa-induk",
+        },
+        {
+          id: "konfigurasi/general-ledger",
+          label: "General Ledger",
+          href: "/admin/konfigurasi/general-ledger",
+        },
+        {
+          id: "konfigurasi/sub-general-ledger",
+          label: "Sub General Ledger",
+          href: "/admin/konfigurasi/sub-general-ledger",
+        },
+        {
+          id: "konfigurasi/rekening-general-ledger",
+          label: "Rekening General Ledger",
+          href: "/admin/konfigurasi/rekening-general-ledger",
+        },
+        {
+          id: "konfigurasi/kode-transaksi",
+          label: "Kode Transaksi",
+          href: "/admin/konfigurasi/kode-transaksi",
+        },
+        {
+          id: "konfigurasi/pengelola",
+          label: "Pengelola",
+          href: "/admin/pengelola",
+        },
+      ],
+    },
+    {
+      id: "pemisah-marketplace",
+      label: "Marketplace",
+      isSeparator: true,
+      href: "#"
+    },
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <BookDashed className="h-5 w-5" />,
+      href: "/admin/dashboard-marketplace",
+    },
+    {
+      id: "seller",
+      label: "Seller",
+      icon: <UserCheck className="h-5 w-5" />,
+      href: "/admin/seller", 
+    },
+    {
+      id: "product",
+      label: "Produk",
+      icon: <Package className="h-5 w-5" />,
+      href: "/admin/product-list", 
+    },
+    {
+      id: "transaction",
+      label: "Transaksi",
+      icon: <ShoppingCart className="h-5 w-5" />,
+      href: "/admin/transaction",
+    },
+    {
+      id: "customer",
+      label: "Data Customer",
+      icon: <BookUser className="h-5 w-5" />,
+      href: "/admin/customer",
+    },
+    {
+      id: "gallery",
+      label: "Galeri",
+      icon: <GalleryVertical className="h-5 w-5" />,
+      href: "/admin/gallery", 
+    },
+    {
+      id: "news",
+      label: "Berita",
+      icon: <Newspaper className="h-5 w-5" />,
+      href: "/admin/news", 
+    },
+    {
+      id: "voucher",
+      label: "Voucher",
+      icon: <Tag className="h-5 w-5" />,
+      href: "/admin/voucher", 
+    },
+    {
+      id: "master",
+      label: "Master",
+      icon: <Database className="h-5 w-5" />,
+      href: "#", 
+      children: [
+        {
+          id: "master-product-category",
+          label: "Kategori Produk",
+          href: "/admin/product-category",
+        },
+        {
+          id: "master-product-merk",
+          label: "Tipe Produk",
+          href: "/admin/product-merk",
+        },
+      ],
+    },
+    {
+      id: "profile-toko",
+      label: "Profile Toko",
+      icon: <Building className="h-5 w-5" />,
+      href: "/admin/profile-toko",
+    },
+  ];
+
+  // Menu items untuk admin (terbatas)
+  const adminMenuItems: MenuItem[] = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      icon: <BookDashed className="h-5 w-5" />,
+      href: "/admin/dashboard",
+    },
+    {
+      id: "pemisah-marketplace",
+      label: "Marketplace",
+      isSeparator: true,
+      href: "#"
+    },
+    {
+      id: "master",
+      label: "Master",
+      icon: <Database className="h-5 w-5" />,
+      href: "#", 
+      children: [
+        {
+          id: "master-product-category",
+          label: "Kategori Produk",
+          href: "/admin/product-category",
+        },
+        {
+          id: "master-product-merk",
+          label: "Tipe Produk",
+          href: "/admin/product-merk",
+        },
+      ],
+    },
+    {
+      id: "product",
+      label: "Produk",
+      icon: <Package className="h-5 w-5" />,
+      href: "/admin/product-list", 
+    },
+    {
+      id: "transaction",
+      label: "Transaksi",
+      icon: <ShoppingCart className="h-5 w-5" />,
+      href: "/admin/transaction",
+    },
+    {
+      id: "customer",
+      label: "Data Customer",
+      icon: <Users className="h-5 w-5" />,
+      href: "/admin/customer",
+    },
+  ];
+
+  // Tentukan menu items berdasarkan role pengguna
+  if (!user || user?.roles[0].name === "superadmin") {
+    menuItems = superadminMenuItems;
+  } else if (user?.roles[0].name === "admin") {
+    menuItems = adminMenuItems;
+  }
+
+  return (
+    <div className="h-screen flex overflow-hidden bg-gray-100">
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        menuItems={menuItems}
+      />
+
+      {/* Main content */}
+      <div className="flex flex-col w-0 flex-1 overflow-hidden">
+        {/* Header */}
+        <Header onMenuClick={() => setSidebarOpen(true)} title={title} />
+
+        {/* Page content */}
+        <main className="flex-1 relative overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              {children}
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default AdminLayout;
