@@ -1,3 +1,5 @@
+import { Voucher } from "../voucher";
+
 // Main Transaction interface for API responses
 export interface Transaction {
   id: number;
@@ -20,14 +22,14 @@ export interface Transaction {
   payment_proof?: string;
   created_at: string;
   updated_at: string;
-  user_name?: string;
-  user_email?: string;
-  address_line_1?: string | null;
-  address_line_2?: string | null;
-  postal_code?: string | null;
+  user_name: string;
+  user_email: string;
+  address_line_1?: string;
+  address_line_2?: string;
+  postal_code?: string;
   media?: Array<{ original_url: string }>;
   // An array of stores associated with this transaction
-  stores?: Store[];
+  stores: Store[];
 }
 
 // Interface for a single store within a transaction
@@ -101,7 +103,18 @@ export interface TransactionListParams {
 // Create transaction request payload
 export interface CreateTransactionRequest {
   data: Transaction[];
-  voucher?: any[]; // Add proper voucher type if needed
+  voucher?: Voucher[]; // Add proper voucher type if needed
+}
+
+export interface CreateTransactionFrontendRequest {
+  data: CreateTransactionPayload[];
+  voucher?: Voucher[]; // Add proper voucher type if needed
+}
+
+export interface CreateTransactionFrontendResponse {
+  success: boolean;
+  message: string;
+  data: CreateTransactionPayload | CreateTransactionPayload[]; // Could be single or multiple transactions
 }
 
 // Create transaction response
@@ -109,4 +122,35 @@ export interface CreateTransactionResponse {
   success: boolean;
   message: string;
   data: Transaction | Transaction[]; // Could be single or multiple transactions
+}
+
+export interface CreateTransactionPayload {
+  address_line_1: string;
+  postal_code: string;
+  payment_method: string;
+  date?: string;
+  hour?: string;
+  data: {
+    shop_id: number;
+    details: {
+      product_id: number;
+      quantity: number;
+    }[];
+    shipment?: {
+      parameter: string;
+      shipment_detail: string;
+      courier: string;
+      cost: number;
+    };
+    customer_info: {
+      name: string;
+      phone: string;
+      address_line_1: string;
+      postal_code: string;
+      province_id: number;
+      city_id: number;
+      district_id: number;
+    };
+  }[];
+  voucher?: Voucher[];
 }

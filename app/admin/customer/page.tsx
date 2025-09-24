@@ -29,6 +29,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 
 export default function CustomerPage() {
   const itemsPerPage = 10;
@@ -52,6 +53,8 @@ export default function CustomerPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -59,12 +62,12 @@ export default function CustomerPage() {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
 
-      return new Intl.DateTimeFormat('id-ID', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
+      return new Intl.DateTimeFormat("id-ID", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
         hour12: false,
       }).format(date);
     } catch (error) {
@@ -80,8 +83,10 @@ export default function CustomerPage() {
   // Filter customer list to show only users with "user" role
   const customerList = useMemo(() => {
     const customers = data?.data || [];
-    return customers.filter((customer: Customer) =>
-      customer.roles && customer.roles.some((role: { name: string }) => role.name === "user")
+    return customers.filter(
+      (customer: Customer) =>
+        customer.roles &&
+        customer.roles.some((role: { name: string }) => role.name === "user")
     );
   }, [data]);
 
@@ -114,6 +119,8 @@ export default function CustomerPage() {
     resetForm();
     setIsModalOpen(true);
   };
+
+  const openModal = handleOpenCreateModal;
 
   const handleOpenEditModal = (user: Customer) => {
     setForm({
@@ -162,10 +169,15 @@ export default function CustomerPage() {
       await refetch();
       handleCloseModal();
     } catch (error: unknown) {
-      const errorMessage = error && typeof error === 'object' && 'data' in error &&
-        error.data && typeof error.data === 'object' && 'message' in error.data
-        ? String(error.data.message)
-        : "Terjadi kesalahan";
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "data" in error &&
+        error.data &&
+        typeof error.data === "object" &&
+        "message" in error.data
+          ? String(error.data.message)
+          : "Terjadi kesalahan";
       Swal.fire("Gagal", errorMessage, "error");
     } finally {
       setIsSubmitting(false);
@@ -189,10 +201,15 @@ export default function CustomerPage() {
         await refetch();
         Swal.fire("Berhasil", "Customer berhasil dihapus", "success");
       } catch (error: unknown) {
-        const errorMessage = error && typeof error === 'object' && 'data' in error &&
-          error.data && typeof error.data === 'object' && 'message' in error.data
-          ? String(error.data.message)
-          : "Gagal menghapus Customer";
+        const errorMessage =
+          error &&
+          typeof error === "object" &&
+          "data" in error &&
+          error.data &&
+          typeof error.data === "object" &&
+          "message" in error.data
+            ? String(error.data.message)
+            : "Gagal menghapus Customer";
         Swal.fire("Gagal", errorMessage, "error");
       }
     }
@@ -200,13 +217,11 @@ export default function CustomerPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Data Customer</h1>
-        <Button onClick={handleOpenCreateModal} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Tambah Customer
-        </Button>
-      </div>
+      <ProdukToolbar
+        openModal={openModal}
+        onSearchChange={setQuery}
+        onCategoryChange={setCategory}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -236,7 +251,9 @@ export default function CustomerPage() {
                 </tr>
               ) : (
                 customerList.map((item) => {
-                  const roleName = (item.roles as { name: string }[] | undefined)?.[0]?.name;
+                  const roleName = (
+                    item.roles as { name: string }[] | undefined
+                  )?.[0]?.name;
                   return (
                     <tr key={item.id} className="border-t">
                       <td className="px-4 py-2">
@@ -261,13 +278,21 @@ export default function CustomerPage() {
                           </Button>
                         </div>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{item.phone || "-"}</td>
-                      <td className="px-4 py-2 whitespace-nowrap">{item.email}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.phone || "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.email}
+                      </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         <Badge variant="secondary">{roleName || "-"}</Badge>
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap">{formatDateTime(item.created_at || "")}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {formatDateTime(item.created_at || "")}
+                      </td>
                     </tr>
                   );
                 })
@@ -308,13 +333,16 @@ export default function CustomerPage() {
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <Tag className="h-5 w-5 text-blue-600" />
               </div>
-              {isEditMode ? 'Edit Customer' : 'Tambah Customer'}
+              {isEditMode ? "Edit Customer" : "Tambah Customer"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="name"
+                className="text-sm font-medium text-gray-700"
+              >
                 Nama
               </Label>
               <Input
@@ -327,7 +355,10 @@ export default function CustomerPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="email"
+                className="text-sm font-medium text-gray-700"
+              >
                 Email
               </Label>
               <Input
@@ -341,7 +372,10 @@ export default function CustomerPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="phone"
+                className="text-sm font-medium text-gray-700"
+              >
                 No. Handphone
               </Label>
               <Input
@@ -349,13 +383,18 @@ export default function CustomerPage() {
                 type="tel"
                 placeholder="Masukkan nomor handphone..."
                 value={form.phone || ""}
-                onChange={(e) => setForm({ ...form, phone: Number(e.target.value) })}
+                onChange={(e) =>
+                  setForm({ ...form, phone: Number(e.target.value) })
+                }
                 className="h-11"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="password"
+                className="text-sm font-medium text-gray-700"
+              >
                 Password
               </Label>
               <Input
@@ -369,7 +408,10 @@ export default function CustomerPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password_confirmation" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="password_confirmation"
+                className="text-sm font-medium text-gray-700"
+              >
                 Password Konfirmasi
               </Label>
               <Input
@@ -377,24 +419,33 @@ export default function CustomerPage() {
                 type="password"
                 placeholder="Masukkan password konfirmasi..."
                 value={form.password_confirmation || ""}
-                onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, password_confirmation: e.target.value })
+                }
                 className="h-11"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="role" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="role"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Role
                 </Label>
                 <Select
-                  onValueChange={(value) => setForm({ ...form, role_id: parseInt(value, 10) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, role_id: parseInt(value, 10) })
+                  }
                   value={form.role_id?.toString() || ""}
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Pilih Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="2" aria-selected={form.role_id === 2}>User</SelectItem>
+                    <SelectItem value="2" aria-selected={form.role_id === 2}>
+                      User
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -404,14 +455,20 @@ export default function CustomerPage() {
                 </Label>
                 <Select
                   value={form.status.toString()}
-                  onValueChange={(value) => setForm({ ...form, status: parseInt(value) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, status: parseInt(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1" aria-selected={form.status === 1}>Aktif</SelectItem>
-                    <SelectItem value="0" aria-selected={form.status === 0}>Nonaktif</SelectItem>
+                    <SelectItem value="1" aria-selected={form.status === 1}>
+                      Aktif
+                    </SelectItem>
+                    <SelectItem value="0" aria-selected={form.status === 0}>
+                      Nonaktif
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -429,16 +486,20 @@ export default function CustomerPage() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !form.name || !form.email || !form.role_id}
+              disabled={
+                isSubmitting || !form.name || !form.email || !form.role_id
+              }
               className="h-10 px-6"
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {isEditMode ? 'Memperbarui...' : 'Menyimpan...'}
+                  {isEditMode ? "Memperbarui..." : "Menyimpan..."}
                 </div>
+              ) : isEditMode ? (
+                "Perbarui"
               ) : (
-                isEditMode ? 'Perbarui' : 'Simpan'
+                "Simpan"
               )}
             </Button>
           </div>

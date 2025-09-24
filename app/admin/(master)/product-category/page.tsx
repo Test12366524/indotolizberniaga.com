@@ -15,6 +15,7 @@ import { ProductCategory } from "@/types/master/product-category";
 import FormProductCategory from "@/components/form-modal/product-category-form";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 
 export default function ProductCategoryPage() {
   const [form, setForm] = useState<Partial<ProductCategory>>({
@@ -25,6 +26,8 @@ export default function ProductCategoryPage() {
   const { isOpen, openModal, closeModal } = useModal();
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   const { data, isLoading, refetch } = useGetProductCategoryListQuery({
     page: currentPage,
@@ -107,10 +110,11 @@ export default function ProductCategoryPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Kategori Produk</h1>
-        <Button onClick={() => openModal()}>Tambah Kategori</Button>
-      </div>
+      <ProdukToolbar
+        openModal={openModal}
+        onSearchChange={setQuery}
+        onCategoryChange={setCategory}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">

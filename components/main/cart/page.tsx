@@ -39,12 +39,13 @@ import {
   useGetDistrictsQuery,
 } from "@/services/shop/open-shop/open-shop.service";
 import { useGetCurrentUserQuery, useCheckShippingCostQuery } from "@/services/auth.service";
-import { useCreateTransactionMutation } from "@/services/admin/transaction.service";
+import { useCreateTransactionFrontendMutation, useCreateTransactionMutation } from "@/services/admin/transaction.service";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { useSession } from "next-auth/react";
 import { useGetUserAddressListQuery } from "@/services/address.service";
 import type { Address } from "@/types/address";
+import { CreateTransactionFrontendRequest } from "@/types/admin/transaction";
 
 const STORAGE_KEY = "cart-storage";
 
@@ -286,7 +287,7 @@ export default function CartPage() {
       skip: !shippingInfo.rajaongkir_city_id,
     });
 
-  const [createTransaction] = useCreateTransactionMutation();
+  const [createTransactionFrontend] = useCreateTransactionFrontendMutation();
 
   // Custom logic for shipping options
   const getShippingOptions = (): ShippingCostOption[] => {
@@ -373,7 +374,7 @@ export default function CartPage() {
 
   const applyCoupon = () => {
     if (couponCode.trim().toLowerCase() === "yameiya10") {
-      setAppliedCoupon("Koperasi Merah Putih10");
+      setAppliedCoupon("YAMEIYA10");
       setCouponCode("");
     }
   };
@@ -425,7 +426,7 @@ export default function CartPage() {
     0
   );
   const discount =
-    appliedCoupon === "Koperasi Merah Putih10" ? Math.round(subtotal * 0.1) : 0;
+    appliedCoupon === "YAMEIYA10" ? Math.round(subtotal * 0.1) : 0;
   
   const shippingCost = shippingMethod?.cost ?? 0;
   
@@ -457,46 +458,52 @@ export default function CartPage() {
     if (paymentType === "manual") {
       try {
         const stored = parseStorage();
-        const payload = {
-          address_line_1: shippingInfo.address_line_1,
-          postal_code: shippingInfo.postal_code,
-          payment_method: paymentType,
+        const itemDetails = stored.map((item) => ({
+          product_id: item.id,
+          quantity: item.quantity ?? 1,
+        }));
+
+        const payload: CreateTransactionFrontendRequest = {
           data: [
             {
-              shop_id: 1,
-              details: stored.map((item) => ({
-                product_id: item.id,
-                quantity: item.quantity ?? 1,
-              })),
-              shipment: {
-                parameter: JSON.stringify({
-                  destination: String(shippingInfo.rajaongkir_district_id),
-                  weight: 1000,
-                  height: 0,
-                  length: 0,
-                  width: 0,
-                  diameter: 0,
-                  courier: shippingCourier ?? "",
-                }),
-                shipment_detail: JSON.stringify(shippingMethod),
-                courier: shippingCourier ?? "",
-                cost: shippingMethod.cost,
-              },
-              customer_info: {
-                name: shippingInfo.fullName,
-                phone: shippingInfo.phone,
-                address_line_1: shippingInfo.address_line_1,
-                postal_code: shippingInfo.postal_code,
-                province_id: shippingInfo.rajaongkir_province_id,
-                city_id: shippingInfo.rajaongkir_city_id,
-                district_id: shippingInfo.rajaongkir_district_id,
-              },
+              address_line_1: shippingInfo.address_line_1,
+              postal_code: shippingInfo.postal_code,
+              payment_method: "manual",
+              data: [
+                {
+                  shop_id: 1,
+                  details: itemDetails,
+                  shipment: {
+                    parameter: JSON.stringify({
+                      destination: String(shippingInfo.rajaongkir_district_id),
+                      weight: 1000,
+                      height: 0,
+                      length: 0,
+                      width: 0,
+                      diameter: 0,
+                      courier: shippingCourier ?? "",
+                    }),
+                    shipment_detail: JSON.stringify(shippingMethod),
+                    courier: shippingCourier ?? "",
+                    cost: shippingMethod!.cost,
+                  },
+                  customer_info: {
+                    name: shippingInfo.fullName,
+                    phone: shippingInfo.phone,
+                    address_line_1: shippingInfo.address_line_1,
+                    postal_code: shippingInfo.postal_code,
+                    province_id: shippingInfo.rajaongkir_province_id,
+                    city_id: shippingInfo.rajaongkir_city_id,
+                    district_id: shippingInfo.rajaongkir_district_id,
+                  },
+                },
+              ],
             },
           ],
         };
 
         setIsSubmitting(true);
-        await createTransaction(payload).unwrap();
+        await createTransactionFrontend(payload).unwrap();
 
         await Swal.fire({
           icon: "success",
@@ -570,47 +577,53 @@ export default function CartPage() {
     // Original midtrans payment flow
     setIsSubmitting(true);
     try {
-      const stored = parseStorage();
-      const payload = {
-        address_line_1: shippingInfo.address_line_1,
-        postal_code: shippingInfo.postal_code,
-        payment_method: paymentType === "midtrans" ? "midtrans" : "cod",
-        data: [
-          {
-            shop_id: 1,
-            details: stored.map((item) => ({
-              product_id: item.id,
-              quantity: item.quantity ?? 1,
-            })),
-            shipment: {
-              parameter: JSON.stringify({
-                destination: String(shippingInfo.rajaongkir_district_id),
-                weight: 1000,
-                height: 0,
-                length: 0,
-                width: 0,
-                diameter: 0,
-                courier: shippingCourier ?? "",
-              }),
-              shipment_detail: JSON.stringify(shippingMethod),
-              courier: shippingCourier ?? "",
-              cost: shippingMethod.cost,
-            },
-            customer_info: {
-              name: shippingInfo.fullName,
-              phone: shippingInfo.phone,
-              address_line_1: shippingInfo.address_line_1,
-              postal_code: shippingInfo.postal_code,
-              province_id: shippingInfo.rajaongkir_province_id,
-              city_id: shippingInfo.rajaongkir_city_id,
-              district_id: shippingInfo.rajaongkir_district_id,
-            },
-          },
-        ],
-      };
+     const stored = parseStorage();
 
-      const result = await createTransaction(payload).unwrap();
+     const itemDetails = stored.map((item) => ({
+       product_id: item.id,
+       quantity: item.quantity ?? 1,
+     }));
 
+     const payload: CreateTransactionFrontendRequest = {
+       data: [
+         {
+           address_line_1: shippingInfo.address_line_1,
+           postal_code: shippingInfo.postal_code,
+           payment_method: paymentType === "midtrans" ? "midtrans" : "cod",
+           data: [
+             {
+               shop_id: 1,
+               details: itemDetails,
+               shipment: {
+                 parameter: JSON.stringify({
+                   destination: String(shippingInfo.rajaongkir_district_id),
+                   weight: 1000,
+                   height: 0,
+                   length: 0,
+                   width: 0,
+                   diameter: 0,
+                   courier: shippingCourier ?? "",
+                 }),
+                 shipment_detail: JSON.stringify(shippingMethod),
+                 courier: shippingCourier ?? "",
+                 cost: shippingMethod!.cost,
+               },
+               customer_info: {
+                 name: shippingInfo.fullName,
+                 phone: shippingInfo.phone,
+                 address_line_1: shippingInfo.address_line_1,
+                 postal_code: shippingInfo.postal_code,
+                 province_id: shippingInfo.rajaongkir_province_id,
+                 city_id: shippingInfo.rajaongkir_city_id,
+                 district_id: shippingInfo.rajaongkir_district_id,
+               },
+             },
+           ],
+         },
+       ],
+     };
+
+     const result = await createTransactionFrontend(payload).unwrap();
       if (
         result &&
         result.data &&
@@ -1337,7 +1350,7 @@ export default function CartPage() {
               )}
               <div className="mt-4 text-sm text-gray-600">
                 <p>
-                  💡 Coba kode: <strong>Koperasi Merah Putih10</strong> untuk diskon 10%
+                  💡 Coba kode: <strong>YAMEIYA10</strong> untuk diskon 10%
                 </p>
               </div>
             </div>

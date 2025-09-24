@@ -131,9 +131,7 @@ export default function VoucherPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Manajemen Voucher</h1>
-
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md bg-white p-4 border border-gray-100 shadow-sm">
         <Input
           placeholder="Cari nama voucher..."
           value={search}

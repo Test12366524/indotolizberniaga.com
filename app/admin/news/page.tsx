@@ -17,12 +17,15 @@ import {
 } from "@/services/admin/news.service";
 import { News } from "@/types/admin/news";
 import FormNews from "@/components/form-modal/admin/news-form";
+import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 
 export default function NewsPage() {
   const [form, setForm] = useState<Partial<News>>();
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,10 +127,11 @@ export default function NewsPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Data Berita</h1>
-        <Button onClick={handleCreate}>Tambah News</Button>
-      </div>
+      <ProdukToolbar
+        openModal={openModal}
+        onSearchChange={setQuery}
+        onCategoryChange={setCategory}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">

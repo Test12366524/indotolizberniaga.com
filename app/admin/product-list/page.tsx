@@ -15,6 +15,7 @@ import { useGetProductMerkListQuery } from "@/services/master/product-merk.servi
 import { Product } from "@/types/admin/product";
 import FormProduct from "@/components/form-modal/admin/product-form";
 import { Badge } from "@/components/ui/badge";
+import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 
 export default function ProductPage() {
   const [form, setForm] = useState<Partial<Product>>({
@@ -25,6 +26,8 @@ export default function ProductPage() {
   const { isOpen, openModal, closeModal } = useModal();
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("all");
 
   const { data, isLoading, refetch } = useGetProductListQuery({
     page: currentPage,
@@ -37,6 +40,31 @@ export default function ProductPage() {
   });
 
   const categoryList = useMemo(() => data?.data || [], [data]);
+  // 🔽 list terfilter oleh search & kategori
+  const filteredList = useMemo(() => {
+    let list = categoryList;
+
+    if (category && category !== "all") {
+      list = list.filter(
+        (item) =>
+          item.product_category_id?.toString() === category ||
+          item.category_name?.toLowerCase() === category.toLowerCase() ||
+          item.category_slug?.toLowerCase?.() === category.toLowerCase?.()
+      );
+    }
+
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      list = list.filter(
+        (item) =>
+          item.name?.toLowerCase().includes(q) ||
+          item.merk_name?.toLowerCase().includes(q) ||
+          item.category_name?.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [categoryList, category, query]);
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
   const merkList = useMemo(() => merkData?.data || [], [merkData]);
 
@@ -58,15 +86,17 @@ export default function ProductPage() {
       if (!form.product_merk_id) {
         throw new Error("Merk produk wajib dipilih");
       }
-      
+
       // Check if selected merk is "Jasa" for additional validation
       const selectedMerk = merkList?.find((m) => m.id === form.product_merk_id);
       const isJasaMerk = selectedMerk?.name?.toLowerCase() === "jasa";
-      
+
       if (isJasaMerk) {
         // For Jasa products, price is required and must be > 0
         if (!form.price || form.price <= 0) {
-          throw new Error("Harga wajib diisi dan harus lebih dari 0 untuk layanan Jasa");
+          throw new Error(
+            "Harga wajib diisi dan harus lebih dari 0 untuk layanan Jasa"
+          );
         }
       }
 
@@ -75,7 +105,8 @@ export default function ProductPage() {
       payload.append("shop_id", "1");
 
       // Numeric fields - handle price properly
-      const priceValue = form.price !== undefined && form.price !== null ? form.price : 0;
+      const priceValue =
+        form.price !== undefined && form.price !== null ? form.price : 0;
       payload.append("price", priceValue ? `${priceValue}` : "0");
       payload.append("price", form.price ? `${form.price}` : "0");
       payload.append("duration", form.duration ? `${form.duration}` : "0");
@@ -83,7 +114,7 @@ export default function ProductPage() {
       payload.append("length", form.length ? `${form.length}` : "0");
       payload.append("width", form.width ? `${form.width}` : "0");
       payload.append("height", form.height ? `${form.height}` : "0");
-      
+
       if (isJasaMerk) {
         // For Jasa, send duration field (which maps to duration in our form)
         const durationValue = form.duration ? `${form.duration}` : "0";
@@ -106,18 +137,23 @@ export default function ProductPage() {
 
       // === IMAGE HANDLING ===
       const imageFields = [
-        'image', 'image_2', 'image_3', 'image_4', 
-        'image_5', 'image_6', 'image_7'
+        "image",
+        "image_2",
+        "image_3",
+        "image_4",
+        "image_5",
+        "image_6",
+        "image_7",
       ];
 
       if (editingSlug) {
         // === MODE EDIT ===
         // Kirim method override untuk PATCH/PUT
         payload.append("_method", "PUT"); // atau "PATCH"
-        
+
         imageFields.forEach((fieldName) => {
           const imageValue = form[fieldName as keyof Product];
-          
+
           if (imageValue instanceof File) {
             // Upload gambar baru
             payload.append(fieldName, imageValue);
@@ -130,7 +166,6 @@ export default function ProductPage() {
 
         await updateProduct({ slug: editingSlug, payload }).unwrap();
         Swal.fire("Sukses", "Produk diperbarui", "success");
-        
       } else {
         // === MODE CREATE ===
         // Validasi minimal 1 gambar untuk create
@@ -153,13 +188,16 @@ export default function ProductPage() {
       setEditingSlug(null);
       await refetch();
       closeModal();
-      
     } catch (error) {
       console.error("Submit error:", error);
-      
-      Swal.fire("Gagal", error instanceof Error ? error.message : "Terjadi kesalahan", "error");
+
+      Swal.fire(
+        "Gagal",
+        error instanceof Error ? error.message : "Terjadi kesalahan",
+        "error"
+      );
     }
-  };  
+  };
 
   const handleEdit = (item: Product) => {
     setForm({ ...item, status: item.status === true || item.status === 1 });
@@ -197,10 +235,11 @@ export default function ProductPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Data Produk</h1>
-        <Button onClick={() => openModal()}>Tambah Produk</Button>
-      </div>
+      <ProdukToolbar
+        openModal={openModal}
+        onSearchChange={setQuery}
+        onCategoryChange={setCategory}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -225,14 +264,14 @@ export default function ProductPage() {
                     Memuat data...
                   </td>
                 </tr>
-              ) : categoryList.length === 0 ? (
+              ) : filteredList.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center p-4">
                     Tidak ada data
                   </td>
                 </tr>
               ) : (
-                categoryList.map((item) => (
+                filteredList.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
                       <div className="flex gap-2">

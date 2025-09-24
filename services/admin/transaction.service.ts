@@ -1,8 +1,11 @@
 import { apiSlice } from "../base-query";
 import { 
   Transaction, 
+  CreateTransactionPayload,
   CreateTransactionRequest, 
-  CreateTransactionResponse 
+  CreateTransactionResponse, 
+  CreateTransactionFrontendRequest,
+  CreateTransactionFrontendResponse
 } from "@/types/admin/transaction";
 
 export const transactionApi = apiSlice.injectEndpoints({
@@ -95,6 +98,29 @@ export const transactionApi = apiSlice.injectEndpoints({
       }),
     }),
 
+    createTransactionFrontend: builder.mutation<
+      CreateTransactionFrontendResponse,
+      CreateTransactionFrontendRequest
+    >({
+      query: (payload) => ({
+        url: `/transaction`,
+        method: "POST",
+        body: payload, // Send JSON object instead of FormData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+      transformResponse: (response: {
+        code: number;
+        message: string;
+        data: CreateTransactionPayload | CreateTransactionPayload[];
+      }): CreateTransactionFrontendResponse => ({
+        success: response.code === 200 || response.code === 201,
+        message: response.message,
+        data: response.data,
+      }),
+    }),
+
     // ➕ Create Transaction with FormData (for admin panel if needed)
     createTransactionFormData: builder.mutation<Transaction, FormData>({
       query: (payload) => ({
@@ -169,6 +195,7 @@ export const {
   useGetTransactionBySlugQuery,
   useGetTransactionByIdQuery,
   useCreateTransactionMutation,
+  useCreateTransactionFrontendMutation,
   useCreateTransactionFormDataMutation, // New export for FormData version
   useUpdateTransactionMutation,
   useUpdateTransactionStatusMutation,
