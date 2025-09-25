@@ -43,7 +43,7 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             cd /mnt/oktober/www/node/koperasi.inovasidigitalpurwokerto.id
-            g reset HEAD --hard
+            git reset HEAD --hard
             ssh-agent bash -c 'ssh-add ~/.ssh/id_ed25519; git pull'
             export NVM_DIR=~/.nvm
             source ~/.nvm/nvm.sh
