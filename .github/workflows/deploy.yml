@@ -42,13 +42,14 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT }}
           script: |
-            cd /var/www/node/koperasi-merah-putih.naditechno.id
+            cd /mnt/oktober/www/node/koperasi.inovasidigitalpurwokerto.id
+            g reset HEAD --hard
             ssh-agent bash -c 'ssh-add ~/.ssh/id_ed25519; git pull'
             export NVM_DIR=~/.nvm
             source ~/.nvm/nvm.sh
             yarn
             yarn build
-            pm2 restart koperasi-merah-putih.naditechno.id
+            pm2 restart ecosystem.config.js
       - name: Update deployment Status (success)
         if: success()
         uses: chrnorm/deployment-status@v2

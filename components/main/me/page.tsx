@@ -132,18 +132,18 @@ interface ApiTransaction {
 // Add mutation hook for uploading payment proof
 const useUploadPaymentProofMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const uploadPaymentProof = async (transactionId: string, file: File) => {
     setIsLoading(true);
     try {
       const formData = new FormData();
-      formData.append('payment_proof', file);
-      formData.append('_method', 'PUT');
+      formData.append("payment_proof", file);
+      formData.append("_method", "PUT");
 
       const response = await fetch(
         `https://cms.yameiyashop.com/api/v1/public/transaction/${transactionId}/manual?_method=PUT`,
         {
-          method: 'POST', // Using POST with _method=PUT for form-data
+          method: "POST", // Using POST with _method=PUT for form-data
           body: formData,
           headers: {
             // Don't set Content-Type, let browser set it for FormData
@@ -152,7 +152,7 @@ const useUploadPaymentProofMutation = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to upload payment proof');
+        throw new Error("Failed to upload payment proof");
       }
 
       const data = await response.json();
@@ -209,7 +209,14 @@ export default function ProfilePage() {
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
 
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "profile" | "addresses" | "orders" | "simpanan" | "pinjaman" | "penarikan" | "seller"
+    | "dashboard"
+    | "profile"
+    | "addresses"
+    | "orders"
+    | "simpanan"
+    | "pinjaman"
+    | "penarikan"
+    | "seller"
   >("dashboard");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isEditing, setIsEditing] = useState(false);
@@ -223,19 +230,21 @@ export default function ProfilePage() {
   const sessionId = (session?.user as { id?: number } | undefined)?.id;
 
   // Payment proof upload mutation
-  const { uploadPaymentProof, isLoading: isUploadingProof } = useUploadPaymentProofMutation();
+  const { uploadPaymentProof, isLoading: isUploadingProof } =
+    useUploadPaymentProofMutation();
 
   /* --------------------- Transaksi (tetap) --------------------- */
-  const { data: txnResp, refetch: refetchTransactions } = useGetTransactionListQuery(
-    { page: 1, paginate: 10, user_id: sessionId },
-    { skip: !sessionId }
-  );
-  
+  const { data: txnResp, refetch: refetchTransactions } =
+    useGetTransactionListQuery(
+      { page: 1, paginate: 10, user_id: sessionId },
+      { skip: !sessionId }
+    );
+
   const transactions: ApiTransaction[] = useMemo(
     () => (txnResp?.data as ApiTransaction[]) || [],
     [txnResp]
   );
-  
+
   const orders: Order[] = useMemo(() => {
     return transactions.map((t) => {
       const items: OrderItem[] = (t.details || []).map((det, idx) => ({
@@ -273,7 +282,7 @@ export default function ProfilePage() {
 
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
-    return orders.find(order => order.id === selectedOrderId) || null;
+    return orders.find((order) => order.id === selectedOrderId) || null;
   }, [selectedOrderId, orders]);
 
   /* --------------------- Address via SERVICE --------------------- */
@@ -289,7 +298,7 @@ export default function ProfilePage() {
     address_line_1: "",
     address_line_2: "",
     postal_code: "",
-    is_default: false,
+    is_primary: false,
   });
 
   const [createUserAddress, { isLoading: isCreatingAddr }] =
@@ -339,7 +348,7 @@ export default function ProfilePage() {
       address_line_1: addrDetail.address_line_1 ?? "",
       address_line_2: addrDetail.address_line_2 ?? "",
       postal_code: addrDetail.postal_code ?? "",
-      is_default: Boolean(addrDetail.is_default),
+      is_primary: Boolean(addrDetail.is_primary),
     });
   }, [addrDetail, sessionId]);
 
@@ -353,7 +362,7 @@ export default function ProfilePage() {
       address_line_1: "",
       address_line_2: "",
       postal_code: "",
-      is_default: false,
+      is_primary: false,
     });
     setAddrModalOpen(true);
   };
@@ -441,7 +450,11 @@ export default function ProfilePage() {
 
     try {
       await uploadPaymentProof(selectedOrderId, paymentProofFile);
-      await Swal.fire("Berhasil", "Bukti pembayaran berhasil diupload", "success");
+      await Swal.fire(
+        "Berhasil",
+        "Bukti pembayaran berhasil diupload",
+        "success"
+      );
       closePaymentProofModal();
       closeOrderDetailModal();
       await refetchTransactions();
@@ -519,9 +532,21 @@ export default function ProfilePage() {
     { id: "profile", label: "Profil", icon: <UserIcon className="w-5 h-5" /> },
     { id: "addresses", label: "Alamat", icon: <MapPin className="w-5 h-5" /> },
     { id: "orders", label: "Pesanan", icon: <Package className="w-5 h-5" /> },
-    { id: "simpanan", label: "Simpanan", icon: <Landmark className="w-5 h-5" /> },
-    { id: "pinjaman", label: "Pinjaman", icon: <CreditCard className="w-5 h-5" /> },
-    { id: "penarikan", label: "Penarikan", icon: <DollarSign className="w-5 h-5" /> },
+    {
+      id: "simpanan",
+      label: "Simpanan",
+      icon: <Landmark className="w-5 h-5" />,
+    },
+    {
+      id: "pinjaman",
+      label: "Pinjaman",
+      icon: <CreditCard className="w-5 h-5" />,
+    },
+    {
+      id: "penarikan",
+      label: "Penarikan",
+      icon: <DollarSign className="w-5 h-5" />,
+    },
     { id: "seller", label: "Seller", icon: <Store className="w-5 h-5" /> },
   ] as const;
 
@@ -671,22 +696,54 @@ export default function ProfilePage() {
   }, [wantedAvatar]);
 
   /* --------------------- UI --------------------- */
-  
+
   // --- Modals for new tabs (with static content for now) ---
-  const [isTambahSimpananModalOpen, setIsTambahSimpananModalOpen] = useState(false);
-  const [isAjukanPinjamanModalOpen, setIsAjukanPinjamanModalOpen] = useState(false);
+  const [isTambahSimpananModalOpen, setIsTambahSimpananModalOpen] =
+    useState(false);
+  const [isAjukanPinjamanModalOpen, setIsAjukanPinjamanModalOpen] =
+    useState(false);
   const [isPenarikanModalOpen, setIsPenarikanModalOpen] = useState(false);
   const [isDaftarSellerModalOpen, setIsDaftarSellerModalOpen] = useState(false);
 
   const staticSimpananHistory = [
-    { id: 1, date: "2024-09-01", type: "Wajib", amount: 50000, status: "Berhasil" },
-    { id: 2, date: "2024-08-25", type: "Sukarela", amount: 100000, status: "Berhasil" },
-    { id: 3, date: "2024-08-01", type: "Wajib", amount: 50000, status: "Berhasil" },
+    {
+      id: 1,
+      date: "2024-09-01",
+      type: "Wajib",
+      amount: 50000,
+      status: "Berhasil",
+    },
+    {
+      id: 2,
+      date: "2024-08-25",
+      type: "Sukarela",
+      amount: 100000,
+      status: "Berhasil",
+    },
+    {
+      id: 3,
+      date: "2024-08-01",
+      type: "Wajib",
+      amount: 50000,
+      status: "Berhasil",
+    },
   ];
 
   const staticPinjamanHistory = [
-    { id: 1, date: "2024-07-15", amount: 2000000, status: "Lunas", due: "2024-10-15" },
-    { id: 2, date: "2024-09-10", amount: 500000, status: "Aktif", due: "2024-12-10" },
+    {
+      id: 1,
+      date: "2024-07-15",
+      amount: 2000000,
+      status: "Lunas",
+      due: "2024-10-15",
+    },
+    {
+      id: 2,
+      date: "2024-09-10",
+      amount: 500000,
+      status: "Aktif",
+      due: "2024-12-10",
+    },
   ];
 
   const staticPenarikanHistory = [
@@ -794,14 +851,17 @@ export default function ProfilePage() {
                     <div className="bg-gradient-to-r from-[#6B6B6B] to-[#DFF19D] rounded-2xl p-6 text-white">
                       <div className="flex items-center gap-3 mb-3">
                         <DollarSign className="w-6 h-6" />
-                        <span className="font-semibold">Total Simpanan Sukarela</span>
+                        <span className="font-semibold">
+                          Total Simpanan Sukarela
+                        </span>
                       </div>
                       <div className="text-3xl font-bold">
                         {new Intl.NumberFormat("id-ID", {
                           style: "currency",
                           currency: "IDR",
                           minimumFractionDigits: 0,
-                        }).format(1_500_000)} {/* Static data */}
+                        }).format(1_500_000)}{" "}
+                        {/* Static data */}
                       </div>
                       <div className="text-white/80 text-sm">
                         Total saldo simpanan sukarela
@@ -811,7 +871,9 @@ export default function ProfilePage() {
                     <div className="bg-gradient-to-r from-[#F6CCD0] to-[#BFF0F5] rounded-2xl p-6 text-white">
                       <div className="flex items-center gap-3 mb-3">
                         <CreditCard className="w-6 h-6" />
-                        <span className="font-semibold">Total Belanja Marketplace</span>
+                        <span className="font-semibold">
+                          Total Belanja Marketplace
+                        </span>
                       </div>
                       <div className="text-3xl font-bold">
                         {new Intl.NumberFormat("id-ID", {
@@ -1083,7 +1145,7 @@ export default function ProfilePage() {
                               <div
                                 key={a.id}
                                 className={`border-2 rounded-2xl p-6 transition-all ${
-                                  a.is_default
+                                  a.is_primary
                                     ? "border-[#6B6B6B] bg-[#6B6B6B]/5"
                                     : "border-gray-200 hover:border-[#6B6B6B]/50"
                                 }`}
@@ -1094,7 +1156,7 @@ export default function ProfilePage() {
                                       <h3 className="font-bold text-gray-900">
                                         Alamat
                                       </h3>
-                                      {a.is_default && (
+                                      {a.is_primary && (
                                         <span className="px-2 py-1 bg-[#6B6B6B] text-white text-xs font-semibold rounded-full">
                                           Default
                                         </span>
@@ -1144,13 +1206,13 @@ export default function ProfilePage() {
                                   </p>
                                 </div>
 
-                                {!a.is_default && (
+                                {!a.is_primary && (
                                   <button
                                     onClick={async () => {
                                       try {
                                         await updateUserAddress({
                                           id: Number(a.id),
-                                          payload: { is_default: true },
+                                          payload: { is_primary: true },
                                         }).unwrap();
                                         await refetchUserAddressList();
                                       } catch {
@@ -1345,19 +1407,19 @@ export default function ProfilePage() {
                           {/* Default */}
                           <div className="flex items-center gap-2">
                             <input
-                              id="is_default"
+                              id="is_primary"
                               type="checkbox"
                               className="w-4 h-4"
-                              checked={Boolean(addrForm.is_default)}
+                              checked={Boolean(addrForm.is_primary)}
                               onChange={(e) =>
                                 setAddrForm((p) => ({
                                   ...p,
-                                  is_default: e.target.checked,
+                                  is_primary: e.target.checked,
                                 }))
                               }
                             />
                             <label
-                              htmlFor="is_default"
+                              htmlFor="is_primary"
                               className="text-sm text-gray-800"
                             >
                               Jadikan alamat default
@@ -1476,9 +1538,9 @@ export default function ProfilePage() {
                               <div className="text-right">
                                 <div className="font-semibold text-gray-900">
                                   Rp{" "}
-                                  {(
-                                    item.price * item.quantity
-                                  ).toLocaleString("id-ID")}
+                                  {(item.price * item.quantity).toLocaleString(
+                                    "id-ID"
+                                  )}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   @Rp {item.price.toLocaleString("id-ID")}
@@ -1581,9 +1643,7 @@ export default function ProfilePage() {
                           <span className="font-bold text-lg text-[#6B6B6B]">
                             Rp {s.amount.toLocaleString("id-ID")}
                           </span>
-                          <p className="text-sm text-green-600">
-                            {s.status}
-                          </p>
+                          <p className="text-sm text-green-600">{s.status}</p>
                         </div>
                       </div>
                     ))}
@@ -1622,17 +1682,25 @@ export default function ProfilePage() {
                             Pinjaman #{p.id}
                           </h4>
                           <p className="text-sm text-gray-600">
-                            Tanggal: {new Date(p.date).toLocaleDateString("id-ID")}
+                            Tanggal:{" "}
+                            {new Date(p.date).toLocaleDateString("id-ID")}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Jatuh tempo: {new Date(p.due).toLocaleDateString("id-ID")}
+                            Jatuh tempo:{" "}
+                            {new Date(p.due).toLocaleDateString("id-ID")}
                           </p>
                         </div>
                         <div className="text-right">
                           <span className="font-bold text-lg text-[#6B6B6B]">
                             Rp {p.amount.toLocaleString("id-ID")}
                           </span>
-                          <p className={`text-sm font-semibold ${p.status === 'Aktif' ? 'text-yellow-600' : 'text-green-600'}`}>
+                          <p
+                            className={`text-sm font-semibold ${
+                              p.status === "Aktif"
+                                ? "text-yellow-600"
+                                : "text-green-600"
+                            }`}
+                          >
                             {p.status}
                           </p>
                         </div>
@@ -1680,9 +1748,7 @@ export default function ProfilePage() {
                           <span className="font-bold text-lg text-[#6B6B6B]">
                             Rp {p.amount.toLocaleString("id-ID")}
                           </span>
-                          <p className="text-sm text-green-600">
-                            {p.status}
-                          </p>
+                          <p className="text-sm text-green-600">{p.status}</p>
                         </div>
                       </div>
                     ))}
@@ -1706,7 +1772,9 @@ export default function ProfilePage() {
                   {hasSellerStore ? (
                     <div>
                       {/* Placeholder for seller info */}
-                      <p className="text-gray-600">Anda sudah terdaftar sebagai seller.</p>
+                      <p className="text-gray-600">
+                        Anda sudah terdaftar sebagai seller.
+                      </p>
                     </div>
                   ) : (
                     <div className="text-center py-12 bg-gray-50 rounded-2xl">
@@ -1717,7 +1785,8 @@ export default function ProfilePage() {
                         Belum Terdaftar sebagai Seller
                       </h3>
                       <p className="text-gray-600 mb-6">
-                        Daftar sekarang untuk mulai menjual produk UMKM Anda di marketplace Koperasi Merah Putih.
+                        Daftar sekarang untuk mulai menjual produk UMKM Anda di
+                        marketplace Koperasi Merah Putih.
                       </p>
                       <button
                         onClick={() => setIsDaftarSellerModalOpen(true)}
@@ -1733,7 +1802,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-      
+
       {/* Profile Edit Modal */}
       {profileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1778,65 +1847,97 @@ export default function ProfilePage() {
               {/* Order Info */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Informasi Pesanan</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    Informasi Pesanan
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Nomor Pesanan:</span>
-                      <span className="font-medium">#{selectedOrder.orderNumber}</span>
+                      <span className="font-medium">
+                        #{selectedOrder.orderNumber}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Tanggal:</span>
                       <span className="font-medium">
-                        {new Date(selectedOrder.date).toLocaleDateString("id-ID", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric"
-                        })}
+                        {new Date(selectedOrder.date).toLocaleDateString(
+                          "id-ID",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(selectedOrder.status)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                          selectedOrder.status
+                        )}`}
+                      >
                         {getStatusText(selectedOrder.status)}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Metode Pembayaran:</span>
-                      <span className="font-medium uppercase">{selectedOrder.payment_method || 'N/A'}</span>
+                      <span className="font-medium uppercase">
+                        {selectedOrder.payment_method || "N/A"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Payment Info */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Rincian Pembayaran</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    Rincian Pembayaran
+                  </h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">Rp {selectedOrder.total.toLocaleString("id-ID")}</span>
+                      <span className="font-medium">
+                        Rp {selectedOrder.total.toLocaleString("id-ID")}
+                      </span>
                     </div>
                     {selectedOrder.shipment_cost && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Ongkos Kirim:</span>
-                        <span className="font-medium">Rp {selectedOrder.shipment_cost.toLocaleString("id-ID")}</span>
+                        <span className="font-medium">
+                          Rp{" "}
+                          {selectedOrder.shipment_cost.toLocaleString("id-ID")}
+                        </span>
                       </div>
                     )}
                     {selectedOrder.cod && selectedOrder.cod > 0 && (
                       <div className="flex justify-between">
                         <span className="text-gray-600">Fee COD:</span>
-                        <span className="font-medium">Rp {selectedOrder.cod.toLocaleString("id-ID")}</span>
+                        <span className="font-medium">
+                          Rp {selectedOrder.cod.toLocaleString("id-ID")}
+                        </span>
                       </div>
                     )}
-                    {selectedOrder.discount_total && selectedOrder.discount_total > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Diskon:</span>
-                        <span className="font-medium text-green-600">-Rp {selectedOrder.discount_total.toLocaleString("id-ID")}</span>
-                      </div>
-                    )}
+                    {selectedOrder.discount_total &&
+                      selectedOrder.discount_total > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Diskon:</span>
+                          <span className="font-medium text-green-600">
+                            -Rp{" "}
+                            {selectedOrder.discount_total.toLocaleString(
+                              "id-ID"
+                            )}
+                          </span>
+                        </div>
+                      )}
                     <div className="border-t pt-2">
                       <div className="flex justify-between">
-                        <span className="font-semibold text-gray-900">Total:</span>
-                        <span className="font-bold text-[#6B6B6B]">Rp {selectedOrder.grand_total.toLocaleString("id-ID")}</span>
+                        <span className="font-semibold text-gray-900">
+                          Total:
+                        </span>
+                        <span className="font-bold text-[#6B6B6B]">
+                          Rp {selectedOrder.grand_total.toLocaleString("id-ID")}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1846,22 +1947,30 @@ export default function ProfilePage() {
               {/* Shipping Info */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Alamat Pengiriman</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">
+                    Alamat Pengiriman
+                  </h4>
                   <div className="text-sm">
-                    <p className="text-gray-800">{selectedOrder.address_line_1}</p>
+                    <p className="text-gray-800">
+                      {selectedOrder.address_line_1}
+                    </p>
                     <p className="text-gray-600">{selectedOrder.postal_code}</p>
                   </div>
                 </div>
 
                 {/* Payment Proof Section */}
-                {selectedOrder.payment_method === 'manual' && (
+                {selectedOrder.payment_method === "manual" && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Bukti Pembayaran</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Bukti Pembayaran
+                    </h4>
                     {selectedOrder.payment_proof ? (
                       <div className="border rounded-lg p-4">
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">Bukti pembayaran telah diupload</span>
+                          <span className="text-sm font-medium">
+                            Bukti pembayaran telah diupload
+                          </span>
                         </div>
                         <div className="mt-2">
                           <Image
@@ -1876,7 +1985,9 @@ export default function ProfilePage() {
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
                         <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-3">Belum ada bukti pembayaran</p>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Belum ada bukti pembayaran
+                        </p>
                         <button
                           onClick={openPaymentProofModal}
                           className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-lg font-medium hover:bg-[#6B6B6B]/90 transition-colors mx-auto"
@@ -1893,10 +2004,15 @@ export default function ProfilePage() {
 
             {/* Order Items */}
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Produk Pesanan</h4>
+              <h4 className="font-semibold text-gray-900 mb-4">
+                Produk Pesanan
+              </h4>
               <div className="space-y-4">
                 {selectedOrder.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 p-4 border rounded-lg"
+                  >
                     <div className="w-16 h-16 relative rounded-lg overflow-hidden">
                       <Image
                         src={item.image}
@@ -1906,12 +2022,17 @@ export default function ProfilePage() {
                       />
                     </div>
                     <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900">{item.name}</h5>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                      <h5 className="font-semibold text-gray-900">
+                        {item.name}
+                      </h5>
+                      <p className="text-sm text-gray-600">
+                        Qty: {item.quantity}
+                      </p>
                     </div>
                     <div className="text-right">
                       <div className="font-semibold text-gray-900">
-                        Rp {(item.price * item.quantity).toLocaleString("id-ID")}
+                        Rp{" "}
+                        {(item.price * item.quantity).toLocaleString("id-ID")}
                       </div>
                       <div className="text-sm text-gray-500">
                         @Rp {item.price.toLocaleString("id-ID")}
@@ -1934,7 +2055,9 @@ export default function ProfilePage() {
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">Upload Bukti Pembayaran</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Upload Bukti Pembayaran
+              </h3>
               <button
                 onClick={closePaymentProofModal}
                 className="text-gray-400 hover:text-gray-600"
@@ -1951,7 +2074,9 @@ export default function ProfilePage() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setPaymentProofFile(e.target.files?.[0] || null)}
+                  onChange={(e) =>
+                    setPaymentProofFile(e.target.files?.[0] || null)
+                  }
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 />
               </div>
@@ -1964,7 +2089,8 @@ export default function ProfilePage() {
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
-                  <strong>Catatan:</strong> Pastikan file yang diupload adalah bukti pembayaran yang valid dan jelas terbaca.
+                  <strong>Catatan:</strong> Pastikan file yang diupload adalah
+                  bukti pembayaran yang valid dan jelas terbaca.
                 </p>
               </div>
             </div>
@@ -2001,68 +2127,143 @@ export default function ProfilePage() {
       {/* --- Modals for new tabs --- */}
 
       {/* Tambah Simpanan Modal */}
-      <Modal isOpen={isTambahSimpananModalOpen} onClose={() => setIsTambahSimpananModalOpen(false)} title="Tambah Simpanan">
+      <Modal
+        isOpen={isTambahSimpananModalOpen}
+        onClose={() => setIsTambahSimpananModalOpen(false)}
+        title="Tambah Simpanan"
+      >
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Jenis Simpanan</label>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Jenis Simpanan
+            </label>
             <select className="w-full border border-gray-200 rounded-2xl px-3 py-2">
               <option>Wajib</option>
               <option>Sukarela</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Jumlah</label>
-            <input type="number" className="w-full border border-gray-200 rounded-2xl px-3 py-2" placeholder="Rp 50.000" />
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Jumlah
+            </label>
+            <input
+              type="number"
+              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
+              placeholder="Rp 50.000"
+            />
           </div>
-          <button type="submit" className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold">Simpan</button>
+          <button
+            type="submit"
+            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
+          >
+            Simpan
+          </button>
         </form>
       </Modal>
 
       {/* Ajukan Pinjaman Modal */}
-      <Modal isOpen={isAjukanPinjamanModalOpen} onClose={() => setIsAjukanPinjamanModalOpen(false)} title="Ajukan Pinjaman">
+      <Modal
+        isOpen={isAjukanPinjamanModalOpen}
+        onClose={() => setIsAjukanPinjamanModalOpen(false)}
+        title="Ajukan Pinjaman"
+      >
         <form className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Jumlah Pinjaman</label>
-            <input type="number" className="w-full border border-gray-200 rounded-2xl px-3 py-2" placeholder="Rp 1.000.000" />
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Jumlah Pinjaman
+            </label>
+            <input
+              type="number"
+              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
+              placeholder="Rp 1.000.000"
+            />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Tujuan Pinjaman</label>
-            <textarea className="w-full border border-gray-200 rounded-2xl px-3 py-2" rows={3} placeholder="Untuk modal usaha, kebutuhan mendesak, dll."></textarea>
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Tujuan Pinjaman
+            </label>
+            <textarea
+              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
+              rows={3}
+              placeholder="Untuk modal usaha, kebutuhan mendesak, dll."
+            ></textarea>
           </div>
-          <button type="submit" className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold">Ajukan</button>
+          <button
+            type="submit"
+            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
+          >
+            Ajukan
+          </button>
         </form>
       </Modal>
 
       {/* Tarik Simpanan Modal */}
-      <Modal isOpen={isPenarikanModalOpen} onClose={() => setIsPenarikanModalOpen(false)} title="Tarik Simpanan Sukarela">
+      <Modal
+        isOpen={isPenarikanModalOpen}
+        onClose={() => setIsPenarikanModalOpen(false)}
+        title="Tarik Simpanan Sukarela"
+      >
         <form className="space-y-4">
           <div className="bg-red-50 p-4 rounded-xl text-sm text-red-800">
-            <p><strong>Perhatian:</strong> Penarikan hanya bisa dilakukan untuk Simpanan Sukarela.</p>
+            <p>
+              <strong>Perhatian:</strong> Penarikan hanya bisa dilakukan untuk
+              Simpanan Sukarela.
+            </p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">Jumlah Penarikan</label>
-            <input type="number" className="w-full border border-gray-200 rounded-2xl px-3 py-2" placeholder="Rp 100.000" />
+            <label className="block text-sm font-semibold text-gray-900 mb-2">
+              Jumlah Penarikan
+            </label>
+            <input
+              type="number"
+              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
+              placeholder="Rp 100.000"
+            />
           </div>
-          <button type="submit" className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold">Tarik Dana</button>
+          <button
+            type="submit"
+            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
+          >
+            Tarik Dana
+          </button>
         </form>
       </Modal>
 
       {/* Daftar Seller Modal */}
-      <Modal isOpen={isDaftarSellerModalOpen} onClose={() => setIsDaftarSellerModalOpen(false)} title="Daftar Menjadi Seller">
+      <Modal
+        isOpen={isDaftarSellerModalOpen}
+        onClose={() => setIsDaftarSellerModalOpen(false)}
+        title="Daftar Menjadi Seller"
+      >
         <div className="text-center p-4">
-          <p className="text-gray-600 mb-4">Anda akan diarahkan ke halaman pendaftaran seller khusus. Lengkapi formulir untuk mulai menjual produk Anda di marketplace kami.</p>
-          <button onClick={() => router.push('/register/seller')} className="bg-[#6B6B6B] text-white py-3 px-6 rounded-2xl font-semibold">
+          <p className="text-gray-600 mb-4">
+            Anda akan diarahkan ke halaman pendaftaran seller khusus. Lengkapi
+            formulir untuk mulai menjual produk Anda di marketplace kami.
+          </p>
+          <button
+            onClick={() => router.push("/register/seller")}
+            className="bg-[#6B6B6B] text-white py-3 px-6 rounded-2xl font-semibold"
+          >
             Mulai Pendaftaran
           </button>
         </div>
       </Modal>
-
     </div>
   );
 }
 
 // Reusable Modal Component
-const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; }) => {
+const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}) => {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -2070,7 +2271,12 @@ const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean; onClose:
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
         {children}
       </div>

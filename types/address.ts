@@ -7,5 +7,5 @@ export interface Address {
   address_line_1: string;
   address_line_2?: string | null;
   postal_code: string;
-  is_default: boolean;
+  is_primary: boolean;
 }
