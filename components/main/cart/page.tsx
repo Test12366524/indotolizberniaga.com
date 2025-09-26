@@ -18,7 +18,7 @@ import {
   Shield,
   Truck,
   Star,
-  Upload
+  Upload,
 } from "lucide-react";
 import { Product } from "@/types/admin/product";
 import { useGetProductListQuery } from "@/services/product.service";
@@ -38,8 +38,14 @@ import {
   useGetCitiesQuery,
   useGetDistrictsQuery,
 } from "@/services/shop/open-shop/open-shop.service";
-import { useGetCurrentUserQuery, useCheckShippingCostQuery } from "@/services/auth.service";
-import { useCreateTransactionFrontendMutation, useCreateTransactionMutation } from "@/services/admin/transaction.service";
+import {
+  useGetCurrentUserQuery,
+  useCheckShippingCostQuery,
+} from "@/services/auth.service";
+import {
+  useCreateTransactionFrontendMutation,
+  useCreateTransactionMutation,
+} from "@/services/admin/transaction.service";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { useSession } from "next-auth/react";
@@ -205,7 +211,8 @@ export default function CartPage() {
   const [paymentType, setPaymentType] = useState("midtrans"); // midtrans or manual
   const [paymentMethod, setPaymentMethod] = useState("");
   const [shippingCourier, setShippingCourier] = useState<string | null>(null);
-  const [shippingMethod, setShippingMethod] = useState<ShippingCostOption | null>(null);
+  const [shippingMethod, setShippingMethod] =
+    useState<ShippingCostOption | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -246,7 +253,7 @@ export default function CartPage() {
     paginate: 100,
   });
   const defaultAddress: Address | undefined = userAddressList?.data?.find(
-    (a) => a.is_default
+    (a) => a.is_primary
   );
   const didPrefill = useRef(false);
 
@@ -316,7 +323,11 @@ export default function CartPage() {
       courier: shippingCourier ?? "",
     },
     {
-      skip: !shippingInfo.rajaongkir_district_id || !shippingCourier || shippingCourier === "cod" || shippingCourier === "international",
+      skip:
+        !shippingInfo.rajaongkir_district_id ||
+        !shippingCourier ||
+        shippingCourier === "cod" ||
+        shippingCourier === "international",
       refetchOnMountOrArgChange: true,
     }
   );
@@ -427,12 +438,15 @@ export default function CartPage() {
   );
   const discount =
     appliedCoupon === "YAMEIYA10" ? Math.round(subtotal * 0.1) : 0;
-  
+
   const shippingCost = shippingMethod?.cost ?? 0;
-  
+
   // Calculate COD fee (2% of subtotal when COD is selected)
-  const codFee = paymentType === "cod" ? Math.round((subtotal - discount + shippingCost) * 0.02) : 0;
-  
+  const codFee =
+    paymentType === "cod"
+      ? Math.round((subtotal - discount + shippingCost) * 0.02)
+      : 0;
+
   const total = subtotal - discount + shippingCost + codFee;
 
   const handleCheckout = async () => {
@@ -535,12 +549,15 @@ export default function CartPage() {
       } catch (err: unknown) {
         setIsSubmitting(false);
         console.error("Error creating transaction:", err);
-        
-        let serverMessage = "Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.";
+
+        let serverMessage =
+          "Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.";
         let fieldErrors = "";
 
         if (typeof err === "object" && err !== null) {
-          const apiErr = err as { data?: { message?: string; errors?: ErrorBag }; };
+          const apiErr = err as {
+            data?: { message?: string; errors?: ErrorBag };
+          };
           const genericErr = err as { message?: string };
 
           if (apiErr.data?.message) {
@@ -577,53 +594,53 @@ export default function CartPage() {
     // Original midtrans payment flow
     setIsSubmitting(true);
     try {
-     const stored = parseStorage();
+      const stored = parseStorage();
 
-     const itemDetails = stored.map((item) => ({
-       product_id: item.id,
-       quantity: item.quantity ?? 1,
-     }));
+      const itemDetails = stored.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity ?? 1,
+      }));
 
-     const payload: CreateTransactionFrontendRequest = {
-       data: [
-         {
-           address_line_1: shippingInfo.address_line_1,
-           postal_code: shippingInfo.postal_code,
-           payment_method: paymentType === "midtrans" ? "midtrans" : "cod",
-           data: [
-             {
-               shop_id: 1,
-               details: itemDetails,
-               shipment: {
-                 parameter: JSON.stringify({
-                   destination: String(shippingInfo.rajaongkir_district_id),
-                   weight: 1000,
-                   height: 0,
-                   length: 0,
-                   width: 0,
-                   diameter: 0,
-                   courier: shippingCourier ?? "",
-                 }),
-                 shipment_detail: JSON.stringify(shippingMethod),
-                 courier: shippingCourier ?? "",
-                 cost: shippingMethod!.cost,
-               },
-               customer_info: {
-                 name: shippingInfo.fullName,
-                 phone: shippingInfo.phone,
-                 address_line_1: shippingInfo.address_line_1,
-                 postal_code: shippingInfo.postal_code,
-                 province_id: shippingInfo.rajaongkir_province_id,
-                 city_id: shippingInfo.rajaongkir_city_id,
-                 district_id: shippingInfo.rajaongkir_district_id,
-               },
-             },
-           ],
-         },
-       ],
-     };
+      const payload: CreateTransactionFrontendRequest = {
+        data: [
+          {
+            address_line_1: shippingInfo.address_line_1,
+            postal_code: shippingInfo.postal_code,
+            payment_method: paymentType === "midtrans" ? "midtrans" : "cod",
+            data: [
+              {
+                shop_id: 1,
+                details: itemDetails,
+                shipment: {
+                  parameter: JSON.stringify({
+                    destination: String(shippingInfo.rajaongkir_district_id),
+                    weight: 1000,
+                    height: 0,
+                    length: 0,
+                    width: 0,
+                    diameter: 0,
+                    courier: shippingCourier ?? "",
+                  }),
+                  shipment_detail: JSON.stringify(shippingMethod),
+                  courier: shippingCourier ?? "",
+                  cost: shippingMethod!.cost,
+                },
+                customer_info: {
+                  name: shippingInfo.fullName,
+                  phone: shippingInfo.phone,
+                  address_line_1: shippingInfo.address_line_1,
+                  postal_code: shippingInfo.postal_code,
+                  province_id: shippingInfo.rajaongkir_province_id,
+                  city_id: shippingInfo.rajaongkir_city_id,
+                  district_id: shippingInfo.rajaongkir_district_id,
+                },
+              },
+            ],
+          },
+        ],
+      };
 
-     const result = await createTransactionFrontend(payload).unwrap();
+      const result = await createTransactionFrontend(payload).unwrap();
       if (
         result &&
         result.data &&
@@ -1183,7 +1200,8 @@ export default function CartPage() {
                   </>
                 )}
 
-                {(shippingCourier === "cod" || shippingCourier === "international") && (
+                {(shippingCourier === "cod" ||
+                  shippingCourier === "international") && (
                   <>
                     {shippingOptions.map((option, index) => (
                       <label
@@ -1225,7 +1243,7 @@ export default function CartPage() {
                 <CreditCard className="w-5 h-5 text-[#6B6B6B]" />
                 Metode Pembayaran
               </h3>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1243,10 +1261,12 @@ export default function CartPage() {
                       />
                       <div>
                         <p className="font-medium">Otomatis</p>
-                        <p className="text-sm text-gray-500">Pembayaran online (Gateway)</p>
+                        <p className="text-sm text-gray-500">
+                          Pembayaran online (Gateway)
+                        </p>
                       </div>
                     </label>
-                    
+
                     <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-neutral-50">
                       <input
                         type="radio"
@@ -1258,7 +1278,9 @@ export default function CartPage() {
                       />
                       <div>
                         <p className="font-medium">Manual</p>
-                        <p className="text-sm text-gray-500">Transfer bank manual</p>
+                        <p className="text-sm text-gray-500">
+                          Transfer bank manual
+                        </p>
                       </div>
                     </label>
 
@@ -1273,7 +1295,9 @@ export default function CartPage() {
                       />
                       <div>
                         <p className="font-medium">COD</p>
-                        <p className="text-sm text-gray-500">+Fee 2% terhadap nilai pesanan</p>
+                        <p className="text-sm text-gray-500">
+                          +Fee 2% terhadap nilai pesanan
+                        </p>
                       </div>
                     </label>
                   </div>
@@ -1285,22 +1309,35 @@ export default function CartPage() {
                       <div className="flex items-start gap-3">
                         <div className="w-5 h-5 text-blue-600 mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-blue-900 mb-2">Rekening Tujuan Transfer</h4>
-                          
+                          <h4 className="font-semibold text-blue-900 mb-2">
+                            Rekening Tujuan Transfer
+                          </h4>
+
                           <div className="bg-white p-3 rounded-lg mb-3">
-                            <p className="font-semibold text-gray-900">ISMAIL MARZUKI</p>
-                            <p className="text-sm text-gray-600">Bank Mandiri</p>
-                            <p className="font-mono text-lg font-bold text-gray-900">1340010955069</p>
+                            <p className="font-semibold text-gray-900">
+                              ISMAIL MARZUKI
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Bank Mandiri
+                            </p>
+                            <p className="font-mono text-lg font-bold text-gray-900">
+                              1340010955069
+                            </p>
                           </div>
-                          
+
                           <div className="bg-white p-3 rounded-lg">
-                            <p className="font-semibold text-gray-900">Herlina Hartosuharto</p>
+                            <p className="font-semibold text-gray-900">
+                              Herlina Hartosuharto
+                            </p>
                             <p className="text-sm text-gray-600">Bank BCA</p>
-                            <p className="font-mono text-lg font-bold text-gray-900">3030727834</p>
+                            <p className="font-mono text-lg font-bold text-gray-900">
+                              3030727834
+                            </p>
                           </div>
-                          
+
                           <p className="text-sm text-blue-700 mt-3">
-                            Setelah transfer, Anda dapat mengupload bukti pembayaran melalui halaman profil pesanan.
+                            Setelah transfer, Anda dapat mengupload bukti
+                            pembayaran melalui halaman profil pesanan.
                           </p>
                         </div>
                       </div>
@@ -1443,7 +1480,7 @@ export default function CartPage() {
                   </>
                 )}
               </button>
-              {((!paymentType) ||
+              {(!paymentType ||
                 !shippingMethod ||
                 !shippingInfo.fullName ||
                 !shippingInfo.address_line_1) && (

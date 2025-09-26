@@ -1,9 +1,9 @@
 module.exports = {
   apps: [
     {
-      name: "yameiyashop.com",
+      name: "koperasi.inovasidigitalpurwokerto.id",
       script: "node_modules/next/dist/bin/next",
-      args: "start -p 1069",
+      args: "start -p 1076",
     },
   ],
 };
