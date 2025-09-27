@@ -1,12 +1,12 @@
 import { apiSlice } from "../base-query";
-import { Product, ProductListResponse } from "@/types/admin/product";
+import { User, UserListResponse } from "@/types/admin/user";
 
-export const productApi = apiSlice.injectEndpoints({
+export const userApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // 🔍 Get All Products (with pagination)
-    getProductList: builder.query<
+    // 🔍 Get All Users (with pagination)
+    getUserList: builder.query<
       {
-        data: Product[];
+        data: User[];
         last_page: number;
         current_page: number;
         total: number;
@@ -15,7 +15,7 @@ export const productApi = apiSlice.injectEndpoints({
       { page: number; paginate: number }
     >({
       query: ({ page, paginate }) => ({
-        url: `/shop/products`,
+        url: `/user/users`,
         method: "GET",
         params: {
           page,
@@ -25,7 +25,7 @@ export const productApi = apiSlice.injectEndpoints({
       transformResponse: (response: {
         code: number;
         message: string;
-        data: ProductListResponse;
+        data: UserListResponse;
       }) => ({
         data: response.data.data,
         last_page: response.data.last_page,
@@ -39,5 +39,5 @@ export const productApi = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetProductListQuery,
-} = productApi;
+  useGetUserListQuery,
+} = userApi;
