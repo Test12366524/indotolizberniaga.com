@@ -106,6 +106,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "/admin/penarikan-simpanan",
     },
     {
+      id: "stock-opname",
+      label: "Stock Opname",
+      icon: <Package className="h-5 w-5" />,
+      href: "/admin/stock-opname",
+    },
+    {
       id: "data-keuangan",
       label: "Data Keuangan",
       icon: <Landmark className="h-5 w-5" />,
