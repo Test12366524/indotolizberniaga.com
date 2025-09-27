@@ -15,6 +15,7 @@ import type { AnggotaKoperasi } from "@/types/koperasi-types/anggota";
 import { Badge } from "@/components/ui/badge";
 import AnggotaForm from "@/components/form-modal/koperasi-modal/anggota-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import { useRouter } from "next/navigation";
 
 type AnggotaPayload = {
   user_id: number;
@@ -43,6 +44,8 @@ export default function AnggotaPage() {
     >
   >({});
 
+  const router = useRouter();
+
   const [editingId, setEditingId] = useState<number | null>(null);
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
@@ -51,7 +54,7 @@ export default function AnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [status, setStatus] = useState<string>("all");
 
   const { data, isLoading, refetch } = useGetAnggotaListQuery({
     page: currentPage,
@@ -210,10 +213,34 @@ export default function AnggotaPage() {
           openModal();
         }}
         onSearchChange={setQuery}
-        onCategoryChange={setCategory}
+        onCategoryChange={(val) => {
+          // opsional: mapping ke format API (mis. "active"|"inactive" -> 1|0)
+          // const mapped = val === "active" ? "1" : val === "inactive" ? "0" : "all";
+          setStatus(val);
+        }}
+        categories={[
+          { value: "all", label: "Semua Status" },
+          { value: "active", label: "Aktif" },
+          { value: "inactive", label: "Tidak Aktif" },
+        ]}
+        onImportExcel={(file) => {
+          // kirim ke service import
+          // uploadImportExcel(file)
+        }}
+        onExportExcel={() => {
+          // panggil service export (download file)
+          // exportProdukExcel({ q: query, status })
+        }}
+        importLabel="Import Excel"
+        exportLabel="Export Excel"
       />
 
       <Card>
+        <div className="px-4">
+          <Button variant="default" onClick={() => router.push("/admin/history")}>
+            Lihat History
+          </Button>
+        </div>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left">

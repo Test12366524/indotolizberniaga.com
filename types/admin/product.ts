@@ -14,6 +14,7 @@ export interface Product {
   address_line_1: string;
   merk_name: string;
   merk_slug: string;
+  stock: number;
   name: string;
   slug: string;
   quantity: number;
