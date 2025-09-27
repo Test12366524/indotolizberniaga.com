@@ -5,18 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { PinjamanCategory } from "@/types/master/pinjaman-category";
+import { SimpananCategory } from "@/types/master/simpanan-category";
 
 interface FormPinjamanCategoryProps {
-  form: Partial<PinjamanCategory>;
-  setForm: (data: Partial<PinjamanCategory>) => void;
+  form: Partial<SimpananCategory>;
+  setForm: (data: Partial<SimpananCategory>) => void;
   onCancel: () => void;
   onSubmit: () => void;
   readonly?: boolean;
   isLoading?: boolean;
 }
 
-export default function FormSimpananCategory({
+export default function FormPinjamanCategory({
   form,
   setForm,
   onCancel,
@@ -38,10 +38,10 @@ export default function FormSimpananCategory({
       <div className="flex justify-between items-center">
         <h2 className="text-lg font-semibold">
           {readonly
-            ? "Detail Kategori Pinjaman"
+            ? "Detail Kategori Simpanan"
             : form.id
-            ? "Edit Kategori Pinjaman"
-            : "Tambah Kategori Pinjaman"}
+            ? "Edit Kategori Simpanan"
+            : "Tambah Kategori Simpanan"}
         </h2>
         <Button variant="ghost" onClick={onCancel}>
           ✕
