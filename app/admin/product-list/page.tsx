@@ -19,7 +19,7 @@ import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 
 export default function ProductPage() {
   const [form, setForm] = useState<Partial<Product>>({
-    status: true,
+    status: 1,
   });
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [readonly, setReadonly] = useState(false);
@@ -141,9 +141,9 @@ export default function ProductPage() {
       // duration:
       // - Jika Jasa: kirim duration dari form (default 1 jika kosong)
       // - Jika Bukan Jasa: TIDAK PERLU, jangan kirim (hindari kebingungan dgn stock)
-      if (isJasaMerk) {
-        payload.append("duration", form.duration ? String(form.duration) : "1");
-      }
+      // if (isJasaMerk) {
+      //   payload.append("duration", form.duration ? String(form.duration) : "1");
+      // }
 
       // === OPTIONAL FIELDS ===
       if (form.name) payload.append("name", form.name);
@@ -173,7 +173,7 @@ export default function ProductPage() {
 
         imageFields.forEach((fieldName) => {
           const imageValue = form[fieldName];
-          if (imageValue instanceof File) {
+          if (imageValue && imageValue instanceof File) {
             payload.append(fieldName, imageValue);
           } else if (typeof imageValue === "string" && imageValue) {
             // pertahankan url lama (jika backend butuh)
@@ -185,7 +185,7 @@ export default function ProductPage() {
         Swal.fire("Sukses", "Produk diperbarui", "success");
       } else {
         // CREATE
-        if (!(form.image instanceof File)) {
+        if (!form.image) {
           throw new Error("Minimal 1 gambar wajib diisi untuk produk baru");
         }
         imageFields.forEach((fieldName) => {
@@ -199,7 +199,7 @@ export default function ProductPage() {
         Swal.fire("Sukses", "Produk ditambahkan", "success");
       }
 
-      setForm({ status: true });
+      setForm({ status: 1 });
       setEditingSlug(null);
       await refetch();
       closeModal();
@@ -214,7 +214,7 @@ export default function ProductPage() {
   };
 
   const handleEdit = (item: Product) => {
-    setForm({ ...item, status: item.status === true || item.status === 1 });
+    setForm({ ...item, status: item.status });
     setEditingSlug(item.slug);
     setReadonly(false);
     openModal();
@@ -365,7 +365,7 @@ export default function ProductPage() {
             form={form}
             setForm={setForm}
             onCancel={() => {
-              setForm({ status: true });
+              setForm({ status: 1 });
               setEditingSlug(null);
               setReadonly(false);
               closeModal();
