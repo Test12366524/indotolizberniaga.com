@@ -48,6 +48,14 @@ export interface MarkAsPaidRequest {
   paid_date: string;
 }
 
+export interface CreatePaymentRequest {
+  pinjaman_id: number;
+  pinjaman_detail_id: number;
+  amount: number;
+  type: 'manual' | 'automatic';
+  image?: File;
+}
+
 export const installmentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // Get installments by pinjaman ID
@@ -109,6 +117,30 @@ export const installmentApi = apiSlice.injectEndpoints({
         "Installment"
       ],
     }),
+
+    // Create payment
+    createPayment: builder.mutation<{ code: number; message: string; data: any }, CreatePaymentRequest>({
+      query: ({ pinjaman_id, pinjaman_detail_id, amount, type, image }) => {
+        const formData = new FormData();
+        formData.append('pinjaman_id', pinjaman_id.toString());
+        formData.append('pinjaman_detail_id', pinjaman_detail_id.toString());
+        formData.append('amount', amount.toString());
+        formData.append('type', type);
+        if (image) {
+          formData.append('image', image);
+        }
+        
+        return {
+          url: `pinjaman/payment`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      invalidatesTags: (result, error, { pinjaman_id }) => [
+        { type: "Installment", id: pinjaman_id },
+        "Installment"
+      ],
+    }),
   }),
 });
 
@@ -117,4 +149,5 @@ export const {
   useMarkInstallmentAsPaidMutation,
   useUploadPaymentProofMutation,
   useGenerateInstallmentsMutation,
+  useCreatePaymentMutation,
 } = installmentApi;

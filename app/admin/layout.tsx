@@ -121,7 +121,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "pos-kasir",
       label: "Pos Kasir",
       icon: <CreditCard className="h-5 w-5" />,
-      href: "/admin/pos-kasir",
+      href: "#",
+      children: [
+        {
+          id: "pos-kasir/history",
+          label: "History",
+          href: "/admin/pos-kasir/history",
+        },
+        {
+          id: "pos-kasir/kasir",
+          label: "Kasir",
+          href: "/admin/pos-kasir/kasir",
+        },
+      ],
     },
     {
       id: "data-keuangan",

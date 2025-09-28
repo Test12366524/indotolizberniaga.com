@@ -1,24 +1,20 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import Image from "next/image";
+import { useMemo, useEffect } from "react";
 import {
   Sparkles,
   ArrowRight,
-  Filter,
-  Search,
   CheckCircle,
   XCircle,
   Store,
   MapPin,
-  Phone,
-  Mail,
   User,
   Info,
 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { InferType } from "yup";
 
 // New API Services for locations
 import {
@@ -32,7 +28,33 @@ import { useCreateTokoMutation } from "@/services/admin/toko.service";
 import DotdLoader from "@/components/loader/3dot";
 
 // ==== Utils for API Data Normalization ====
-const toList = (data: any) => data?.rajaongkir?.results || [];
+// Mengganti 'any' dengan tipe yang lebih spesifik atau menggunakan generik jika memungkinkan.
+// Dalam konteks ini, kita asumsikan data yang masuk memiliki struktur yang konsisten.
+// Karena struktur hasil RajaOngkir sudah diketahui, kita bisa mendefinisikan tipe yang lebih baik.
+// Untuk kemudahan, kita akan mendefinisikan sebuah tipe dasar untuk hasil API
+type Province = {
+  province_id: string;
+  province: string;
+};
+
+type City = {
+  city_id: string;
+  type: string;
+  city_name: string;
+};
+
+type District = {
+  subdistrict_id: string;
+  subdistrict_name: string;
+};
+
+type RajaOngkirResult = {
+  rajaongkir: {
+    results: Array<Province | City | District>;
+  };
+};
+
+const toList = (data: RajaOngkirResult | undefined) => data?.rajaongkir?.results || [];
 
 const schema = yup.object().shape({
   name: yup.string().required("Nama toko wajib diisi"),
@@ -43,7 +65,14 @@ const schema = yup.object().shape({
   rajaongkir_province_id: yup.number().min(1, "Provinsi wajib dipilih").required(),
   rajaongkir_city_id: yup.number().min(1, "Kota wajib dipilih").required(),
   rajaongkir_district_id: yup.number().min(1, "Kecamatan wajib dipilih").required(),
+  // Field tambahan yang ada di defaultValues tapi tidak divalidasi oleh yup
+  status: yup.string().oneOf(["pending"]).required(),
+  latitude: yup.string().required(),
+  longitude: yup.string().required(),
 });
+
+// Menentukan tipe data form dari schema yup
+type SellerFormData = InferType<typeof schema>;
 
 export default function SellerPage() {
   const {
@@ -52,13 +81,23 @@ export default function SellerPage() {
     watch,
     setValue,
     formState: { errors },
-    reset,
-  } = useForm({
+    // 'reset' dihapus karena tidak digunakan
+  } = useForm<SellerFormData>({ // Menggunakan tipe InferType untuk mengganti 'any'
     resolver: yupResolver(schema),
     defaultValues: {
       status: "pending",
       latitude: "-6.2088",
       longitude: "106.8456",
+      // Pastikan semua field wajib diisi, atau opsional
+      name: "",
+      phone: "",
+      email: "",
+      address: "",
+      description: "",
+      // Menggunakan 0 atau null untuk nilai awal number/select
+      rajaongkir_province_id: 0,
+      rajaongkir_city_id: 0,
+      rajaongkir_district_id: 0,
     },
   });
 
@@ -75,32 +114,50 @@ export default function SellerPage() {
   // Reset city and district when province changes
   useEffect(() => {
     if (provinceId) {
-      setValue("rajaongkir_city_id", "");
-      setValue("rajaongkir_district_id", "");
+      // Mengatur nilai menjadi 0 (atau string kosong jika ingin option pertama terpilih)
+      // Karena schema menggunakan .min(1), maka menggunakan 0 di sini akan memicu error validasi
+      // jika pengguna tidak memilih, yang merupakan perilaku yang diinginkan.
+      setValue("rajaongkir_city_id", 0);
+      setValue("rajaongkir_district_id", 0);
     }
   }, [provinceId, setValue]);
 
   // Reset district when city changes
   useEffect(() => {
     if (cityId) {
-      setValue("rajaongkir_district_id", "");
+      setValue("rajaongkir_district_id", 0);
     }
   }, [cityId, setValue]);
 
-  const onSubmit = async (data: any) => {
+  // Mengganti 'any' dengan tipe SellerFormData yang sudah didefinisikan
+  const onSubmit = async (data: SellerFormData) => {
     const formData = new FormData();
-    Object.keys(data).forEach(key => formData.append(key, data[key]));
+    // Looping di sini masih menggunakan key string, yang aman.
+    Object.keys(data).forEach(key => {
+        // Assertion 'key as keyof SellerFormData' untuk memastikan key adalah bagian dari tipe
+        formData.append(key, String(data[key as keyof SellerFormData]));
+    });
 
     try {
+      // unwrap() menangani logika success/error
       await createShop(formData).unwrap();
     } catch (err) {
+      // 'error' di sini adalah tipe dari RTK Query, tidak perlu log 'err' sebagai 'any'
       console.error("Failed to register shop:", err);
     }
   };
 
-  const provinceList = useMemo(() => toList(provinces), [provinces]);
-  const cityList = useMemo(() => toList(cities), [cities]);
-  const districtList = useMemo(() => toList(districts), [districts]);
+  // Type inference dari toList sudah cukup, tapi kita bisa definisikan secara eksplisit jika perlu
+  const provinceList: Province[] = useMemo(() => toList(provinces as unknown as RajaOngkirResult) as Province[], [provinces]);
+  const cityList: City[] = useMemo(() => toList(cities as unknown as RajaOngkirResult) as City[], [cities]);
+  const districtList: District[] = useMemo(() => toList(districts as unknown as RajaOngkirResult) as District[], [districts]);
+
+  // Struktur RajaOngkir untuk province: { province_id: string, province: string }
+  // Struktur RajaOngkir untuk city: { city_id: string, type: string, city_name: string }
+  // Struktur RajaOngkir untuk district: { subdistrict_id: string, subdistrict_name: string }
+  // Catatan: Karena `toList` mengembalikan `any[]`, kita biarkan `provinceList` dll. sebagai `any[]` untuk meminimalkan perubahan,
+  // namun kita telah memperbaiki penggunaan `any` utama di form data dan util.
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-[#DFF19D]/10">
@@ -200,9 +257,10 @@ export default function SellerPage() {
                       Terjadi kesalahan saat mengirim formulir. Silakan coba
                       kembali.
                     </p>
-                    {error?.data?.message && (
+                    {/* Mengatasi `error` yang mungkin undefined atau tidak memiliki properti data */}
+                    {typeof error === 'object' && error !== null && 'data' in error && typeof (error.data as { message?: string }).message === 'string' && (
                       <p className="text-xs mt-2 text-red-600">
-                        Detail: {error.data.message}
+                        Detail: {(error.data as { message?: string }).message}
                       </p>
                     )}
                   </div>
@@ -259,13 +317,14 @@ export default function SellerPage() {
                     <label htmlFor="province" className="block text-sm font-medium text-gray-700 mb-2">Provinsi</label>
                     <select
                       id="province"
-                      {...register("rajaongkir_province_id")}
+                      {...register("rajaongkir_province_id", { valueAsNumber: true })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#E53935] focus:border-transparent"
                       disabled={isProvincesLoading}
                     >
-                      <option value="">Pilih Provinsi</option>
+                      <option value={0}>Pilih Provinsi</option>
                       {provinceList.map(p => (
-                        <option key={p.province_id} value={p.province_id}>
+                        // Asumsi p.province_id adalah string, dan select mengubahnya menjadi number
+                        <option key={p.province_id} value={Number(p.province_id)}>
                           {p.province}
                         </option>
                       ))}
@@ -276,13 +335,13 @@ export default function SellerPage() {
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">Kota</label>
                     <select
                       id="city"
-                      {...register("rajaongkir_city_id")}
+                      {...register("rajaongkir_city_id", { valueAsNumber: true })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#E53935] focus:border-transparent"
                       disabled={!provinceId || isCitiesLoading}
                     >
-                      <option value="">Pilih Kota</option>
+                      <option value={0}>Pilih Kota</option>
                       {cityList.map(c => (
-                        <option key={c.city_id} value={c.city_id}>
+                        <option key={c.city_id} value={Number(c.city_id)}>
                           {c.type} {c.city_name}
                         </option>
                       ))}
@@ -293,13 +352,13 @@ export default function SellerPage() {
                     <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">Kecamatan</label>
                     <select
                       id="district"
-                      {...register("rajaongkir_district_id")}
+                      {...register("rajaongkir_district_id", { valueAsNumber: true })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-[#E53935] focus:border-transparent"
                       disabled={!cityId || isDistrictsLoading}
                     >
-                      <option value="">Pilih Kecamatan</option>
+                      <option value={0}>Pilih Kecamatan</option>
                       {districtList.map(d => (
-                        <option key={d.subdistrict_id} value={d.subdistrict_id}>
+                        <option key={d.subdistrict_id} value={Number(d.subdistrict_id)}>
                           {d.subdistrict_name}
                         </option>
                       ))}

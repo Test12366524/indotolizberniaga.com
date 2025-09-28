@@ -432,7 +432,7 @@ export default function SettingsPage() {
                   src={
                     typeof item.image === "string"
                       ? item.image
-                      : item.image instanceof File
+                      : item.image
                       ? URL.createObjectURL(item.image)
                       : "/placeholder.png"
                   }
