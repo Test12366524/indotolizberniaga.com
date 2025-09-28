@@ -59,6 +59,7 @@ export default function PengadaanPage() {
   const [selectedItem, setSelectedItem] = useState<PurchaseOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState("all");
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -112,25 +113,45 @@ export default function PengadaanPage() {
   const purchaseOrderList = useMemo(() => data?.data || [], [data]);
   const productsList = useMemo(() => productsData?.data || [], [productsData]);
   
-  // Filter list by search query
+  // Create supplier categories for filter
+  const supplierCategories = useMemo(() => {
+    const categories = [{ value: "all", label: "Semua Supplier" }];
+    const uniqueSuppliers = Array.from(new Set(purchaseOrderList.map(item => item.supplier).filter(Boolean)));
+    uniqueSuppliers.forEach(supplier => {
+      categories.push({ value: supplier, label: supplier });
+    });
+    return categories;
+  }, [purchaseOrderList]);
+  
+  // Filter list by search query and supplier
   const filteredList = useMemo(() => {
-    if (!query.trim()) return purchaseOrderList;
+    let filtered = purchaseOrderList;
     
-    const q = query.toLowerCase();
-    return purchaseOrderList.filter(
-      (item) => {
-        const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
-        const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
-        
-        return (
-          item.supplier?.toLowerCase().includes(q) ||
-          userName.toLowerCase().includes(q) ||
-          shopName.toLowerCase().includes(q) ||
-          item.notes?.toLowerCase().includes(q)
-        );
-      }
-    );
-  }, [purchaseOrderList, query, meData]);
+    // Filter by supplier if not "all"
+    if (selectedSupplier !== "all") {
+      filtered = filtered.filter(item => item.supplier === selectedSupplier);
+    }
+    
+    // Filter by search query
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      filtered = filtered.filter(
+        (item) => {
+          const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
+          const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
+          
+          return (
+            item.supplier?.toLowerCase().includes(q) ||
+            userName.toLowerCase().includes(q) ||
+            shopName.toLowerCase().includes(q) ||
+            item.notes?.toLowerCase().includes(q)
+          );
+        }
+      );
+    }
+    
+    return filtered;
+  }, [purchaseOrderList, query, selectedSupplier, meData]);
 
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
@@ -324,7 +345,10 @@ export default function PengadaanPage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        onCategoryChange={() => {}}
+        onCategoryChange={setSelectedSupplier}
+        categories={supplierCategories}
+        initialCategory="all"
+        addButtonLabel="Tambah Pengadaan"
       />
 
       <Card>
@@ -333,7 +357,7 @@ export default function PengadaanPage() {
             <thead className="bg-muted text-left">
               <tr>
                 <th className="px-4 py-2 whitespace-nowrap">Aksi</th>
-                <th className="px-4 py-2 whitespace-nowrap">ID</th>
+                {/* <th className="px-4 py-2 whitespace-nowrap">ID</th> */}
                 <th className="px-4 py-2 whitespace-nowrap">Supplier</th>
                 <th className="px-4 py-2 whitespace-nowrap">User</th>
                 <th className="px-4 py-2 whitespace-nowrap">Total</th>
@@ -390,9 +414,9 @@ export default function PengadaanPage() {
                         </Button>
                       </div>
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
+                    {/* <td className="px-4 py-2 whitespace-nowrap">
                       {item.id}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.supplier}
                     </td>

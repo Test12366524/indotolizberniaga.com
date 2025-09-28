@@ -31,6 +31,7 @@ type Props = {
   initialCategory?: string;
   extraSelects?: ExtraSelect[];
   extraNodes?: ReactNode;
+  addButtonLabel?: string; // Custom label for add button
 
   /** ===== Excel actions (opsional) ===== */
   onImportExcel?: (file: File) => void;
@@ -55,6 +56,7 @@ export function ProdukToolbar({
   initialCategory,
   extraSelects = [],
   extraNodes,
+  addButtonLabel = "Tambah Stock Opname",
 
   onImportExcel,
   onExportExcel,
@@ -188,7 +190,7 @@ export function ProdukToolbar({
           )}
 
           {/* Tambah data (opsional) */}
-          {openModal && <Button onClick={openModal}>Tambah Stock Opname</Button>}
+          {openModal && <Button onClick={openModal}>{addButtonLabel}</Button>}
         </div>
       </div>
     </div>
