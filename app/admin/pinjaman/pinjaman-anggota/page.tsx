@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
-import { createPortal } from "react-dom";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,13 @@ import {
   useDeletePinjamanMutation,
   useUpdatePinjamanStatusMutation,
 } from "@/services/admin/pinjaman.service";
+import {
+  useGetInstallmentsByPinjamanQuery,
+  useMarkInstallmentAsPaidMutation,
+  useUploadPaymentProofMutation,
+} from "@/services/installment.service";
 import { Pinjaman } from "@/types/admin/pinjaman";
+import { Installment, INSTALLMENT_STATUS_LABELS, INSTALLMENT_STATUS_VARIANTS } from "@/types/installment";
 import FormPinjaman from "@/components/form-modal/pinjaman-form";
 import { useGetPinjamanCategoryListQuery } from "@/services/master/pinjaman-category.service";
 import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
@@ -30,7 +35,9 @@ import {
   XCircle,
   MoreVertical,
   CreditCard,
-  User,
+  Upload,
+  Calendar,
+  DollarSign,
 } from "lucide-react";
 
 export default function PinjamanAnggotaPage() {
@@ -44,6 +51,10 @@ export default function PinjamanAnggotaPage() {
   );
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [paymentFile, setPaymentFile] = useState<File | null>(null);
+  const [manualInstallments, setManualInstallments] = useState<Installment[]>([]);
 
   // Close dropdown when modal opens
   useEffect(() => {
@@ -142,6 +153,15 @@ export default function PinjamanAnggotaPage() {
     useUpdatePinjamanMutation();
   const [deletePinjaman] = useDeletePinjamanMutation();
   const [updateStatus] = useUpdatePinjamanStatusMutation();
+  const [markAsPaid] = useMarkInstallmentAsPaidMutation();
+  const [uploadProof] = useUploadPaymentProofMutation();
+  // const [generateInstallments] = useGenerateInstallmentsMutation();
+
+  // Get installments data when a pinjaman is selected
+  const { data: installmentsData, isLoading: isLoadingInstallments, refetch: refetchInstallments } = useGetInstallmentsByPinjamanQuery(
+    { pinjaman_id: selectedPinjaman?.id || 0 },
+    { skip: !selectedPinjaman?.id }
+  );
 
   const handleSubmit = async () => {
     try {
@@ -223,6 +243,107 @@ export default function PinjamanAnggotaPage() {
   const handlePaymentHistory = (item: Pinjaman) => {
     setSelectedPinjaman(item);
     setPaymentModalOpen(true);
+  };
+
+  const handleMarkAsPaid = async (installment: Installment) => {
+    try {
+      // Check if it's a manual installment
+      if (manualInstallments.some(mi => mi.id === installment.id)) {
+        // Update manual installment
+        setManualInstallments(prev => 
+          prev.map(inst => 
+            inst.id === installment.id 
+              ? { ...inst, status: 'paid' as const, paid_date: new Date().toISOString().split('T')[0] }
+              : inst
+          )
+        );
+        Swal.fire("Berhasil", "Angsuran berhasil ditandai sebagai dibayar", "success");
+      } else {
+        // API call for real installments
+        const today = new Date().toISOString().split('T')[0];
+        await markAsPaid({
+          installment_id: installment.id,
+          paid_date: today,
+        }).unwrap();
+        await refetchInstallments();
+        Swal.fire("Berhasil", "Angsuran berhasil ditandai sebagai dibayar", "success");
+      }
+    } catch (error) {
+      Swal.fire("Gagal", "Gagal menandai angsuran sebagai dibayar", "error");
+      console.error(error);
+    }
+  };
+
+  const handleUploadProof = async () => {
+    if (!selectedInstallment || !paymentFile) {
+      Swal.fire("Error", "Pilih file bukti pembayaran terlebih dahulu", "error");
+      return;
+    }
+
+    try {
+      await uploadProof({
+        installment_id: selectedInstallment.id,
+        payment_proof: paymentFile,
+      }).unwrap();
+      await refetchInstallments();
+      setUploadModalOpen(false);
+      setSelectedInstallment(null);
+      setPaymentFile(null);
+      Swal.fire("Berhasil", "Bukti pembayaran berhasil diupload", "success");
+    } catch (error) {
+      Swal.fire("Gagal", "Gagal upload bukti pembayaran", "error");
+      console.error(error);
+    }
+  };
+
+  const handleGenerateInstallments = async () => {
+    if (!selectedPinjaman) return;
+
+    try {
+      // Generate installments manually based on loan data
+      const installments = generateInstallmentsManually(selectedPinjaman);
+      
+      // Store in local state
+      setManualInstallments(installments);
+      
+      Swal.fire("Berhasil", "Angsuran berhasil digenerate", "success");
+    } catch (error) {
+      Swal.fire("Gagal", "Gagal generate angsuran", "error");
+      console.error(error);
+    }
+  };
+
+  // Manual function to generate installments
+  const generateInstallmentsManually = (pinjaman: Pinjaman) => {
+    const installments = [];
+    const nominal = pinjaman.nominal || 0;
+    const tenor = pinjaman.tenor || 0;
+    const interestRate = pinjaman.interest_rate || 0;
+    const startDate = new Date(pinjaman.date || new Date());
+    
+    // Calculate monthly payment using simple interest formula
+    // Monthly payment = (Principal + Total Interest) / Tenor
+    const totalInterest = (nominal * interestRate * tenor) / 100;
+    const monthlyPayment = Math.round((nominal + totalInterest) / tenor);
+    
+    for (let i = 1; i <= tenor; i++) {
+      // Calculate due date (monthly from start date)
+      const dueDate = new Date(startDate);
+      dueDate.setMonth(dueDate.getMonth() + i);
+      
+      installments.push({
+        id: i, // Temporary ID
+        pinjaman_id: pinjaman.id,
+        installment_number: i,
+        amount: monthlyPayment,
+        due_date: dueDate.toISOString().split('T')[0],
+        status: 'pending' as const,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+    
+    return installments;
   };
 
   const handleExport = async () => {
@@ -593,7 +714,7 @@ export default function PinjamanAnggotaPage() {
                         </div>
 
                         {/* Status Actions for Pending */}
-                        {(item.status === "0" || item.status === 0) && (
+                        {(item.status === "0" || item.status === "pending") && (
                           <div className="flex gap-1">
                             <Button
                               size="sm"
@@ -749,20 +870,331 @@ export default function PinjamanAnggotaPage() {
       {/* Payment History Modal */}
       {paymentModalOpen && selectedPinjaman && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-4xl">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  History Pembayaran - {selectedPinjaman.user?.name}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Pinjaman: {formatCurrency(selectedPinjaman.nominal)} - {selectedPinjaman.tenor} bulan
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleGenerateInstallments}
+                  disabled={isLoadingInstallments}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Generate Angsuran
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setPaymentModalOpen(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+
+            {isLoadingInstallments ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-2 text-gray-500">Memuat data angsuran...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Total Angsuran</p>
+                          <p className="font-semibold">
+                            {(installmentsData?.data?.data?.length || 0) + manualInstallments.length} bulan
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-5 w-5 text-blue-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Sudah Dibayar</p>
+                          <p className="font-semibold">
+                            {(installmentsData?.data?.data?.filter(i => i.status === 'paid').length || 0) + 
+                             manualInstallments.filter(i => i.status === 'paid').length} bulan
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-red-600" />
+                        <div>
+                          <p className="text-sm text-gray-500">Belum Dibayar</p>
+                          <p className="font-semibold">
+                            {(installmentsData?.data?.data?.filter(i => i.status === 'pending' || i.status === 'overdue').length || 0) + 
+                             manualInstallments.filter(i => i.status === 'pending' || i.status === 'overdue').length} bulan
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Installments Table */}
+                <Card>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted text-left">
+                          <tr>
+                            <th className="px-4 py-2">Bulan Ke</th>
+                            <th className="px-4 py-2">Nominal</th>
+                            <th className="px-4 py-2">Jatuh Tempo</th>
+                            <th className="px-4 py-2">Tanggal Bayar</th>
+                            <th className="px-4 py-2">Status</th>
+                            <th className="px-4 py-2">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {installmentsData?.data?.data?.length === 0 && manualInstallments.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="text-center p-8 text-gray-500">
+                                Belum ada data angsuran. Klik &quot;Generate Angsuran&quot; untuk membuat jadwal pembayaran.
+                              </td>
+                            </tr>
+                          ) : (
+                            <>
+                              {/* Manual Installments */}
+                              {manualInstallments.map((installment) => (
+                                <tr key={`manual-${installment.id}`} className="border-t">
+                                  <td className="px-4 py-2 font-medium">
+                                    {installment.installment_number}
+                                  </td>
+                                  <td className="px-4 py-2 font-medium">
+                                    {formatCurrency(installment.amount)}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {new Date(installment.due_date).toLocaleDateString("id-ID")}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {installment.paid_date 
+                                      ? new Date(installment.paid_date).toLocaleDateString("id-ID")
+                                      : "-"
+                                    }
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <Badge 
+                                      variant={INSTALLMENT_STATUS_VARIANTS[installment.status]}
+                                    >
+                                      {INSTALLMENT_STATUS_LABELS[installment.status]}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex gap-2">
+                                      {installment.status === 'pending' || installment.status === 'overdue' ? (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            variant="default"
+                                            onClick={() => handleMarkAsPaid(installment)}
+                                          >
+                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                            Bayar
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setSelectedInstallment(installment);
+                                              setUploadModalOpen(true);
+                                            }}
+                                          >
+                                            <Upload className="h-4 w-4 mr-1" />
+                                            Upload Bukti
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          {installment.payment_proof && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => window.open(installment.payment_proof, '_blank')}
+                                            >
+                                              <Eye className="h-4 w-4 mr-1" />
+                                              Lihat Bukti
+                                            </Button>
+                                          )}
+                                          <Badge variant="success" className="text-xs">
+                                            Lunas
+                                          </Badge>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                              
+                              {/* API Installments */}
+                              {installmentsData?.data?.data?.map((installment) => (
+                                <tr key={installment.id} className="border-t">
+                                  <td className="px-4 py-2 font-medium">
+                                    {installment.installment_number}
+                                  </td>
+                                  <td className="px-4 py-2 font-medium">
+                                    {formatCurrency(installment.amount)}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {new Date(installment.due_date).toLocaleDateString("id-ID")}
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    {installment.paid_date 
+                                      ? new Date(installment.paid_date).toLocaleDateString("id-ID")
+                                      : "-"
+                                    }
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <Badge 
+                                      variant={INSTALLMENT_STATUS_VARIANTS[installment.status]}
+                                    >
+                                      {INSTALLMENT_STATUS_LABELS[installment.status]}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <div className="flex gap-2">
+                                      {installment.status === 'pending' || installment.status === 'overdue' ? (
+                                        <>
+                                          <Button
+                                            size="sm"
+                                            variant="default"
+                                            onClick={() => handleMarkAsPaid(installment)}
+                                          >
+                                            <CheckCircle className="h-4 w-4 mr-1" />
+                                            Bayar
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                              setSelectedInstallment(installment);
+                                              setUploadModalOpen(true);
+                                            }}
+                                          >
+                                            <Upload className="h-4 w-4 mr-1" />
+                                            Upload Bukti
+                                          </Button>
+                                        </>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          {installment.payment_proof && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => window.open(installment.payment_proof, '_blank')}
+                                            >
+                                              <Eye className="h-4 w-4 mr-1" />
+                                              Lihat Bukti
+                                            </Button>
+                                          )}
+                                          <Badge variant="success" className="text-xs">
+                                            Lunas
+                                          </Badge>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Upload Payment Proof Modal */}
+      {uploadModalOpen && selectedInstallment && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">
-                History Pembayaran - {selectedPinjaman.user?.name}
+                Upload Bukti Pembayaran
               </h2>
               <Button
                 variant="ghost"
-                onClick={() => setPaymentModalOpen(false)}
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setSelectedInstallment(null);
+                  setPaymentFile(null);
+                }}
               >
                 ✕
               </Button>
             </div>
-            <div className="text-center py-8 text-gray-500">
-              Fitur history pembayaran akan segera tersedia
+            
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">
+                  Angsuran Bulan Ke: <strong>{selectedInstallment.installment_number}</strong>
+                </p>
+                <p className="text-sm text-gray-600 mb-2">
+                  Nominal: <strong>{formatCurrency(selectedInstallment.amount)}</strong>
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Jatuh Tempo: <strong>{new Date(selectedInstallment.due_date).toLocaleDateString("id-ID")}</strong>
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Pilih File Bukti Pembayaran
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setPaymentFile(e.target.files?.[0] || null)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Format yang didukung: JPG, PNG, PDF (Max 5MB)
+                </p>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setUploadModalOpen(false);
+                    setSelectedInstallment(null);
+                    setPaymentFile(null);
+                  }}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={handleUploadProof}
+                  disabled={!paymentFile}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload
+                </Button>
+              </div>
             </div>
           </div>
         </div>
