@@ -31,6 +31,7 @@ export default function FormPinjamanCategory({
         status: 1,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.id, form.status]);
 
   return (
