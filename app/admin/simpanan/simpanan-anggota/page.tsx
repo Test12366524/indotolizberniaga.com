@@ -20,7 +20,6 @@ import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.serv
 import {
   Download,
   Filter,
-  Search,
   Plus,
   Eye,
   Edit,
@@ -29,15 +28,23 @@ import {
   XCircle,
   MoreVertical,
   CreditCard,
+  CalendarIcon,
 } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
 
-export default function PinjamanAnggotaPage() {
+export default function SimpananAnggotaPage() {
   const [form, setForm] = useState<Partial<Simpanan>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPinjaman, setSelectedPinjaman] = useState<Simpanan | null>(
+  const [selectedSimpanan, setSelectedSimpanan] = useState<Simpanan | null>(
     null
   );
   const [isExporting, setIsExporting] = useState(false);
@@ -77,23 +84,29 @@ export default function PinjamanAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filters
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    category_id: string;
+    status: string;
+    date_from: Date | undefined;
+    date_to: Date | undefined;
+  }>({
     category_id: "",
     status: "",
-    user_id: "",
-    date_from: "",
-    date_to: "",
-    search: "",
+    date_from: undefined,
+    date_to: undefined,
   });
 
-  const { data, isLoading, refetch } = useGetSimpananListQuery({
+  const { data, isLoading, isFetching, refetch } = useGetSimpananListQuery({
     page: currentPage,
     paginate: itemsPerPage,
     category_id: filters.category_id ? Number(filters.category_id) : undefined,
     status: filters.status || undefined,
-    user_id: filters.user_id ? Number(filters.user_id) : undefined,
-    date_from: filters.date_from || undefined,
-    date_to: filters.date_to || undefined,
+    date_from: filters.date_from
+      ? format(filters.date_from, "yyyy-MM-dd")
+      : undefined,
+    date_to: filters.date_to
+      ? format(filters.date_to, "yyyy-MM-dd")
+      : undefined,
   });
 
   // Get categories and users for filters
@@ -110,7 +123,7 @@ export default function PinjamanAnggotaPage() {
 
   const categories = categoriesData?.data || [];
   const users = usersData?.data || [];
-  const pinjamanList = useMemo(() => data?.data || [], [data]);
+  const simpananList = useMemo(() => data?.data || [], [data]);
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
   // Helper functions to get names by ID
@@ -154,10 +167,10 @@ export default function PinjamanAnggotaPage() {
 
       if (editingId) {
         await updateSimpanan({ id: editingId, payload }).unwrap();
-        Swal.fire("Sukses", "Pinjaman diperbarui", "success");
+        Swal.fire("Sukses", "Simpanan diperbarui", "success");
       } else {
         await createSimpanan(payload).unwrap();
-        Swal.fire("Sukses", "Pinjaman ditambahkan", "success");
+        Swal.fire("Sukses", "Simpanan ditambahkan", "success");
       }
 
       setForm({});
@@ -218,7 +231,7 @@ export default function PinjamanAnggotaPage() {
   };
 
   const handlePaymentHistory = (item: Simpanan) => {
-    setSelectedPinjaman(item);
+    setSelectedSimpanan(item);
     setPaymentModalOpen(true);
   };
 
@@ -230,7 +243,7 @@ export default function PinjamanAnggotaPage() {
 
     const confirm = await Swal.fire({
       title: "Export Data",
-      text: `Apakah Anda yakin ingin mengekspor ${filteredData.length} data pinjaman?`,
+      text: `Apakah Anda yakin ingin mengekspor ${filteredData.length} data simpanan?`,
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Export",
@@ -252,7 +265,7 @@ export default function PinjamanAnggotaPage() {
       "Nominal (Rp)": formatCurrency(item.nominal || 0),
       Tipe: item.type.toUpperCase(),
       Status: item.status || "-",
-      "Tanggal Pinjaman": item.date
+      "Tanggal Simpanan": item.date
         ? new Date(item.date).toLocaleDateString("id-ID")
         : "-",
       Deskripsi: item.description || "-",
@@ -274,22 +287,15 @@ export default function PinjamanAnggotaPage() {
     if (filters.status) {
       filterInfo.push(`Status: ${filters.status}`);
     }
-    if (filters.user_id) {
-      const user = users.find((u) => u.id === Number(filters.user_id));
-      filterInfo.push(`Anggota: ${user?.name || "Unknown"}`);
-    }
     if (filters.date_from) {
       filterInfo.push(`Dari: ${filters.date_from}`);
     }
     if (filters.date_to) {
       filterInfo.push(`Sampai: ${filters.date_to}`);
     }
-    if (filters.search) {
-      filterInfo.push(`Pencarian: ${filters.search}`);
-    }
 
     const csvContent = [
-      "LAPORAN PINJAMAN ANGGOTA",
+      "LAPORAN SIMPANAN ANGGOTA",
       `Tanggal Export: ${new Date().toLocaleString("id-ID")}`,
       `Total Data: ${filteredData.length} record`,
       ...(filterInfo.length > 0 ? [`Filter: ${filterInfo.join(", ")}`] : []),
@@ -336,16 +342,9 @@ export default function PinjamanAnggotaPage() {
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
-    if (!filters.search) return pinjamanList;
-    return pinjamanList.filter(
-      (item) =>
-        item.user_name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.category_name
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase()) ||
-        item.description?.toLowerCase().includes(filters.search.toLowerCase())
-    );
-  }, [pinjamanList, filters.search]);
+    return simpananList;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [simpananList, filters]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -410,23 +409,6 @@ export default function PinjamanAnggotaPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Cari</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Cari nama, kategori, atau deskripsi..."
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters({ ...filters, search: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-
             {/* Kategori */}
             <div className="flex flex-col gap-y-1">
               <label className="text-sm font-medium">Kategori</label>
@@ -436,7 +418,7 @@ export default function PinjamanAnggotaPage() {
                 onChange={(e) =>
                   setFilters({ ...filters, category_id: e.target.value })
                 }
-                aria-label="Filter kategori pinjaman"
+                aria-label="Filter kategori simpanan"
               >
                 <option value="">Semua Kategori</option>
                 {categories.map((category) => (
@@ -456,7 +438,7 @@ export default function PinjamanAnggotaPage() {
                 onChange={(e) =>
                   setFilters({ ...filters, status: e.target.value })
                 }
-                aria-label="Filter status pinjaman"
+                aria-label="Filter status simpanan"
               >
                 <option value="">Semua Status</option>
                 <option value="0">Pending</option>
@@ -465,52 +447,47 @@ export default function PinjamanAnggotaPage() {
               </select>
             </div>
 
-            {/* Anggota */}
+            {/* Tanggal */}
             <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Anggota</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.user_id}
-                onChange={(e) =>
-                  setFilters({ ...filters, user_id: e.target.value })
-                }
-                aria-label="Filter anggota"
-              >
-                <option value="">Semua Anggota</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tanggal Dari */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Tanggal Dari</label>
-              <input
-                type="date"
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.date_from}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_from: e.target.value })
-                }
-                aria-label="Tanggal dari"
-              />
-            </div>
-
-            {/* Tanggal Sampai */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Tanggal Sampai</label>
-              <input
-                type="date"
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.date_to}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_to: e.target.value })
-                }
-                aria-label="Tanggal sampai"
-              />
+              <label className="text-sm font-medium">Tanggal</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={`h-10 border border-gray-300 justify-start text-left font-normal`}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {filters.date_from ? (
+                      filters.date_to ? (
+                        <>
+                          {format(filters.date_from, "LLL dd, y")} -{" "}
+                          {format(filters.date_to, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(filters.date_from, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pilih rentang tanggal</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    defaultMonth={filters.date_from}
+                    selected={{ from: filters.date_from, to: filters.date_to }}
+                    onSelect={(val) => {
+                      setFilters((state) => ({
+                        ...state,
+                        date_from: val.from,
+                        date_to: val.to,
+                      }));
+                    }}
+                    numberOfMonths={2}
+                    required
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -518,16 +495,14 @@ export default function PinjamanAnggotaPage() {
           <div className="mt-4 flex justify-end">
             <Button
               variant="outline"
-              onClick={() =>
+              onClick={() => {
                 setFilters({
                   category_id: "",
                   status: "",
-                  user_id: "",
-                  date_from: "",
-                  date_to: "",
-                  search: "",
-                })
-              }
+                  date_from: undefined,
+                  date_to: undefined,
+                });
+              }}
             >
               Reset Filter
             </Button>
@@ -552,7 +527,7 @@ export default function PinjamanAnggotaPage() {
               </tr>
             </thead>
             <tbody>
-              {isLoading ? (
+              {isLoading || isFetching ? (
                 <tr>
                   <td colSpan={8} className="text-center p-4">
                     Memuat data...
@@ -726,7 +701,7 @@ export default function PinjamanAnggotaPage() {
         </div>
       </Card>
 
-      {/* Pinjaman Form Modal */}
+      {/* Simpanan Form Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <FormSimpanan
@@ -746,12 +721,12 @@ export default function PinjamanAnggotaPage() {
       )}
 
       {/* Payment History Modal */}
-      {paymentModalOpen && selectedPinjaman && (
+      {paymentModalOpen && selectedSimpanan && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-4xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">
-                History Pembayaran - {selectedPinjaman.user_name}
+                History Pembayaran - {selectedSimpanan.user_name}
               </h2>
               <Button
                 variant="ghost"

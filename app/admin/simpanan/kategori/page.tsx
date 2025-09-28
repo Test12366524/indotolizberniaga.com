@@ -12,9 +12,9 @@ import {
   useDeleteSimpananCategoryMutation,
 } from "@/services/master/simpanan-category.service";
 import { SimpananCategory } from "@/types/master/simpanan-category";
-import FormSimpananCategory from "@/components/form-modal/pinjaman-category-form";
+import FormSimpananCategory from "@/components/form-modal/simpanan-category-form";
 import { Badge } from "@/components/ui/badge";
-import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import { Input } from "@/components/ui/input";
 
 export default function PinjamanKategoriPage() {
   const [form, setForm] = useState<Partial<SimpananCategory>>({
@@ -115,7 +115,28 @@ export default function PinjamanKategoriPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <ProdukToolbar openModal={openModal} onSearchChange={setQuery} />
+      <div className="rounded-md bg-white p-4 border border-gray-100 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Kiri: filter */}
+          <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Input
+              placeholder="Cari kategori..."
+              value={query}
+              onChange={(e) => {
+                const q = e.target.value;
+                setQuery(q);
+              }}
+              className="w-full sm:max-w-xs"
+            />
+          </div>
+
+          {/* Kanan: aksi */}
+          <div className="shrink-0 flex flex-wrap items-center gap-2">
+            {/* Tambah data (opsional) */}
+            {openModal && <Button onClick={openModal}>Tambah Kategori</Button>}
+          </div>
+        </div>
+      </div>
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">

@@ -16,7 +16,7 @@ interface FormPinjamanCategoryProps {
   isLoading?: boolean;
 }
 
-export default function FormSimpananCategory({
+export default function FormPinjamanCategory({
   form,
   setForm,
   onCancel,
@@ -31,6 +31,7 @@ export default function FormSimpananCategory({
         status: 1,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.id, form.status]);
 
   return (

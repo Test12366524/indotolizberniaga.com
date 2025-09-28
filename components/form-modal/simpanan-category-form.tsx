@@ -16,7 +16,7 @@ interface FormPinjamanCategoryProps {
   isLoading?: boolean;
 }
 
-export default function FormPinjamanCategory({
+export default function FormSimpananCategory({
   form,
   setForm,
   onCancel,
