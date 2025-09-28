@@ -71,6 +71,117 @@ export const pinjamanApi = apiSlice.injectEndpoints({
       }) => response.data,
     }),
 
+    // 🔍 Get Pinjaman Details with Installments
+    getPinjamanDetails: builder.query<{
+      id: number;
+      pinjaman_category_id: number;
+      user_id: number;
+      reference: string;
+      ref_number: number;
+      description: string;
+      date: string;
+      nominal: number;
+      tenor: number;
+      interest_rate: number;
+      monthly_principal: number;
+      monthly_interest: number;
+      monthly_installment: number;
+      status: number;
+      created_at: string;
+      updated_at: string;
+      media: any[];
+      user: {
+        id: number;
+        name: string;
+        phone: string;
+        email: string;
+        email_verified_at: string;
+        created_at: string;
+        updated_at: string;
+      };
+      category: {
+        id: number;
+        code: string;
+        name: string;
+        description: string;
+        status: number;
+        created_at: string;
+        updated_at: string;
+      };
+      details: Array<{
+        id: number;
+        pinjaman_id: number;
+        month: number;
+        paid: number;
+        remaining: number;
+        due_date: string;
+        paid_at: string | null;
+        description: string;
+        status: boolean;
+        created_at: string;
+        updated_at: string;
+      }>;
+    }, number>({
+      query: (id) => ({
+        url: `/pinjaman/${id}`,
+        method: "GET",
+      }),
+      transformResponse: (response: {
+        code: number;
+        message: string;
+        data: {
+          id: number;
+          pinjaman_category_id: number;
+          user_id: number;
+          reference: string;
+          ref_number: number;
+          description: string;
+          date: string;
+          nominal: number;
+          tenor: number;
+          interest_rate: number;
+          monthly_principal: number;
+          monthly_interest: number;
+          monthly_installment: number;
+          status: number;
+          created_at: string;
+          updated_at: string;
+          media: any[];
+          user: {
+            id: number;
+            name: string;
+            phone: string;
+            email: string;
+            email_verified_at: string;
+            created_at: string;
+            updated_at: string;
+          };
+          category: {
+            id: number;
+            code: string;
+            name: string;
+            description: string;
+            status: number;
+            created_at: string;
+            updated_at: string;
+          };
+          details: Array<{
+            id: number;
+            pinjaman_id: number;
+            month: number;
+            paid: number;
+            remaining: number;
+            due_date: string;
+            paid_at: string | null;
+            description: string;
+            status: boolean;
+            created_at: string;
+            updated_at: string;
+          }>;
+        };
+      }) => response.data,
+    }),
+
     // ➕ Create Pinjaman
     createPinjaman: builder.mutation<Pinjaman, CreatePinjamanRequest>({
       query: (payload) => ({
@@ -252,6 +363,7 @@ export const pinjamanApi = apiSlice.injectEndpoints({
 export const {
   useGetPinjamanListQuery,
   useGetPinjamanByIdQuery,
+  useGetPinjamanDetailsQuery,
   useCreatePinjamanMutation,
   useUpdatePinjamanMutation,
   useDeletePinjamanMutation,
