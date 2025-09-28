@@ -188,7 +188,7 @@ export function ProdukToolbar({
           )}
 
           {/* Tambah data (opsional) */}
-          {openModal && <Button onClick={openModal}>Tambah Produk</Button>}
+          {openModal && <Button onClick={openModal}>Tambah Stock Opname</Button>}
         </div>
       </div>
     </div>

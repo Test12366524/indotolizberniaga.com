@@ -28,6 +28,7 @@ import {
 } from "@/services/admin/stock-opname.service";
 import { useGetMeQuery } from "@/services/admin/shop.service";
 import { useGetProductListQuery } from "@/services/admin/product.service";
+import { useGetTokoListQuery } from "@/services/admin/toko.service";
 import { StockOpname, CreateStockOpnameRequest } from "@/types/admin/stock-opname";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
@@ -57,6 +58,7 @@ export default function StockOpnamePage() {
   const [selectedItem, setSelectedItem] = useState<StockOpname | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
+  const [selectedShop, setSelectedShop] = useState("all");
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -107,29 +109,56 @@ export default function StockOpnamePage() {
     paginate: 100,
   });
 
+  // Get shops for category filter
+  const { data: shopsData } = useGetTokoListQuery({
+    page: 1,
+    paginate: 100,
+  });
+
   const stockOpnameList = useMemo(() => data?.data || [], [data]);
   const productsList = useMemo(() => productsData?.data || [], [productsData]);
+  const shopsList = useMemo(() => shopsData?.data || [], [shopsData]);
   
-  // Filter list by search query
+  // Create shop categories for filter
+  const shopCategories = useMemo(() => {
+    const categories = [{ value: "all", label: "Semua Toko" }];
+    shopsList.forEach(shop => {
+      categories.push({ value: shop.id.toString(), label: shop.name });
+    });
+    return categories;
+  }, [shopsList]);
+  
+  // Filter list by search query and shop
   const filteredList = useMemo(() => {
-    if (!query.trim()) return stockOpnameList;
+    let filtered = stockOpnameList;
     
-    const q = query.toLowerCase();
-    return stockOpnameList.filter(
-      (item) => {
-        const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
-        const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
-        const productName = item.product?.name || productsList.find(p => p.id === item.product_id)?.name || '';
-        
-        return (
-          userName.toLowerCase().includes(q) ||
-          shopName.toLowerCase().includes(q) ||
-          productName.toLowerCase().includes(q) ||
-          item.notes?.toLowerCase().includes(q)
-        );
-      }
-    );
-  }, [stockOpnameList, query, meData, productsList]);
+    // Filter by shop if not "all"
+    if (selectedShop !== "all") {
+      const shopId = Number(selectedShop);
+      filtered = filtered.filter(item => item.shop_id === shopId);
+    }
+    
+    // Filter by search query
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      filtered = filtered.filter(
+        (item) => {
+          const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
+          const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
+          const productName = item.product?.name || productsList.find(p => p.id === item.product_id)?.name || '';
+          
+          return (
+            userName.toLowerCase().includes(q) ||
+            shopName.toLowerCase().includes(q) ||
+            productName.toLowerCase().includes(q) ||
+            item.notes?.toLowerCase().includes(q)
+          );
+        }
+      );
+    }
+    
+    return filtered;
+  }, [stockOpnameList, query, selectedShop, meData, productsList]);
 
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
@@ -270,7 +299,9 @@ export default function StockOpnamePage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        onCategoryChange={() => {}}
+        onCategoryChange={setSelectedShop}
+        categories={shopCategories}
+        initialCategory="all"
       />
 
       <Card>
@@ -279,7 +310,7 @@ export default function StockOpnamePage() {
             <thead className="bg-muted text-left">
               <tr>
                 <th className="px-4 py-2 whitespace-nowrap">Aksi</th>
-                <th className="px-4 py-2 whitespace-nowrap">ID</th>
+                {/* <th className="px-4 py-2 whitespace-nowrap">ID</th> */}
                 <th className="px-4 py-2 whitespace-nowrap">User</th>
                 <th className="px-4 py-2 whitespace-nowrap">Shop</th>
                 <th className="px-4 py-2 whitespace-nowrap">Product</th>
@@ -337,9 +368,9 @@ export default function StockOpnamePage() {
                         </Button>
                       </div>
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
+                    {/* <td className="px-4 py-2 whitespace-nowrap">
                       {item.id}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.user?.name || (meData?.id === item.user_id ? meData.name : `User ID: ${item.user_id}`)}
                     </td>
