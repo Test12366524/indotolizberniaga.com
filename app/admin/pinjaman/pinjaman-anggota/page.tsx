@@ -16,16 +16,12 @@ import {
 } from "@/services/admin/pinjaman.service";
 import { Pinjaman } from "@/types/admin/pinjaman";
 import FormPinjaman from "@/components/form-modal/pinjaman-form";
-import { 
-  useGetPinjamanCategoryListQuery 
-} from "@/services/master/pinjaman-category.service";
-import { 
-  useGetAnggotaListQuery 
-} from "@/services/koperasi-service/anggota.service";
-import { 
-  Download, 
-  Filter, 
-  Search, 
+import { useGetPinjamanCategoryListQuery } from "@/services/master/pinjaman-category.service";
+import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
+import {
+  Download,
+  Filter,
+  Search,
   Plus,
   Eye,
   Edit,
@@ -34,7 +30,7 @@ import {
   XCircle,
   MoreVertical,
   CreditCard,
-  User
+  User,
 } from "lucide-react";
 
 export default function PinjamanAnggotaPage() {
@@ -43,7 +39,9 @@ export default function PinjamanAnggotaPage() {
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedPinjaman, setSelectedPinjaman] = useState<Pinjaman | null>(null);
+  const [selectedPinjaman, setSelectedPinjaman] = useState<Pinjaman | null>(
+    null
+  );
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
 
@@ -59,7 +57,7 @@ export default function PinjamanAnggotaPage() {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       // Don't close if clicking on dropdown button or dropdown content
-      if (openDropdownId && !target.closest('.dropdown-container')) {
+      if (openDropdownId && !target.closest(".dropdown-container")) {
         setOpenDropdownId(null);
       }
     };
@@ -67,20 +65,19 @@ export default function PinjamanAnggotaPage() {
     if (openDropdownId) {
       // Use setTimeout to avoid immediate closure
       setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
+        document.addEventListener("click", handleClickOutside);
       }, 100);
     }
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [openDropdownId]);
 
-  
   // Pagination
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     category_id: "",
@@ -120,27 +117,29 @@ export default function PinjamanAnggotaPage() {
 
   // Helper functions to get names by ID
   const getUserName = (userId: number) => {
-    const user = users.find(u => u.id === userId);
+    const user = users.find((u) => u.id === userId);
     return user?.name || `User ID: ${userId}`;
   };
 
   const getUserEmail = (userId: number) => {
-    const user = users.find(u => u.id === userId);
-    return user?.email || 'Email tidak tersedia';
+    const user = users.find((u) => u.id === userId);
+    return user?.email || "Email tidak tersedia";
   };
 
   const getCategoryName = (categoryId: number) => {
-    const category = categories.find(c => c.id === categoryId);
+    const category = categories.find((c) => c.id === categoryId);
     return category?.name || `Category ID: ${categoryId}`;
   };
 
   const getCategoryCode = (categoryId: number) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category?.code || 'Kode tidak tersedia';
+    const category = categories.find((c) => c.id === categoryId);
+    return category?.code || "Kode tidak tersedia";
   };
 
-  const [createPinjaman, { isLoading: isCreating }] = useCreatePinjamanMutation();
-  const [updatePinjaman, { isLoading: isUpdating }] = useUpdatePinjamanMutation();
+  const [createPinjaman, { isLoading: isCreating }] =
+    useCreatePinjamanMutation();
+  const [updatePinjaman, { isLoading: isUpdating }] =
+    useUpdatePinjamanMutation();
   const [deletePinjaman] = useDeletePinjamanMutation();
   const [updateStatus] = useUpdatePinjamanStatusMutation();
 
@@ -190,7 +189,9 @@ export default function PinjamanAnggotaPage() {
   const handleDelete = async (item: Pinjaman) => {
     const confirm = await Swal.fire({
       title: "Yakin hapus pinjaman?",
-      text: `Pinjaman ${item.user?.name} - Rp ${item.nominal?.toLocaleString('id-ID')}`,
+      text: `Pinjaman ${item.user?.name} - Rp ${item.nominal?.toLocaleString(
+        "id-ID"
+      )}`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Hapus",
@@ -245,34 +246,40 @@ export default function PinjamanAnggotaPage() {
 
     // Prepare data for export
     const exportData = filteredData.map((item, index) => ({
-      'No': index + 1,
-      'Anggota': getUserName(item.user_id),
-      'Email': getUserEmail(item.user_id),
-      'Kategori': getCategoryName(item.pinjaman_category_id),
-      'Kode Kategori': getCategoryCode(item.pinjaman_category_id),
-      'Nominal (Rp)': formatCurrency(item.nominal || 0),
-      'Tenor (Bulan)': item.tenor || 0,
-      'Suku Bunga (%)': item.interest_rate || 0,
-      'Status': item.status || '-',
-      'Tanggal Pinjaman': item.date ? new Date(item.date).toLocaleDateString('id-ID') : '-',
-      'Deskripsi': item.description || '-',
-      'Dibuat': item.created_at ? new Date(item.created_at).toLocaleString('id-ID') : '-',
+      No: index + 1,
+      Anggota: getUserName(item.user_id),
+      Email: getUserEmail(item.user_id),
+      Kategori: getCategoryName(item.pinjaman_category_id),
+      "Kode Kategori": getCategoryCode(item.pinjaman_category_id),
+      "Nominal (Rp)": formatCurrency(item.nominal || 0),
+      "Tenor (Bulan)": item.tenor || 0,
+      "Suku Bunga (%)": item.interest_rate || 0,
+      Status: item.status || "-",
+      "Tanggal Pinjaman": item.date
+        ? new Date(item.date).toLocaleDateString("id-ID")
+        : "-",
+      Deskripsi: item.description || "-",
+      Dibuat: item.created_at
+        ? new Date(item.created_at).toLocaleString("id-ID")
+        : "-",
     }));
 
     // Create CSV content with metadata
     const headers = Object.keys(exportData[0]);
     const filterInfo = [];
-    
+
     if (filters.category_id) {
-      const category = categories.find(c => c.id === Number(filters.category_id));
-      filterInfo.push(`Kategori: ${category?.name || 'Unknown'}`);
+      const category = categories.find(
+        (c) => c.id === Number(filters.category_id)
+      );
+      filterInfo.push(`Kategori: ${category?.name || "Unknown"}`);
     }
     if (filters.status) {
       filterInfo.push(`Status: ${filters.status}`);
     }
     if (filters.user_id) {
-      const user = users.find(u => u.id === Number(filters.user_id));
-      filterInfo.push(`Anggota: ${user?.name || 'Unknown'}`);
+      const user = users.find((u) => u.id === Number(filters.user_id));
+      filterInfo.push(`Anggota: ${user?.name || "Unknown"}`);
     }
     if (filters.date_from) {
       filterInfo.push(`Dari: ${filters.date_from}`);
@@ -285,36 +292,48 @@ export default function PinjamanAnggotaPage() {
     }
 
     const csvContent = [
-      'LAPORAN PINJAMAN ANGGOTA',
-      `Tanggal Export: ${new Date().toLocaleString('id-ID')}`,
+      "LAPORAN PINJAMAN ANGGOTA",
+      `Tanggal Export: ${new Date().toLocaleString("id-ID")}`,
       `Total Data: ${filteredData.length} record`,
-      ...(filterInfo.length > 0 ? [`Filter: ${filterInfo.join(', ')}`] : []),
-      '',
-      headers.join(','),
-      ...exportData.map(row => 
-        headers.map(header => {
-          const value = row[header as keyof typeof row];
-          // Escape commas and quotes in values
-          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-          return value;
-        }).join(',')
-      )
-    ].join('\n');
+      ...(filterInfo.length > 0 ? [`Filter: ${filterInfo.join(", ")}`] : []),
+      "",
+      headers.join(","),
+      ...exportData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header as keyof typeof row];
+            // Escape commas and quotes in values
+            if (
+              typeof value === "string" &&
+              (value.includes(",") || value.includes('"'))
+            ) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          })
+          .join(",")
+      ),
+    ].join("\n");
 
     // Create and download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `pinjaman-anggota-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `pinjaman-anggota-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 
-    Swal.fire("Berhasil", `Data berhasil diekspor (${filteredData.length} record)`, "success");
+    Swal.fire(
+      "Berhasil",
+      `Data berhasil diekspor (${filteredData.length} record)`,
+      "success"
+    );
     setIsExporting(false);
   };
 
@@ -324,35 +343,37 @@ export default function PinjamanAnggotaPage() {
     return pinjamanList.filter(
       (item) =>
         item.user?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.pinjaman_category?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        item.pinjaman_category?.name
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
         item.description?.toLowerCase().includes(filters.search.toLowerCase())
     );
   }, [pinjamanList, filters.search]);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const getStatusBadge = (status: string | number) => {
     const statusConfig = {
-      '0': { variant: 'destructive' as const, label: 'Pending' },
-      '1': { variant: 'success' as const, label: 'Approved' },
-      '-1': { variant: 'destructive' as const, label: 'Ditolak' },
-      'pending': { variant: 'destructive' as const, label: 'Pending' },
-      'approved': { variant: 'success' as const, label: 'Approved' },
-      'rejected': { variant: 'destructive' as const, label: 'Ditolak' },
+      "0": { variant: "destructive" as const, label: "Pending" },
+      "1": { variant: "success" as const, label: "Approved" },
+      "2": { variant: "destructive" as const, label: "Ditolak" },
+      pending: { variant: "destructive" as const, label: "Pending" },
+      approved: { variant: "success" as const, label: "Approved" },
+      rejected: { variant: "destructive" as const, label: "Ditolak" },
     };
-    
+
     const statusKey = String(status);
-    const config = statusConfig[statusKey as keyof typeof statusConfig] || { 
-      variant: 'destructive' as const, 
-      label: String(status)
+    const config = statusConfig[statusKey as keyof typeof statusConfig] || {
+      variant: "destructive" as const,
+      label: String(status),
     };
-    
+
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -362,10 +383,16 @@ export default function PinjamanAnggotaPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Pinjaman Anggota</h1>
-          <p className="text-sm text-gray-500">Kelola data pinjaman anggota koperasi</p>
+          <p className="text-sm text-gray-500">
+            Kelola data pinjaman anggota koperasi
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleExport} variant="outline" disabled={isExporting}>
+          <Button
+            onClick={handleExport}
+            variant="outline"
+            disabled={isExporting}
+          >
             <Download className="h-4 w-4 mr-2" />
             {isExporting ? "Exporting..." : "Export Excel"}
           </Button>
@@ -396,7 +423,9 @@ export default function PinjamanAnggotaPage() {
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Cari nama, kategori, atau deskripsi..."
                   value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -407,7 +436,9 @@ export default function PinjamanAnggotaPage() {
               <select
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.category_id}
-                onChange={(e) => setFilters({ ...filters, category_id: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, category_id: e.target.value })
+                }
                 aria-label="Filter kategori pinjaman"
               >
                 <option value="">Semua Kategori</option>
@@ -425,13 +456,15 @@ export default function PinjamanAnggotaPage() {
               <select
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.status}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
                 aria-label="Filter status pinjaman"
               >
                 <option value="">Semua Status</option>
                 <option value="0">Pending</option>
                 <option value="1">Approved</option>
-                <option value="-1">Ditolak</option>
+                <option value="2">Ditolak</option>
               </select>
             </div>
 
@@ -441,7 +474,9 @@ export default function PinjamanAnggotaPage() {
               <select
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.user_id}
-                onChange={(e) => setFilters({ ...filters, user_id: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, user_id: e.target.value })
+                }
                 aria-label="Filter anggota"
               >
                 <option value="">Semua Anggota</option>
@@ -460,7 +495,9 @@ export default function PinjamanAnggotaPage() {
                 type="date"
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.date_from}
-                onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_from: e.target.value })
+                }
                 aria-label="Tanggal dari"
               />
             </div>
@@ -472,7 +509,9 @@ export default function PinjamanAnggotaPage() {
                 type="date"
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={filters.date_to}
-                onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_to: e.target.value })
+                }
                 aria-label="Tanggal sampai"
               />
             </div>
@@ -482,14 +521,16 @@ export default function PinjamanAnggotaPage() {
           <div className="mt-4 flex justify-end">
             <Button
               variant="outline"
-              onClick={() => setFilters({
-                category_id: "",
-                status: "",
-                user_id: "",
-                date_from: "",
-                date_to: "",
-                search: "",
-              })}
+              onClick={() =>
+                setFilters({
+                  category_id: "",
+                  status: "",
+                  user_id: "",
+                  date_from: "",
+                  date_to: "",
+                  search: "",
+                })
+              }
             >
               Reset Filter
             </Button>
@@ -533,16 +574,16 @@ export default function PinjamanAnggotaPage() {
                       <div className="flex items-center gap-2">
                         {/* Primary Actions */}
                         <div className="flex gap-1">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => handleDetail(item)}
                             title="Lihat Detail"
                           >
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             onClick={() => handleEdit(item)}
                             title="Edit"
@@ -552,21 +593,21 @@ export default function PinjamanAnggotaPage() {
                         </div>
 
                         {/* Status Actions for Pending */}
-                        {(item.status === '0' || item.status === 0) && (
+                        {(item.status === "0" || item.status === 0) && (
                           <div className="flex gap-1">
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="default"
-                              onClick={() => handleStatusUpdate(item, '1')}
+                              onClick={() => handleStatusUpdate(item, "1")}
                               title="Approve"
                               className="bg-green-600 hover:bg-green-700"
                             >
                               <CheckCircle className="h-3 w-3" />
                             </Button>
-                            <Button 
-                              size="sm" 
+                            <Button
+                              size="sm"
                               variant="destructive"
-                              onClick={() => handleStatusUpdate(item, '-1')}
+                              onClick={() => handleStatusUpdate(item, "2")}
                               title="Reject"
                             >
                               <XCircle className="h-3 w-3" />
@@ -574,53 +615,55 @@ export default function PinjamanAnggotaPage() {
                           </div>
                         )}
 
-                         {/* Dropdown for Additional Actions */}
-                         <div className="relative dropdown-container">
-                           <Button 
-                             size="sm" 
-                             variant="ghost" 
-                             className="hover:bg-gray-100"
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               setOpenDropdownId(openDropdownId === item.id ? null : item.id);
-                             }}
-                           >
-                             <MoreVertical className="h-4 w-4" />
-                           </Button>
-                           
-                           {/* Dropdown Menu */}
-                           {openDropdownId === item.id && (
-                             <div 
-                               className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-xl z-[99999] min-w-[160px]"
-                               onClick={(e) => e.stopPropagation()}
-                             >
-                               <div className="py-1">
-                                 <button
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     handlePaymentHistory(item);
-                                     setOpenDropdownId(null);
-                                   }}
-                                   className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                 >
-                                   <CreditCard className="h-4 w-4" />
-                                   History Pembayaran
-                                 </button>
-                                 <button
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     handleDelete(item);
-                                     setOpenDropdownId(null);
-                                   }}
-                                   className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                   Hapus Pinjaman
-                                 </button>
-                               </div>
-                             </div>
-                           )}
-                         </div>
+                        {/* Dropdown for Additional Actions */}
+                        <div className="relative dropdown-container">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdownId(
+                                openDropdownId === item.id ? null : item.id
+                              );
+                            }}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+
+                          {/* Dropdown Menu */}
+                          {openDropdownId === item.id && (
+                            <div
+                              className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-xl z-[99999] min-w-[160px]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePaymentHistory(item);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                  History Pembayaran
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(item);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Hapus Pinjaman
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-2">
@@ -648,11 +691,9 @@ export default function PinjamanAnggotaPage() {
                     </td>
                     <td className="px-4 py-2">{item.tenor} bulan</td>
                     <td className="px-4 py-2">{item.interest_rate}%</td>
-                    <td className="px-4 py-2">
-                      {getStatusBadge(item.status)}
-                    </td>
+                    <td className="px-4 py-2">{getStatusBadge(item.status)}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">
-                      {new Date(item.date).toLocaleDateString('id-ID')}
+                      {new Date(item.date).toLocaleDateString("id-ID")}
                     </td>
                   </tr>
                 ))
@@ -705,7 +746,6 @@ export default function PinjamanAnggotaPage() {
         </div>
       )}
 
-
       {/* Payment History Modal */}
       {paymentModalOpen && selectedPinjaman && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
@@ -714,7 +754,10 @@ export default function PinjamanAnggotaPage() {
               <h2 className="text-lg font-semibold">
                 History Pembayaran - {selectedPinjaman.user?.name}
               </h2>
-              <Button variant="ghost" onClick={() => setPaymentModalOpen(false)}>
+              <Button
+                variant="ghost"
+                onClick={() => setPaymentModalOpen(false)}
+              >
                 ✕
               </Button>
             </div>
