@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import useModal from "@/hooks/use-modal";
 import {
   useGetPinjamanListQuery,
@@ -25,7 +26,6 @@ import { useGetPinjamanCategoryListQuery } from "@/services/master/pinjaman-cate
 import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
 import {
   Download,
-  Filter,
   Search,
   Plus,
   Eye,
@@ -33,7 +33,6 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
-  MoreVertical,
   CreditCard,
   Upload,
   Calendar,
@@ -50,40 +49,11 @@ export default function PinjamanAnggotaPage() {
     null
   );
   const [isExporting, setIsExporting] = useState(false);
-  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [selectedInstallment, setSelectedInstallment] = useState<Installment | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [paymentFile, setPaymentFile] = useState<File | null>(null);
   const [manualInstallments, setManualInstallments] = useState<Installment[]>([]);
 
-  // Close dropdown when modal opens
-  useEffect(() => {
-    if (isOpen || paymentModalOpen) {
-      setOpenDropdownId(null);
-    }
-  }, [isOpen, paymentModalOpen]);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      // Don't close if clicking on dropdown button or dropdown content
-      if (openDropdownId && !target.closest(".dropdown-container")) {
-        setOpenDropdownId(null);
-      }
-    };
-
-    if (openDropdownId) {
-      // Use setTimeout to avoid immediate closure
-      setTimeout(() => {
-        document.addEventListener("click", handleClickOutside);
-      }, 100);
-    }
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, [openDropdownId]);
 
   // Pagination
   const itemsPerPage = 10;
@@ -93,20 +63,12 @@ export default function PinjamanAnggotaPage() {
   const [filters, setFilters] = useState({
     category_id: "",
     status: "",
-    user_id: "",
-    date_from: "",
-    date_to: "",
     search: "",
   });
 
   const { data, isLoading, refetch } = useGetPinjamanListQuery({
     page: currentPage,
     paginate: itemsPerPage,
-    category_id: filters.category_id ? Number(filters.category_id) : undefined,
-    status: filters.status || undefined,
-    user_id: filters.user_id ? Number(filters.user_id) : undefined,
-    date_from: filters.date_from || undefined,
-    date_to: filters.date_to || undefined,
   });
 
   // Get categories and users for filters
@@ -398,16 +360,6 @@ export default function PinjamanAnggotaPage() {
     if (filters.status) {
       filterInfo.push(`Status: ${filters.status}`);
     }
-    if (filters.user_id) {
-      const user = users.find((u) => u.id === Number(filters.user_id));
-      filterInfo.push(`Anggota: ${user?.name || "Unknown"}`);
-    }
-    if (filters.date_from) {
-      filterInfo.push(`Dari: ${filters.date_from}`);
-    }
-    if (filters.date_to) {
-      filterInfo.push(`Sampai: ${filters.date_to}`);
-    }
     if (filters.search) {
       filterInfo.push(`Pencarian: ${filters.search}`);
     }
@@ -458,18 +410,38 @@ export default function PinjamanAnggotaPage() {
     setIsExporting(false);
   };
 
-  // Filter data based on search query
+  // Filter data based on all filters
   const filteredData = useMemo(() => {
-    if (!filters.search) return pinjamanList;
-    return pinjamanList.filter(
-      (item) =>
-        item.user?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.pinjaman_category?.name
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase()) ||
-        item.description?.toLowerCase().includes(filters.search.toLowerCase())
-    );
-  }, [pinjamanList, filters.search]);
+    let filtered = pinjamanList;
+    
+    // Apply category filter
+    if (filters.category_id) {
+      filtered = filtered.filter(
+        (item) => item.pinjaman_category_id === Number(filters.category_id)
+      );
+    }
+    
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(
+        (item) => String(item.status) === filters.status
+      );
+    }
+    
+    // Apply search filter
+    if (filters.search) {
+      filtered = filtered.filter(
+        (item) =>
+          item.user?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          item.pinjaman_category?.name
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
+          item.description?.toLowerCase().includes(filters.search.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  }, [pinjamanList, filters.category_id, filters.status, filters.search]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -481,21 +453,22 @@ export default function PinjamanAnggotaPage() {
 
   const getStatusBadge = (status: string | number) => {
     const statusConfig = {
-      "0": { variant: "destructive" as const, label: "Pending" },
-      "1": { variant: "success" as const, label: "Approved" },
-      "2": { variant: "destructive" as const, label: "Ditolak" },
-      pending: { variant: "destructive" as const, label: "Pending" },
-      approved: { variant: "success" as const, label: "Approved" },
-      rejected: { variant: "destructive" as const, label: "Ditolak" },
+      "0": { variant: "secondary" as const, label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+      "1": { variant: "success" as const, label: "Approved", className: "bg-green-100 text-green-800" },
+      "2": { variant: "destructive" as const, label: "Ditolak", className: "bg-red-100 text-red-800" },
+      pending: { variant: "secondary" as const, label: "Pending", className: "bg-yellow-100 text-yellow-800" },
+      approved: { variant: "success" as const, label: "Approved", className: "bg-green-100 text-green-800" },
+      rejected: { variant: "destructive" as const, label: "Ditolak", className: "bg-red-100 text-red-800" },
     };
 
     const statusKey = String(status);
     const config = statusConfig[statusKey as keyof typeof statusConfig] || {
       variant: "destructive" as const,
       label: String(status),
+      className: "bg-gray-100 text-gray-800"
     };
 
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
   return (
@@ -525,130 +498,65 @@ export default function PinjamanAnggotaPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filter Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="rounded-md bg-white p-4 border border-gray-100 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Kiri: filter */}
+          <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
             {/* Search */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Cari</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Cari nama, kategori, atau deskripsi..."
-                  value={filters.search}
-                  onChange={(e) =>
-                    setFilters({ ...filters, search: e.target.value })
-                  }
-                />
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 sm:max-w-xs"
+                placeholder="Cari nama, kategori, atau deskripsi..."
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
+              />
             </div>
 
             {/* Kategori */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Kategori</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.category_id}
-                onChange={(e) =>
-                  setFilters({ ...filters, category_id: e.target.value })
-                }
-                aria-label="Filter kategori pinjaman"
-              >
-                <option value="">Semua Kategori</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <select
+              className="w-full sm:w-56 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.category_id}
+              onChange={(e) =>
+                setFilters({ ...filters, category_id: e.target.value })
+              }
+              aria-label="Filter kategori pinjaman"
+            >
+              <option value="">Semua Kategori</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
 
             {/* Status */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Status</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                aria-label="Filter status pinjaman"
-              >
-                <option value="">Semua Status</option>
-                <option value="0">Pending</option>
-                <option value="1">Approved</option>
-                <option value="2">Ditolak</option>
-              </select>
-            </div>
-
-            {/* Anggota */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Anggota</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.user_id}
-                onChange={(e) =>
-                  setFilters({ ...filters, user_id: e.target.value })
-                }
-                aria-label="Filter anggota"
-              >
-                <option value="">Semua Anggota</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tanggal Dari */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Tanggal Dari</label>
-              <input
-                type="date"
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.date_from}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_from: e.target.value })
-                }
-                aria-label="Tanggal dari"
-              />
-            </div>
-
-            {/* Tanggal Sampai */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Tanggal Sampai</label>
-              <input
-                type="date"
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.date_to}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_to: e.target.value })
-                }
-                aria-label="Tanggal sampai"
-              />
-            </div>
+            <select
+              className="w-full sm:w-48 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={filters.status}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
+              aria-label="Filter status pinjaman"
+            >
+              <option value="">Semua Status</option>
+              <option value="0">Pending</option>
+              <option value="1">Approved</option>
+              <option value="2">Ditolak</option>
+            </select>
           </div>
 
-          {/* Reset Filters */}
-          <div className="mt-4 flex justify-end">
+          {/* Kanan: aksi */}
+          <div className="shrink-0 flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               onClick={() =>
                 setFilters({
                   category_id: "",
                   status: "",
-                  user_id: "",
-                  date_from: "",
-                  date_to: "",
                   search: "",
                 })
               }
@@ -656,8 +564,8 @@ export default function PinjamanAnggotaPage() {
               Reset Filter
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Data Table */}
       <Card>
@@ -692,100 +600,111 @@ export default function PinjamanAnggotaPage() {
                 filteredData.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex items-center gap-2">
-                        {/* Primary Actions */}
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDetail(item)}
-                            title="Lihat Detail"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(item)}
-                            title="Edit"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
+                      <TooltipProvider>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {/* Basic Actions */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDetail(item)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Lihat Detail</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-                        {/* Status Actions for Pending */}
-                        {(item.status === "0" || item.status === "pending") && (
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleStatusUpdate(item, "1")}
-                              title="Approve"
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleStatusUpdate(item, "2")}
-                              title="Reject"
-                            >
-                              <XCircle className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(item)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Pinjaman</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-                        {/* Dropdown for Additional Actions */}
-                        <div className="relative dropdown-container">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenDropdownId(
-                                openDropdownId === item.id ? null : item.id
-                              );
-                            }}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePaymentHistory(item)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>History Pembayaran</p>
+                            </TooltipContent>
+                          </Tooltip>
 
-                          {/* Dropdown Menu */}
-                          {openDropdownId === item.id && (
-                            <div
-                              className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-xl z-[99999] min-w-[160px]"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePaymentHistory(item);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <CreditCard className="h-4 w-4" />
-                                  History Pembayaran
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(item);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Hapus Pinjaman
-                                </button>
-                              </div>
-                            </div>
+                          {/* Validation Actions - Only show for pending loans */}
+                          {(item.status === "0" || item.status === "pending" || item.status === 0) && (
+                            <>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="default"
+                                    onClick={() => handleStatusUpdate(item, "1")}
+                                    className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Approve Pinjaman</p>
+                                </TooltipContent>
+                              </Tooltip>
+
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    onClick={() => handleStatusUpdate(item, "2")}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Reject Pinjaman</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </>
                           )}
+
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(item)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Hapus Pinjaman</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                      </div>
+                      </TooltipProvider>
                     </td>
                     <td className="px-4 py-2">
                       <div>
@@ -812,7 +731,9 @@ export default function PinjamanAnggotaPage() {
                     </td>
                     <td className="px-4 py-2">{item.tenor} bulan</td>
                     <td className="px-4 py-2">{item.interest_rate}%</td>
-                    <td className="px-4 py-2">{getStatusBadge(item.status)}</td>
+                    <td className="px-4 py-2">
+                      {getStatusBadge(item.status)}
+                    </td>
                     <td className="px-4 py-2 text-sm text-gray-500">
                       {new Date(item.date).toLocaleDateString("id-ID")}
                     </td>
