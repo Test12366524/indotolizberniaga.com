@@ -45,7 +45,7 @@ export default function FormProduct({
       if (!form.id) {
         setForm({
           ...form,
-          status: form.status ?? true, // Default status true jika belum ada
+          status: form.status ?? 1, // Default status true jika belum ada
         });
       }
       setIsInitialized(true);
@@ -224,11 +224,11 @@ export default function FormProduct({
             <Label>{isJasaMerk ? "Durasi" : "Stok"}</Label>
             <Input
               type="number"
-              value={form.duration ?? ""}
+              value={form.stock ?? ""}
               onChange={(e) =>
                 setForm({
                   ...form,
-                  duration: e.target.value ? Number(e.target.value) : undefined,
+                  stock: e.target.value ? Number(e.target.value) : undefined,
                 })
               }
               readOnly={readonly}
@@ -246,7 +246,7 @@ export default function FormProduct({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      weight: e.target.value ? Number(e.target.value) : undefined,
+                      weight: e.target.value ? e.target.value : undefined,
                     })
                   }
                   readOnly={readonly}
@@ -261,7 +261,7 @@ export default function FormProduct({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      length: e.target.value ? Number(e.target.value) : undefined,
+                      length: e.target.value ? e.target.value : undefined,
                     })
                   }
                   readOnly={readonly}
@@ -276,7 +276,7 @@ export default function FormProduct({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      width: e.target.value ? Number(e.target.value) : undefined,
+                      width: e.target.value ? e.target.value : undefined,
                     })
                   }
                   readOnly={readonly}
@@ -291,7 +291,7 @@ export default function FormProduct({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      height: e.target.value ? Number(e.target.value) : undefined,
+                      height: e.target.value ? e.target.value : undefined,
                     })
                   }
                   readOnly={readonly}
@@ -306,7 +306,7 @@ export default function FormProduct({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      diameter: e.target.value ? Number(e.target.value) : undefined,
+                      diameter: e.target.value ? e.target.value : undefined,
                     })
                   }
                   readOnly={readonly}
@@ -321,7 +321,7 @@ export default function FormProduct({
               className="border rounded-md px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600"
               value={form.status ? "1" : "0"}
               onChange={(e) =>
-                setForm({ ...form, status: e.target.value === "1" })
+                setForm({ ...form, status: e.target.value === "1" ? 1 : 0 })
               }
               disabled={readonly}
             >

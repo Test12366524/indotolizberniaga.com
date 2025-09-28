@@ -22,13 +22,13 @@ export interface Product {
   category_slug: string;
   merk_name: string;
   merk_slug: string;
-  image: string;
-  image_2: string;
-  image_3: string;
-  image_4: string;
-  image_5: string;
-  image_6: string;
-  image_7: string;
+  image: string | File;
+  image_2: string | File;
+  image_3: string | File;
+  image_4: string | File;
+  image_5: string | File;
+  image_6: string | File;
+  image_7: string | File;
   media: {
     id: number;
     model_type: string;

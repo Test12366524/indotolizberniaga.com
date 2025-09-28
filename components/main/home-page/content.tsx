@@ -135,7 +135,7 @@ export default function HomePage() {
     typeof img === "string" && img.length > 0 ? img : "/produk-1.webp";
 
   const makeBadge = (p: Product) =>
-    p.terlaris ? "Best Seller" : p.terbaru ? "New" : "Produk";
+    "Produk";
 
   const toInt = (v: unknown) => {
     const n = Number(v);

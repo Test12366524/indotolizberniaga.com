@@ -140,9 +140,15 @@ export default function FormPayment({
               <Input
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) setForm({ ...form, image: file });
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setForm({ ...form, image: reader.result as string });
+                    };
+                    reader.readAsDataURL(file);
+                  }
                 }}
               />
             )}

@@ -192,7 +192,7 @@ function mapStoredToView(items: StoredCartItem[]): CartItemView[] {
     category: it.category_name,
     ageGroup: "Semua usia",
     isEcoFriendly: false,
-    inStock: (it.duration ?? 0) > 0,
+    inStock: (it.stock ?? 0) > 0,
   }));
 }
 

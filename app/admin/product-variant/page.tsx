@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function ProductPage() {
   const [form, setForm] = useState<Partial<Product>>({
-    status: true,
+    status: 1,
   });
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
   const [readonly, setReadonly] = useState(false);
@@ -61,7 +61,7 @@ export default function ProductPage() {
         Swal.fire("Sukses", "Varian Produk ditambahkan", "success");
       }
 
-      setForm({ status: true });
+      setForm({ status: 1 });
       setEditingSlug(null);
       await refetch();
       closeModal();
@@ -72,7 +72,7 @@ export default function ProductPage() {
   };
 
   const handleEdit = (item: Product) => {
-    setForm({ ...item, status: item.status === true || item.status === 1 });
+    setForm({ ...item, status: item.status });
     setEditingSlug(item.id.toString());
     setReadonly(false);
     openModal();
@@ -165,7 +165,7 @@ export default function ProductPage() {
                     <td className="px-4 py-2">{item.merk_name}</td>
                     <td className="px-4 py-2">{item.name}</td>
                     <td className="px-4 py-2">{item.price}</td>
-                    <td className="px-4 py-2">{item.duration}</td>
+                    <td className="px-4 py-2">{item.stock}</td>
                     <td className="px-4 py-2">{item.rating}</td>
                     <td className="px-4 py-2">{item.total_reviews}</td>
                     <td className="px-4 py-2">
@@ -210,7 +210,7 @@ export default function ProductPage() {
             form={form}
             setForm={setForm}
             onCancel={() => {
-              setForm({ status: true });
+              setForm({ status: 1 });
               setEditingSlug(null);
               setReadonly(false);
               closeModal();
