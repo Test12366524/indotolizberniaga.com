@@ -80,7 +80,7 @@ export default function FormSimpanan({
   const SimpananStatus = {
     "0": "MENUNGGU",
     "1": "DITERIMA",
-    "-1": "DITOLAK",
+    "2": "DITOLAK",
   } as const;
 
   return (

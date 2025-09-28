@@ -358,7 +358,7 @@ export default function SimpananAnggotaPage() {
     const statusConfig = {
       "0": { variant: "destructive" as const, label: "Pending" },
       "1": { variant: "success" as const, label: "Approved" },
-      "-1": { variant: "destructive" as const, label: "Ditolak" },
+      "2": { variant: "destructive" as const, label: "Ditolak" },
       pending: { variant: "destructive" as const, label: "Pending" },
       approved: { variant: "success" as const, label: "Approved" },
       rejected: { variant: "destructive" as const, label: "Ditolak" },
@@ -443,7 +443,7 @@ export default function SimpananAnggotaPage() {
                 <option value="">Semua Status</option>
                 <option value="0">Pending</option>
                 <option value="1">Approved</option>
-                <option value="-1">Ditolak</option>
+                <option value="2">Ditolak</option>
               </select>
             </div>
 
@@ -579,7 +579,7 @@ export default function SimpananAnggotaPage() {
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleStatusUpdate(item, "-1")}
+                              onClick={() => handleStatusUpdate(item, "2")}
                               title="Reject"
                             >
                               <XCircle className="h-3 w-3" />
