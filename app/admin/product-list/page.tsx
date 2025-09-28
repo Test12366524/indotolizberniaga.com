@@ -87,50 +87,71 @@ export default function ProductPage() {
         throw new Error("Merk produk wajib dipilih");
       }
 
-      // Check if selected merk is "Jasa" for additional validation
       const selectedMerk = merkList?.find((m) => m.id === form.product_merk_id);
       const isJasaMerk = selectedMerk?.name?.toLowerCase() === "jasa";
 
+      // Jasa: harga wajib > 0
       if (isJasaMerk) {
-        // For Jasa products, price is required and must be > 0
         if (!form.price || form.price <= 0) {
           throw new Error(
             "Harga wajib diisi dan harus lebih dari 0 untuk layanan Jasa"
           );
         }
+        // Durasi opsional di form, tapi jika tidak diisi set 1
+        // (atau validasi sesuai kebutuhanmu)
+      } else {
+        // Barang: stock wajib diisi (>= 0)
+        const stockNum =
+          typeof form.stock === "number"
+            ? form.stock
+            : parseInt(String(form.stock ?? "0"), 10);
+        if (Number.isNaN(stockNum) || stockNum < 0) {
+          throw new Error("Stok wajib diisi dan tidak boleh negatif");
+        }
       }
 
       // === REQUIRED FIELDS ===
-      // Hardcoded shop_id as requested by backend team
       payload.append("shop_id", "1");
 
-      // Numeric fields - handle price properly
+      // price (jangan dobel lagi)
       const priceValue =
-        form.price !== undefined && form.price !== null ? form.price : 0;
-      payload.append("price", priceValue ? `${priceValue}` : "0");
-      payload.append("price", form.price ? `${form.price}` : "0");
-      payload.append("duration", form.duration ? `${form.duration}` : "0");
-      payload.append("weight", form.weight ? `${form.weight}` : "0");
-      payload.append("length", form.length ? `${form.length}` : "0");
-      payload.append("width", form.width ? `${form.width}` : "0");
-      payload.append("height", form.height ? `${form.height}` : "0");
+        form.price !== undefined && form.price !== null
+          ? Number(form.price)
+          : 0;
+      payload.append("price", String(priceValue));
 
+      // stock: WAJIB ADA untuk backend (isi 0 jika jasa)
+      const stockValue = isJasaMerk
+        ? 0
+        : (() => {
+            const n =
+              typeof form.stock === "number"
+                ? form.stock
+                : parseInt(String(form.stock ?? "0"), 10);
+            return Number.isNaN(n) ? 0 : n;
+          })();
+      payload.append("stock", String(stockValue));
+
+      // dimension/weight (tetap aman string angka)
+      payload.append("weight", form.weight ? String(form.weight) : "0");
+      payload.append("length", form.length ? String(form.length) : "0");
+      payload.append("width", form.width ? String(form.width) : "0");
+      payload.append("height", form.height ? String(form.height) : "0");
+
+      // duration:
+      // - Jika Jasa: kirim duration dari form (default 1 jika kosong)
+      // - Jika Bukan Jasa: TIDAK PERLU, jangan kirim (hindari kebingungan dgn stock)
       if (isJasaMerk) {
-        // For Jasa, send duration field (which maps to duration in our form)
-        const durationValue = form.duration ? `${form.duration}` : "0";
-        payload.append("duration", durationValue);
-      } else {
-        // For non-Jasa products, hardcode duration to 1 (required but not needed)
-        payload.append("duration", "1");
+        payload.append("duration", form.duration ? String(form.duration) : "1");
       }
 
       // === OPTIONAL FIELDS ===
       if (form.name) payload.append("name", form.name);
       if (form.description) payload.append("description", form.description);
       if (form.product_category_id)
-        payload.append("product_category_id", `${form.product_category_id}`);
+        payload.append("product_category_id", String(form.product_category_id));
       if (form.product_merk_id)
-        payload.append("product_merk_id", `${form.product_merk_id}`);
+        payload.append("product_merk_id", String(form.product_merk_id));
       if (typeof form.status === "boolean") {
         payload.append("status", form.status ? "1" : "0");
       }
@@ -144,37 +165,31 @@ export default function ProductPage() {
         "image_5",
         "image_6",
         "image_7",
-      ];
+      ] as const;
 
       if (editingSlug) {
-        // === MODE EDIT ===
-        // Kirim method override untuk PATCH/PUT
-        payload.append("_method", "PUT"); // atau "PATCH"
+        // EDIT
+        payload.append("_method", "PUT");
 
         imageFields.forEach((fieldName) => {
-          const imageValue = form[fieldName as keyof Product];
-
+          const imageValue = form[fieldName];
           if (imageValue instanceof File) {
-            // Upload gambar baru
             payload.append(fieldName, imageValue);
           } else if (typeof imageValue === "string" && imageValue) {
-            // Pertahankan gambar lama dengan mengirim URL-nya
-            payload.append(`${fieldName}`, imageValue);
+            // pertahankan url lama (jika backend butuh)
+            payload.append(fieldName, imageValue);
           }
-          // Jika undefined/null = hapus gambar
         });
 
         await updateProduct({ slug: editingSlug, payload }).unwrap();
         Swal.fire("Sukses", "Produk diperbarui", "success");
       } else {
-        // === MODE CREATE ===
-        // Validasi minimal 1 gambar untuk create
+        // CREATE
         if (!(form.image instanceof File)) {
           throw new Error("Minimal 1 gambar wajib diisi untuk produk baru");
         }
-
         imageFields.forEach((fieldName) => {
-          const imageValue = form[fieldName as keyof Product];
+          const imageValue = form[fieldName];
           if (imageValue instanceof File) {
             payload.append(fieldName, imageValue);
           }
@@ -190,7 +205,6 @@ export default function ProductPage() {
       closeModal();
     } catch (error) {
       console.error("Submit error:", error);
-
       Swal.fire(
         "Gagal",
         error instanceof Error ? error.message : "Terjadi kesalahan",
@@ -301,7 +315,7 @@ export default function ProductPage() {
                       {item.price}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.duration}
+                      {item.stock}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.rating}

@@ -14,15 +14,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   useGetStockOpnameListQuery,
   useCreateStockOpnameMutation,
   useUpdateStockOpnameMutation,
   useDeleteStockOpnameMutation,
 } from "@/services/admin/stock-opname.service";
+import { useGetMeQuery } from "@/services/admin/shop.service";
+import { useGetProductListQuery } from "@/services/admin/product.service";
 import { StockOpname, CreateStockOpnameRequest } from "@/types/admin/stock-opname";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Edit, Trash2, Package } from "lucide-react";
+import { Edit, Trash2, Package, Eye } from "lucide-react";
 
 export default function StockOpnamePage() {
   const itemsPerPage = 10;
@@ -43,7 +52,9 @@ export default function StockOpnamePage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedItem, setSelectedItem] = useState<StockOpname | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -66,12 +77,38 @@ export default function StockOpnamePage() {
     }
   };
 
+  // Helper function to convert date to YYYY-MM-DD format for input
+  const formatDateForInput = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "";
+      
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "";
+    }
+  };
+
   const { data, isLoading, refetch } = useGetStockOpnameListQuery({
     page: currentPage,
     paginate: itemsPerPage,
   });
 
+  // Get current user profile (includes shop info)
+  const { data: meData } = useGetMeQuery();
+
+  // Get products for dropdown
+  const { data: productsData } = useGetProductListQuery({
+    page: 1,
+    paginate: 100,
+  });
+
   const stockOpnameList = useMemo(() => data?.data || [], [data]);
+  const productsList = useMemo(() => productsData?.data || [], [productsData]);
   
   // Filter list by search query
   const filteredList = useMemo(() => {
@@ -79,13 +116,20 @@ export default function StockOpnamePage() {
     
     const q = query.toLowerCase();
     return stockOpnameList.filter(
-      (item) =>
-        item.user?.name?.toLowerCase().includes(q) ||
-        item.shop?.name?.toLowerCase().includes(q) ||
-        item.product?.name?.toLowerCase().includes(q) ||
-        item.notes?.toLowerCase().includes(q)
+      (item) => {
+        const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
+        const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
+        const productName = item.product?.name || productsList.find(p => p.id === item.product_id)?.name || '';
+        
+        return (
+          userName.toLowerCase().includes(q) ||
+          shopName.toLowerCase().includes(q) ||
+          productName.toLowerCase().includes(q) ||
+          item.notes?.toLowerCase().includes(q)
+        );
+      }
     );
-  }, [stockOpnameList, query]);
+  }, [stockOpnameList, query, meData, productsList]);
 
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
@@ -118,6 +162,11 @@ export default function StockOpnamePage() {
 
   const openModal = handleOpenCreateModal;
 
+  const handleOpenDetailModal = (item: StockOpname) => {
+    setSelectedItem(item);
+    setIsDetailModalOpen(true);
+  };
+
   const handleOpenEditModal = (item: StockOpname) => {
     setForm({
       id: item.id,
@@ -140,6 +189,11 @@ export default function StockOpnamePage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     resetForm();
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedItem(null);
   };
 
   const handleSubmit = async () => {
@@ -257,6 +311,15 @@ export default function StockOpnamePage() {
                         <Button
                           size="sm"
                           variant="outline"
+                          onClick={() => handleOpenDetailModal(item)}
+                          className="flex items-center gap-1 h-8 px-3"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Detail
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
                           onClick={() => handleOpenEditModal(item)}
                           className="flex items-center gap-1 h-8 px-3"
                         >
@@ -278,13 +341,13 @@ export default function StockOpnamePage() {
                       {item.id}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.user?.name || `User ID: ${item.user_id}`}
+                      {item.user?.name || (meData?.id === item.user_id ? meData.name : `User ID: ${item.user_id}`)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.shop?.name || `Shop ID: ${item.shop_id}`}
+                      {item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : `Shop ID: ${item.shop_id}`)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.product?.name || `Product ID: ${item.product_id}`}
+                      {item.product?.name || productsList.find(p => p.id === item.product_id)?.name || `Product ID: ${item.product_id}`}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatNumber(item.initial_stock)}
@@ -338,7 +401,7 @@ export default function StockOpnamePage() {
 
       {/* Create/Edit Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md md:min-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -352,44 +415,104 @@ export default function StockOpnamePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="user_id" className="text-sm font-medium text-gray-700">
-                  User ID
+                  User
                 </Label>
-                <Input
-                  id="user_id"
-                  type="number"
-                  placeholder="Masukkan User ID"
-                  value={form.user_id || ""}
-                  onChange={(e) => setForm({ ...form, user_id: Number(e.target.value) })}
-                  className="h-11"
-                />
+                <Select
+                  value={form.user_id ? form.user_id.toString() : undefined}
+                  onValueChange={(value) => setForm({ ...form, user_id: Number(value) })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="👤 Pilih User..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {!meData?.shop ? (
+                      <SelectItem value="no-shop" disabled>
+                        <span className="text-gray-500">User harus memiliki shop untuk membuat stock opname</span>
+                      </SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="placeholder-user" disabled>
+                          <span className="text-gray-400 italic">👤 Pilih User...</span>
+                        </SelectItem>
+                        <SelectItem value={meData.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{meData.name}</span>
+                            <span className="text-sm text-gray-500">({meData.email})</span>
+                          </div>
+                        </SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="shop_id" className="text-sm font-medium text-gray-700">
-                  Shop ID
+                  Shop
                 </Label>
-                <Input
-                  id="shop_id"
-                  type="number"
-                  placeholder="Masukkan Shop ID"
-                  value={form.shop_id || ""}
-                  onChange={(e) => setForm({ ...form, shop_id: Number(e.target.value) })}
-                  className="h-11"
-                />
+                <Select
+                  value={form.shop_id ? form.shop_id.toString() : undefined}
+                  onValueChange={(value) => setForm({ ...form, shop_id: Number(value) })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="🏪 Pilih Shop..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {!meData?.shop ? (
+                      <SelectItem value="no-shop" disabled>
+                        <span className="text-gray-500">Tidak ada shop tersedia</span>
+                      </SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="placeholder-shop" disabled>
+                          <span className="text-gray-400 italic">🏪 Pilih Shop...</span>
+                        </SelectItem>
+                        <SelectItem value={meData.shop.id.toString()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{meData.shop.name}</span>
+                            <span className="text-sm text-gray-500">({meData.shop.email})</span>
+                          </div>
+                        </SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="product_id" className="text-sm font-medium text-gray-700">
-                  Product ID
+                  Product
                 </Label>
-                <Input
-                  id="product_id"
-                  type="number"
-                  placeholder="Masukkan Product ID"
-                  value={form.product_id || ""}
-                  onChange={(e) => setForm({ ...form, product_id: Number(e.target.value) })}
-                  className="h-11"
-                />
+                <Select
+                  value={form.product_id ? form.product_id.toString() : undefined}
+                  onValueChange={(value) => setForm({ ...form, product_id: Number(value) })}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="📦 Pilih Product..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {productsList.length === 0 ? (
+                      <SelectItem value="no-products" disabled>
+                        <span className="text-gray-500">Tidak ada product tersedia</span>
+                      </SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="placeholder-product" disabled>
+                          <span className="text-gray-400 italic">📦 Pilih Product...</span>
+                        </SelectItem>
+                        {productsList.map((product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{product.name}</span>
+                              <span className="text-sm text-gray-500">- {product.category_name}</span>
+                              <span className="text-xs text-blue-500">({product.merk_name})</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -399,7 +522,7 @@ export default function StockOpnamePage() {
                 <Input
                   id="date"
                   type="date"
-                  value={form.date || ""}
+                  value={form.date ? formatDateForInput(form.date) : ""}
                   onChange={(e) => setForm({ ...form, date: e.target.value })}
                   className="h-11"
                 />
@@ -412,7 +535,7 @@ export default function StockOpnamePage() {
                 <Input
                   id="initial_stock"
                   type="number"
-                  placeholder="Masukkan stok awal"
+                  placeholder="🔢 Masukkan stok awal..."
                   value={form.initial_stock || ""}
                   onChange={(e) => {
                     const value = Number(e.target.value);
@@ -433,7 +556,7 @@ export default function StockOpnamePage() {
                 <Input
                   id="counted_stock"
                   type="number"
-                  placeholder="Masukkan stok terhitung"
+                  placeholder="📊 Masukkan stok terhitung..."
                   value={form.counted_stock || ""}
                   onChange={(e) => {
                     const value = Number(e.target.value);
@@ -456,7 +579,7 @@ export default function StockOpnamePage() {
                   type="number"
                   value={form.difference || ""}
                   disabled={true}
-                  placeholder="Selisih akan dihitung otomatis"
+                  placeholder="⚡ Selisih akan dihitung otomatis..."
                   className="h-11 bg-gray-100"
                 />
               </div>
@@ -468,7 +591,7 @@ export default function StockOpnamePage() {
               </Label>
               <Textarea
                 id="notes"
-                placeholder="Masukkan catatan (opsional)"
+                placeholder="📝 Masukkan catatan (opsional)..."
                 value={form.notes || ""}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={3}
@@ -500,6 +623,120 @@ export default function StockOpnamePage() {
               ) : (
                 "Simpan"
               )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3 text-xl">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <Package className="h-5 w-5 text-blue-600" />
+              </div>
+              Detail Stock Opname
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedItem && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">ID</Label>
+                    <p className="text-lg font-semibold">{selectedItem.id}</p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">User</Label>
+                    <p className="text-lg">
+                      {selectedItem.user?.name || (meData?.id === selectedItem.user_id ? meData.name : `User ID: ${selectedItem.user_id}`)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Shop</Label>
+                    <p className="text-lg">
+                      {selectedItem.shop?.name || (meData?.shop?.id === selectedItem.shop_id ? meData.shop.name : `Shop ID: ${selectedItem.shop_id}`)}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Product</Label>
+                    <p className="text-lg">
+                      {selectedItem.product?.name || productsList.find(p => p.id === selectedItem.product_id)?.name || `Product ID: ${selectedItem.product_id}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Tanggal</Label>
+                    <p className="text-lg">{formatDateTime(selectedItem.date)}</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Stok Awal</Label>
+                    <p className="text-lg font-semibold">{formatNumber(selectedItem.initial_stock)}</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Stok Terhitung</Label>
+                    <p className="text-lg font-semibold">{formatNumber(selectedItem.counted_stock)}</p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">Selisih</Label>
+                    <div className="mt-1">
+                      <Badge 
+                        variant={selectedItem.difference >= 0 ? "success" : "destructive"}
+                        className="text-sm px-3 py-1"
+                      >
+                        {selectedItem.difference >= 0 ? "+" : ""}{formatNumber(selectedItem.difference)}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedItem.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Catatan</Label>
+                  <p className="text-lg mt-1 p-3 bg-gray-50 rounded-md">{selectedItem.notes}</p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Dibuat</Label>
+                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.created_at || "")}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Diperbarui</Label>
+                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.updated_at || "")}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <Button
+              variant="outline"
+              onClick={handleCloseDetailModal}
+              className="h-10 px-6"
+            >
+              Tutup
+            </Button>
+            <Button
+              onClick={() => {
+                handleCloseDetailModal();
+                handleOpenEditModal(selectedItem!);
+              }}
+              className="h-10 px-6"
+            >
+              Edit
             </Button>
           </div>
         </DialogContent>
