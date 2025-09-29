@@ -67,7 +67,7 @@ const TERMS_CONTENT = {
     <>
       <h3>1. Penerimaan Persyaratan</h3>
       <p>
-        Dengan mendaftar dan menggunakan layanan Koperasi Merah Putih ("Layanan"), Anda setuju untuk terikat oleh Syarat dan Ketentuan ini ("Syarat"). Jika Anda tidak setuju dengan Syarat ini, Anda tidak boleh menggunakan Layanan.
+        Dengan mendaftar dan menggunakan layanan Koperasi Merah Putih (Layanan), Anda setuju untuk terikat oleh Syarat dan Ketentuan ini (Syarat). Jika Anda tidak setuju dengan Syarat ini, Anda tidak boleh menggunakan Layanan.
       </p>
 
       <h3>2. Layanan Koperasi</h3>
