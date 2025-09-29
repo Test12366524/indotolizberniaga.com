@@ -315,7 +315,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "#"
     },
     {
-      id: "dashboard",
+      id: "dashboard-marketplace",
       label: "Dashboard",
       icon: <BookDashed className="h-5 w-5" />,
       href: "/admin/dashboard-marketplace",
@@ -327,19 +327,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "/admin/seller", 
     },
     {
-      id: "product",
+      id: "product-marketplace",
       label: "Produk",
       icon: <Package className="h-5 w-5" />,
       href: "/admin/product-list", 
     },
     {
-      id: "transaction",
+      id: "transaction-marketplace",
       label: "Transaksi",
       icon: <ShoppingCart className="h-5 w-5" />,
       href: "/admin/transaction",
     },
     {
-      id: "customer",
+      id: "customer-marketplace",
       label: "Data Customer",
       icon: <BookUser className="h-5 w-5" />,
       href: "/admin/customer",
@@ -363,18 +363,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "/admin/voucher", 
     },
     {
-      id: "master",
+      id: "master-marketplace",
       label: "Master",
       icon: <Database className="h-5 w-5" />,
       href: "#", 
       children: [
         {
-          id: "master-product-category",
+          id: "master-product-category-marketplace",
           label: "Kategori Produk",
           href: "/admin/product-category",
         },
         {
-          id: "master-product-merk",
+          id: "master-product-merk-marketplace",
           label: "Tipe Produk",
           href: "/admin/product-merk",
         },
@@ -391,49 +391,49 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   // Menu items untuk admin (terbatas)
   const adminMenuItems: MenuItem[] = [
     {
-      id: "dashboard",
+      id: "dashboard-admin",
       label: "Dashboard",
       icon: <BookDashed className="h-5 w-5" />,
       href: "/admin/dashboard",
     },
     {
-      id: "pemisah-marketplace",
+      id: "pemisah-marketplace-admin",
       label: "Marketplace",
       isSeparator: true,
       href: "#"
     },
     {
-      id: "master",
+      id: "master-admin",
       label: "Master",
       icon: <Database className="h-5 w-5" />,
       href: "#", 
       children: [
         {
-          id: "master-product-category",
+          id: "master-product-category-admin",
           label: "Kategori Produk",
           href: "/admin/product-category",
         },
         {
-          id: "master-product-merk",
+          id: "master-product-merk-admin",
           label: "Tipe Produk",
           href: "/admin/product-merk",
         },
       ],
     },
     {
-      id: "product",
+      id: "product-admin",
       label: "Produk",
       icon: <Package className="h-5 w-5" />,
       href: "/admin/product-list", 
     },
     {
-      id: "transaction",
+      id: "transaction-admin",
       label: "Transaksi",
       icon: <ShoppingCart className="h-5 w-5" />,
       href: "/admin/transaction",
     },
     {
-      id: "customer",
+      id: "customer-admin",
       label: "Data Customer",
       icon: <Users className="h-5 w-5" />,
       href: "/admin/customer",
