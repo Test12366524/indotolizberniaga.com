@@ -43,6 +43,7 @@ export default function Footer() {
     { name: "Simpan Pinjam", href: "/simpan-pinjam" },
     { name: "Marketplace", href: "/marketplace" },
     { name: "FAQs", href: "/faq" },
+    { name: "Login Anggota", href: "/auth/login" },
   ];
 
   return (
