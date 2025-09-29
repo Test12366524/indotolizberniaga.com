@@ -286,7 +286,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         {
           id: "konfigurasi/kode-transaksi",
           label: "Kode Transaksi",
-          href: "/admin/konfigurasi/kode-transaksi",
+          href: "/admin/master/kode-transaksi",
         },
         {
           id: "konfigurasi/pengelola",

@@ -27,7 +27,7 @@ export default function KodeTransaksiPage() {
     search: "",
     status: "all",
   });
-  const [currentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -189,13 +189,13 @@ export default function KodeTransaksiPage() {
     }
   };
 
-  const updateDebitEntry = (index: number, field: string, value: string | number) => {
+  const updateDebitEntry = (index: number, field: string, value: any) => {
     const updatedDebits = [...formData.debits];
     updatedDebits[index] = { ...updatedDebits[index], [field]: value };
     setFormData({ ...formData, debits: updatedDebits });
   };
 
-  const updateCreditEntry = (index: number, field: string, value: string | number) => {
+  const updateCreditEntry = (index: number, field: string, value: any) => {
     const updatedCredits = [...formData.credits];
     updatedCredits[index] = { ...updatedCredits[index], [field]: value };
     setFormData({ ...formData, credits: updatedCredits });

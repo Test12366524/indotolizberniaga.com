@@ -178,3 +178,4 @@ export const {
   useDeleteAnggotaMeninggalMutation,
   useUpdateAnggotaMeninggalStatusMutation,
 } = anggotaMeninggalApi;
+

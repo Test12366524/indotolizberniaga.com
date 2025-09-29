@@ -88,3 +88,4 @@ export const {
   useGetTopSellersQuery,
   useGetTopProductsQuery,
 } = dashboardMarketplaceApi;
+

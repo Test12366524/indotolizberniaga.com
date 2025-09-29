@@ -64,3 +64,4 @@ export const {
   useGetSimpananChartQuery,
   useGetPinjamanChartQuery,
 } = dashboardKoperasiApi;
+
