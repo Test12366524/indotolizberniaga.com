@@ -52,12 +52,7 @@ export const anggotaApi = apiSlice.injectEndpoints({
     }),
 
     // ➕ Create Anggota
-    // Jika backend menerima JSON, pakai payload object.
-    // Jika perlu FormData, ubah tipe & body sesuai kebutuhanmu.
-    createAnggota: builder.mutation<
-      AnggotaKoperasi,
-      Omit<Partial<AnggotaKoperasi>, "id" | "created_at" | "updated_at">
-    >({
+    createAnggota: builder.mutation<AnggotaKoperasi, FormData>({
       query: (payload) => ({
         url: `/anggota/anggotas`,
         method: "POST",
@@ -71,10 +66,9 @@ export const anggotaApi = apiSlice.injectEndpoints({
     }),
 
     // ✏️ Update Anggota by ID
-    // Mengikuti pola method override seperti contohmu
     updateAnggota: builder.mutation<
       AnggotaKoperasi,
-      { id: number; payload: Partial<AnggotaKoperasi> }
+      { id: number; payload: FormData }
     >({
       query: ({ id, payload }) => ({
         url: `/anggota/anggotas/${id}?_method=PUT`,

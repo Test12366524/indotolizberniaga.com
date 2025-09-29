@@ -5,38 +5,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combo-box";
 import type { AnggotaKoperasi } from "@/types/koperasi-types/anggota";
-import { useGetUsersListQuery } from "@/services/koperasi-service/users-management.service";
-
-interface UserItem {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string | null;
-}
-
-type UsersPayload = {
-  data: UserItem[];
-  last_page?: number;
-  current_page?: number;
-  total?: number;
-};
 
 interface AnggotaFormProps {
   form: Partial<
     AnggotaKoperasi & {
-      user_id?: number | null;
       password?: string;
       password_confirmation?: string;
+      nip?: string;
+      unit_kerja?: string;
+      jabatan?: string;
+      ktp?: File | null;
+      photo?: File | null;
+      slip_gaji?: File | null;
     }
   >;
   setForm: (
     data: Partial<
       AnggotaKoperasi & {
-        user_id?: number | null;
         password?: string;
         password_confirmation?: string;
+        nip?: string;
+        unit_kerja?: string;
+        jabatan?: string;
+        ktp?: File | null;
+        photo?: File | null;
+        slip_gaji?: File | null;
       }
     >
   ) => void;
@@ -57,27 +51,6 @@ export default function AnggotaForm({
   // ---- Semua hooks diletakkan di atas sebelum kemungkinan early return ----
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
-  // Users combobox state + query
-  const [userQuery, setUserQuery] = useState("");
-  const { data: usersResp, isLoading: isUsersLoading } = useGetUsersListQuery({
-    search: userQuery,
-    paginate: 10,
-    page: 1,
-  });
-
-  // Ambil array user dari payload: { data: UserItem[], last_page, ... }
-  const users: UserItem[] = useMemo(() => {
-    const payload = usersResp as { data?: UsersPayload } | undefined;
-    return payload?.data?.data ?? [];
-  }, [usersResp]);
-
-  // Temukan user terpilih dengan aman (tanpa ?? unreachable)
-  const selectedUser = useMemo(() => {
-    return typeof form.user_id === "number"
-      ? users.find((u) => u.id === form.user_id) ?? null
-      : null;
-  }, [users, form.user_id]);
 
   const statusOptions: Array<{ value: 0 | 1 | 2; label: string }> = [
     { value: 0, label: "PENDING" },
@@ -125,38 +98,6 @@ export default function AnggotaForm({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* USER (Combobox) – hanya tampil saat form editable */}
-          {!readonly && (
-            <div className="flex flex-col gap-y-1 sm:col-span-2">
-              <Label>User</Label>
-              <Combobox<UserItem>
-                value={typeof form.user_id === "number" ? form.user_id : null}
-                onChange={(userId) => {
-                  const u = users.find((x) => x.id === userId);
-                  setForm({
-                    ...form,
-                    user_id: userId,
-                    name: u?.name ?? "",
-                    email: u?.email ?? "",
-                    phone: u?.phone ?? "",
-                  });
-                }}
-                onSearchChange={(q) => setUserQuery(q)}
-                data={users}
-                isLoading={isUsersLoading}
-                placeholder="Pilih user…"
-                getOptionLabel={(u) =>
-                  `${u.name} (${u.email}${u.phone ? ` • ${u.phone}` : ""})`
-                }
-              />
-              {selectedUser && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Terpilih: {selectedUser.name} — {selectedUser.email}
-                  {selectedUser.phone ? ` — ${selectedUser.phone}` : ""}
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Nama */}
           <div className="flex flex-col gap-y-1">
@@ -276,6 +217,93 @@ export default function AnggotaForm({
               onChange={(e) => setForm({ ...form, npwp: e.target.value })}
               readOnly={readonly}
             />
+          </div>
+
+          {/* NIP */}
+          <div className="flex flex-col gap-y-1">
+            <Label>NIP</Label>
+            <Input
+              value={form.nip ?? ""}
+              onChange={(e) => setForm({ ...form, nip: e.target.value })}
+              readOnly={readonly}
+            />
+          </div>
+
+          {/* Unit Kerja */}
+          <div className="flex flex-col gap-y-1">
+            <Label>Unit Kerja</Label>
+            <Input
+              value={form.unit_kerja ?? ""}
+              onChange={(e) => setForm({ ...form, unit_kerja: e.target.value })}
+              readOnly={readonly}
+            />
+          </div>
+
+          {/* Jabatan */}
+          <div className="flex flex-col gap-y-1">
+            <Label>Jabatan</Label>
+            <Input
+              value={form.jabatan ?? ""}
+              onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
+              readOnly={readonly}
+            />
+          </div>
+
+          {/* KTP Upload */}
+          <div className="flex flex-col gap-y-1">
+            <Label>KTP</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setForm({ ...form, ktp: file });
+              }}
+              disabled={readonly}
+            />
+            {form.ktp && (
+              <p className="text-xs text-muted-foreground">
+                File: {form.ktp.name}
+              </p>
+            )}
+          </div>
+
+          {/* Photo Upload */}
+          <div className="flex flex-col gap-y-1">
+            <Label>Photo</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setForm({ ...form, photo: file });
+              }}
+              disabled={readonly}
+            />
+            {form.photo && (
+              <p className="text-xs text-muted-foreground">
+                File: {form.photo.name}
+              </p>
+            )}
+          </div>
+
+          {/* Slip Gaji Upload */}
+          <div className="flex flex-col gap-y-1">
+            <Label>Slip Gaji</Label>
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setForm({ ...form, slip_gaji: file });
+              }}
+              disabled={readonly}
+            />
+            {form.slip_gaji && (
+              <p className="text-xs text-muted-foreground">
+                File: {form.slip_gaji.name}
+              </p>
+            )}
           </div>
 
           {/* Alamat (full width) */}

@@ -18,7 +18,6 @@ import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { useRouter } from "next/navigation";
 
 type AnggotaPayload = {
-  user_id: number;
   name: string;
   email: string;
   phone: string;
@@ -28,18 +27,29 @@ type AnggotaPayload = {
   birth_place: string;
   nik: string;
   npwp: string | null;
+  nip?: string;
+  unit_kerja?: string;
+  jabatan?: string;
   status: 0 | 1 | 2;
   password?: string;
   password_confirmation?: string;
+  ktp?: File;
+  photo?: File;
+  slip_gaji?: File;
 };
 
 export default function AnggotaPage() {
   const [form, setForm] = useState<
     Partial<
       AnggotaKoperasi & {
-        user_id?: number | null;
         password?: string;
         password_confirmation?: string;
+        nip?: string;
+        unit_kerja?: string;
+        jabatan?: string;
+        ktp?: File | null;
+        photo?: File | null;
+        slip_gaji?: File | null;
       }
     >
   >({});
@@ -88,9 +98,6 @@ export default function AnggotaPage() {
   const handleSubmit = async () => {
     try {
       // === VALIDASI WAJIB ===
-      if (!form.user_id || typeof form.user_id !== "number") {
-        throw new Error("User wajib dipilih");
-      }
       if (!form.name || !form.email || !form.phone || !form.nik) {
         throw new Error("Nama, Email, Telepon, dan NIK wajib diisi");
       }
@@ -103,43 +110,48 @@ export default function AnggotaPage() {
 
       // Password hanya wajib saat CREATE
       if (!editingId) {
-        if (!form.password || form.password.trim().length < 6) {
-          throw new Error("Password minimal 6 karakter");
+        if (!form.password || form.password.trim().length < 8) {
+          throw new Error("Password minimal 8 karakter");
         }
         if (form.password !== form.password_confirmation) {
           throw new Error("Konfirmasi password tidak cocok");
         }
       }
 
-      const payload: AnggotaPayload = {
-        user_id: form.user_id,
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        address: form.address ?? "",
-        gender: form.gender as "M" | "F",
-        birth_date: form.birth_date ?? "",
-        birth_place: form.birth_place ?? "",
-        nik: form.nik,
-        npwp: form.npwp ?? null,
-        status: form.status as 0 | 1 | 2,
-      };
+      // Create FormData for file uploads
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('email', form.email);
+      formData.append('phone', form.phone);
+      formData.append('address', form.address ?? "");
+      formData.append('gender', form.gender as string);
+      formData.append('birth_date', form.birth_date ?? "");
+      formData.append('birth_place', form.birth_place ?? "");
+      formData.append('nik', form.nik);
+      formData.append('npwp', form.npwp ?? "");
+      formData.append('status', String(form.status));
 
-      // Sertakan password bila create atau saat user memang mengubah password
+      // Add optional fields
+      if (form.nip) formData.append('nip', form.nip);
+      if (form.unit_kerja) formData.append('unit_kerja', form.unit_kerja);
+      if (form.jabatan) formData.append('jabatan', form.jabatan);
+
+      // Add password fields for create
       if (!editingId && form.password && form.password_confirmation) {
-        payload.password = form.password;
-        payload.password_confirmation = form.password_confirmation;
+        formData.append('password', form.password);
+        formData.append('password_confirmation', form.password_confirmation);
       }
-      if (editingId && form.password && form.password_confirmation) {
-        payload.password = form.password;
-        payload.password_confirmation = form.password_confirmation;
-      }
+
+      // Add file uploads
+      if (form.ktp) formData.append('ktp', form.ktp);
+      if (form.photo) formData.append('photo', form.photo);
+      if (form.slip_gaji) formData.append('slip_gaji', form.slip_gaji);
 
       if (editingId) {
-        await updateAnggota({ id: editingId, payload }).unwrap();
+        await updateAnggota({ id: editingId, payload: formData }).unwrap();
         Swal.fire("Sukses", "Anggota diperbarui", "success");
       } else {
-        await createAnggota(payload).unwrap();
+        await createAnggota(formData).unwrap();
         Swal.fire("Sukses", "Anggota ditambahkan", "success");
       }
 
@@ -158,7 +170,6 @@ export default function AnggotaPage() {
   const handleEdit = (item: AnggotaKoperasi) => {
     setForm({
       ...item,
-      user_id: (item as unknown as { user_id?: number })?.user_id ?? null,
       password: "",
       password_confirmation: "",
     });
@@ -170,7 +181,6 @@ export default function AnggotaPage() {
   const handleDetail = (item: AnggotaKoperasi) => {
     setForm({
       ...item,
-      user_id: (item as unknown as { user_id?: number })?.user_id ?? null,
     });
     setReadonly(true);
     openModal();
