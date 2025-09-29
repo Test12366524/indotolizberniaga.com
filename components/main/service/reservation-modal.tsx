@@ -162,140 +162,140 @@ export default function ReservationModal({
     setShippingInfo((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
 
-    if (!service) return;
+  //   if (!service) return;
 
-    // Validation
-    if (
-      !formData.fullName ||
-      !formData.phone ||
-      !formData.reservationDate ||
-      !formData.reservationTime ||
-      !isPhoneValid ||
-      !shippingInfo.address_line_1 ||
-      !shippingInfo.postal_code ||
-      !shippingInfo.rajaongkir_province_id ||
-      !shippingInfo.rajaongkir_city_id ||
-      !shippingInfo.rajaongkir_district_id
-    ) {
-      await Swal.fire({
-        icon: "warning",
-        title: "Lengkapi Data",
-        text: "Harap lengkapi semua informasi yang diperlukan untuk melanjutkan reservasi.",
-      });
-      return;
-    }
+  //   // Validation
+  //   if (
+  //     !formData.fullName ||
+  //     !formData.phone ||
+  //     !formData.reservationDate ||
+  //     !formData.reservationTime ||
+  //     !isPhoneValid ||
+  //     !shippingInfo.address_line_1 ||
+  //     !shippingInfo.postal_code ||
+  //     !shippingInfo.rajaongkir_province_id ||
+  //     !shippingInfo.rajaongkir_city_id ||
+  //     !shippingInfo.rajaongkir_district_id
+  //   ) {
+  //     await Swal.fire({
+  //       icon: "warning",
+  //       title: "Lengkapi Data",
+  //       text: "Harap lengkapi semua informasi yang diperlukan untuk melanjutkan reservasi.",
+  //     });
+  //     return;
+  //   }
 
-    setIsSubmitting(true);
+  //   setIsSubmitting(true);
 
-    try {
-      // Create payload similar to cart but for service reservation
-      const payload = {
-        address_line_1: shippingInfo.address_line_1,
-        postal_code: shippingInfo.postal_code,
-        date: formData.reservationDate,
-        hour: formData.reservationTime,
-        data: [
-          {
-            shop_id: 1,
-            details: [
-              {
-                product_id: service.id, // For service instead of product_id
-                quantity: 1,
-              },
-            ],
-            customer_info: {
-              name: formData.fullName,
-              phone: formData.phone,
-              address_line_1: shippingInfo.address_line_1,
-              postal_code: shippingInfo.postal_code,
-              province_id: shippingInfo.rajaongkir_province_id,
-              city_id: shippingInfo.rajaongkir_city_id,
-              district_id: shippingInfo.rajaongkir_district_id,
-            },
-            payment_method: paymentMethod || "cod", // Default to COD if not selected
-          },
-        ],
-      };
+  //   try {
+  //     // Create payload matching CreateTransactionRequest type
+  //     const payload = {
+  //       address_line_1: shippingInfo.address_line_1,
+  //       postal_code: shippingInfo.postal_code,
+  //       date: formData.reservationDate,
+  //       hour: formData.reservationTime,
+  //       transactions: [
+  //         {
+  //           shop_id: 1,
+  //           details: [
+  //             {
+  //               product_id: service.id, // For service instead of product_id
+  //               quantity: 1,
+  //             },
+  //           ],
+  //           customer_info: {
+  //             name: formData.fullName,
+  //             phone: formData.phone,
+  //             address_line_1: shippingInfo.address_line_1,
+  //             postal_code: shippingInfo.postal_code,
+  //             province_id: shippingInfo.rajaongkir_province_id,
+  //             city_id: shippingInfo.rajaongkir_city_id,
+  //             district_id: shippingInfo.rajaongkir_district_id,
+  //           },
+  //           payment_method: paymentMethod || "cod", // Default to COD if not selected
+  //         },
+  //       ],
+  //     };
 
-      const result = await createTransaction(payload).unwrap();
+  //     const result = await createTransaction(payload).unwrap();
 
-      if (
-        result &&
-        result.data &&
-        typeof result.data === "object" &&
-        "payment_link" in result.data
-      ) {
-        await Swal.fire({
-          icon: "success",
-          title: "Reservasi Berhasil Dibuat",
-          text: "Silakan lanjutkan ke halaman pembayaran.",
-          confirmButtonText: "Lanjut ke Pembayaran",
-        });
+  //     if (
+  //       result &&
+  //       result.data &&
+  //       typeof result.data === "object" &&
+  //       "payment_link" in result.data
+  //     ) {
+  //       await Swal.fire({
+  //         icon: "success",
+  //         title: "Reservasi Berhasil Dibuat",
+  //         text: "Silakan lanjutkan ke halaman pembayaran.",
+  //         confirmButtonText: "Lanjut ke Pembayaran",
+  //       });
 
-        window.open(
-          (result.data as { payment_link: string }).payment_link,
-          "_blank"
-        );
+  //       window.open(
+  //         (result.data as { payment_link: string }).payment_link,
+  //         "_blank"
+  //       );
 
-        onClose(); // Close modal
-        setTimeout(() => {
-          router.push("/me");
-        }, 2000);
-      } else {
-        console.warn("Unexpected response format:", result);
-        await Swal.fire({
-          icon: "success",
-          title: "Reservasi Berhasil",
-          text: "Reservasi berhasil dibuat! Kami akan menghubungi Anda segera.",
-        });
-        onClose();
-      }
-    } catch (err: unknown) {
-      console.error("Error creating reservation:", err);
+  //       onClose(); // Close modal
+  //       setTimeout(() => {
+  //         router.push("/me");
+  //       }, 2000);
+  //     } else {
+  //       console.warn("Unexpected response format:", result);
+  //       await Swal.fire({
+  //         icon: "success",
+  //         title: "Reservasi Berhasil",
+  //         text: "Reservasi berhasil dibuat! Kami akan menghubungi Anda segera.",
+  //       });
+  //       onClose();
+  //     }
+  //   } catch (err: unknown) {
+  //     console.error("Error creating reservation:", err);
 
-      let serverMessage =
-        "Terjadi kesalahan saat membuat reservasi. Silakan coba lagi.";
-      let fieldErrors = "";
+  //     let serverMessage =
+  //       "Terjadi kesalahan saat membuat reservasi. Silakan coba lagi.";
+  //     let fieldErrors = "";
 
-      if (typeof err === "object" && err !== null) {
-        const apiErr = err as {
-          data?: { message?: string; errors?: ErrorBag };
-        };
-        const genericErr = err as { message?: string };
+  //     if (typeof err === "object" && err !== null) {
+  //       const apiErr = err as {
+  //         data?: { message?: string; errors?: ErrorBag };
+  //       };
+  //       const genericErr = err as { message?: string };
 
-        if (apiErr.data?.message) {
-          serverMessage = apiErr.data.message;
-        } else if (genericErr.message) {
-          serverMessage = genericErr.message;
-        }
+  //       if (apiErr.data?.message) {
+  //         serverMessage = apiErr.data.message;
+  //       } else if (genericErr.message) {
+  //         serverMessage = genericErr.message;
+  //       }
 
-        const rawErrors: ErrorBag | undefined = apiErr.data?.errors;
-        if (rawErrors) {
-          fieldErrors = Object.entries(rawErrors)
-            .map(([field, msgs]) => {
-              const list = Array.isArray(msgs) ? msgs : [msgs];
-              return `${field}: ${list.join(", ")}`;
-            })
-            .join("\n");
-        }
-      }
+  //       const rawErrors: ErrorBag | undefined = apiErr.data?.errors;
+  //       if (rawErrors) {
+  //         fieldErrors = Object.entries(rawErrors)
+  //           .map(([field, msgs]) => {
+  //             const list = Array.isArray(msgs) ? msgs : [msgs];
+  //             return `${field}: ${list.join(", ")}`;
+  //           })
+  //           .join("\n");
+  //       }
+  //     }
 
-      await Swal.fire({
-        icon: "error",
-        title: "Gagal Membuat Reservasi",
-        html:
-          `<p style="text-align:left">${serverMessage}</p>` +
-          (fieldErrors
-            ? `<pre style="text-align:left;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px">${fieldErrors}</pre>`
-            : ""),
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  //     await Swal.fire({
+  //       icon: "error",
+  //       title: "Gagal Membuat Reservasi",
+  //       html:
+  //         `<p style="text-align:left">${serverMessage}</p>` +
+  //         (fieldErrors
+  //           ? `<pre style="text-align:left;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px">${fieldErrors}</pre>`
+  //           : ""),
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   if (!isOpen || !service) return null;
 
@@ -363,7 +363,8 @@ export default function ReservationModal({
 
           {/* Right: Form */}
           <div className="lg:col-span-2">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            {/* <form onSubmit={handleSubmit} className="space-y-6"> */}
+            <form className="space-y-6">
               {/* Personal Info */}
               <div className="p-4 bg-[#6B6B6B]/10 rounded-2xl">
                 <div className="flex items-center gap-2 mb-2">

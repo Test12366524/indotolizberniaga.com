@@ -707,7 +707,7 @@ export default function ProductsPage() {
                       </div>
                       <div className="flex items-center gap-3 text-sm text-[#6B6B6B]">
                         <span className="font-medium">Stok Tersedia:</span>
-                        <span>{detailProduct.duration}</span>
+                        <span>{detailProduct.stock}</span>
                       </div>
                     </div>
 

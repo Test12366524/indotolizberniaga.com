@@ -57,7 +57,7 @@ export default function ServicesPage() {
           name: product.name,
           description: product.description,
           price: product.price,
-          duration: product.duration ? `${product.duration} Menit` : "30 Menit",
+          duration: product.stock ? `${product.stock} Menit` : "30 Menit",
           category_name: product.category_name,
           merk_name: product.merk_name,
         };

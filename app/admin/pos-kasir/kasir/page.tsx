@@ -81,9 +81,9 @@ export default function KasirPage() {
     }
 
     if (selectedCategory && selectedCategory !== "all") {
-      filtered = filtered.filter(product =>
-        product.category?.name === selectedCategory
-      );
+      // filtered = filtered.filter(product =>
+        // product.category?.name === selectedCategory
+      // );
     }
 
     return filtered;
@@ -91,8 +91,8 @@ export default function KasirPage() {
 
   // Get unique categories
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(products.map(p => p.category?.name).filter(Boolean));
-    return Array.from(uniqueCategories);
+    // const uniqueCategories = new Set(products.map(p => p.category?.name).filter(Boolean));
+    // return Array.from(uniqueCategories);
   }, [products]);
 
   const addToCart = (product: { id: number; name: string; price: number; type: string }) => {
@@ -226,11 +226,11 @@ export default function KasirPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Semua Kategori</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
+                    {/* {categories.map((category) => ( */}
+                      {/* <SelectItem key={category} value={category}>
                         {category}
                       </SelectItem>
-                    ))}
+                    ))} */}
                   </SelectContent>
                 </Select>
               </div>
@@ -261,16 +261,16 @@ export default function KasirPage() {
                             Rp {product.price?.toLocaleString('id-ID') || '0'}
                           </span>
                           <Badge variant="outline" className="text-xs">
-                            {product.type || 'Produk'}
+                            {/* {product.type || 'Produk'} */}
                           </Badge>
                         </div>
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => addToCart(product)}
+                        // onClick={() => addToCart(product)}
                         className="ml-2"
                       >
-                        <Plus className="h-4 w-4 mr-1" />
+                        <Plus className="h-4 w-4 mr-1" /> 
                         Add Item
                       </Button>
                     </div>
