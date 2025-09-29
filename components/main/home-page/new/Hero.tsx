@@ -33,14 +33,14 @@ export default function Hero() {
           {/* CTA Buttons */}
           <div className="flex gap-4">
             <Link
-              href="/simpan-pinjam"
+              href="/service"
               className="px-6 py-3 bg-[#E53935] text-white font-medium rounded-xl shadow-md hover:bg-red-600 transition flex items-center gap-x-1.5"
             >
               <LandmarkIcon className="size-5" />
-              Simpan Pinjam
+              Layanan Koperasi
             </Link>
             <Link
-              href="/marketplace"
+              href="/product"
               className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-xl shadow-md hover:bg-gray-300 transition flex items-center gap-x-1.5"
             >
               <HandshakeIcon className="size-5" />
@@ -57,7 +57,7 @@ export default function Hero() {
           className="flex justify-center"
         >
           <Image
-            src="/images/new/hero/koperasi-merah-putih.webp"
+            src="/hero-koperasi.webp"
             alt="Koperasi Merah Putih Unit Usaha"
             width={500}
             height={500}
