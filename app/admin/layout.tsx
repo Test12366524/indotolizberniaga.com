@@ -162,24 +162,29 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "anggota-meninggal",
       label: "Anggota Meninggal",
       icon: <ClipboardList className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "anggota-meninggal/status-anggota",
-          label: "Status Anggota",
-          href: "/admin/anggota-meninggal/status-anggota",
-        },
-        {
-          id: "anggota-meninggal/status-pinjaman",
-          label: "Status Pinjaman",
-          href: "/admin/anggota-meninggal/status-pinjaman",
-        },
-        {
-          id: "anggota-meninggal/pembayaran-anggota",
-          label: "Pembayaran Anggota",
-          href: "/admin/anggota-meninggal/pembayaran-anggota",
-        },
-      ],
+      href: "/admin/anggota-meninggal",
+      // children: [
+      //   {
+      //     id: "anggota-meninggal/main",
+      //     label: "Data Anggota Meninggal",
+      //     href: "/admin/anggota-meninggal",
+      //   },
+      //   // {
+      //   //   id: "anggota-meninggal/status-anggota",
+      //   //   label: "Status Anggota",
+      //   //   href: "/admin/anggota-meninggal/status-anggota",
+      //   // },
+      //   // {
+      //   //   id: "anggota-meninggal/status-pinjaman",
+      //   //   label: "Status Pinjaman",
+      //   //   href: "/admin/anggota-meninggal/status-pinjaman",
+      //   // },
+      //   // {
+      //   //   id: "anggota-meninggal/pembayaran-anggota",
+      //   //   label: "Pembayaran Anggota",
+      //   //   href: "/admin/anggota-meninggal/pembayaran-anggota",
+      //   // },
+      // ],
     },
     {
       id: "akuntansi",
