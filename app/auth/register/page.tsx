@@ -1,6 +1,6 @@
 "use client";
 import AuthForm from "../auth-form";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return <AuthForm mode="register" />;
 }
