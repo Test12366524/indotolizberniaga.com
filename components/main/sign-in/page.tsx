@@ -25,6 +25,7 @@ import {
 import { signIn } from "next-auth/react";
 import { useRegisterMutation } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
+import PolicyModal from "@/components/modals/PolicyModal";
 
 interface LoginFormData {
   email: string;
@@ -60,6 +61,64 @@ interface OtpFormData {
   confirmPassword: string;
 }
 
+const TERMS_CONTENT = {
+  title: "Syarat & Ketentuan",
+  content: (
+    <>
+      <h3>1. Penerimaan Persyaratan</h3>
+      <p>
+        Dengan mendaftar dan menggunakan layanan Koperasi Merah Putih ("Layanan"), Anda setuju untuk terikat oleh Syarat dan Ketentuan ini ("Syarat"). Jika Anda tidak setuju dengan Syarat ini, Anda tidak boleh menggunakan Layanan.
+      </p>
+
+      <h3>2. Layanan Koperasi</h3>
+      <p>
+        Layanan kami meliputi fasilitas simpan pinjam bagi anggota, platform marketplace untuk UMKM, serta program pemberdayaan anggota lainnya. Semua layanan tunduk pada peraturan internal Koperasi dan hukum yang berlaku di Indonesia.
+      </p>
+
+      <h3>3. Kewajiban Anggota</h3>
+      <ul>
+        <li>Memberikan informasi yang akurat dan terkini saat pendaftaran.</li>
+        <li>Menjaga kerahasiaan password dan keamanan akun.</li>
+        <li>Bertanggung jawab atas semua aktivitas yang terjadi di bawah akun Anda.</li>
+        <li>Mematuhi semua anggaran dasar dan anggaran rumah tangga (AD/ART) Koperasi.</li>
+      </ul>
+
+      <h3>4. Larangan</h3>
+      <p>
+        Anda dilarang menggunakan Layanan untuk tujuan ilegal, penipuan, atau aktivitas yang dapat merugikan Koperasi dan anggotanya.
+      </p>
+    </>
+  ),
+};
+
+const PRIVACY_POLICY_CONTENT = {
+  title: "Kebijakan Privasi",
+  content: (
+    <>
+      <h3>1. Informasi yang Kami Kumpulkan</h3>
+      <p>
+        Kami mengumpulkan informasi yang Anda berikan secara langsung saat pendaftaran, seperti nama lengkap, alamat email, nomor telepon, dan data lain yang diperlukan untuk keanggotaan. Kami juga dapat mengumpulkan data transaksi saat Anda menggunakan layanan simpan pinjam atau marketplace.
+      </p>
+
+      <h3>2. Bagaimana Kami Menggunakan Informasi Anda</h3>
+      <p>
+        Informasi Anda digunakan untuk:
+      </p>
+      <ul>
+        <li>Memverifikasi identitas Anda dan mengelola keanggotaan Anda.</li>
+        <li>Memproses transaksi simpan pinjam dan jual beli di marketplace.</li>
+        <li>Mengirimkan informasi penting terkait layanan Koperasi.</li>
+        <li>Meningkatkan kualitas layanan kami.</li>
+      </ul>
+
+      <h3>3. Keamanan Data</h3>
+      <p>
+        Kami menerapkan langkah-langkah keamanan yang wajar untuk melindungi informasi pribadi Anda dari akses, penggunaan, atau pengungkapan yang tidak sah. Data Anda dienkripsi dan disimpan di server yang aman.
+      </p>
+    </>
+  ),
+};
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -70,6 +129,11 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState<boolean>(false);
   const [showOtpForm, setShowOtpForm] = useState<boolean>(false); // New state
 
+  const [modalContent, setModalContent] = useState<{
+    title: string;
+    content: React.ReactNode;
+  } | null>(null);
+  
   const [loginData, setLoginData] = useState<LoginFormData>({
     email: "",
     password: "",
@@ -576,7 +640,12 @@ export default function LoginPage() {
 
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center">
-                <span className="text-[#e84741] font-bold text-xl">KMP</span>
+                <Image
+                  src="/logo-koperasi-merah-putih-online.webp"
+                  alt="Koperasi Merah Putih"
+                  width={50}
+                  height={50}
+                />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
@@ -918,18 +987,24 @@ export default function LoginPage() {
                     className="w-4 h-4 text-[#e84741] border-gray-300 rounded focus:ring-[#e84741] mt-1"
                   />
                   <label htmlFor="terms" className="ml-3 text-sm text-gray-600">
-                    Saya setuju dengan{" "}
-                    <a href="/terms" className="text-[#e84741] hover:underline">
-                      Syarat & Ketentuan
-                    </a>{" "}
-                    dan{" "}
-                    <a
-                      href="/privacy"
-                      className="text-[#e84741] hover:underline"
-                    >
-                      Kebijakan Privasi
-                    </a>
-                  </label>
+                      Saya setuju dengan{" "}
+                      {/* ++ Step 4: Change links to buttons that open the modal */}
+                      <button
+                        type="button"
+                        onClick={() => setModalContent(TERMS_CONTENT)}
+                        className="text-[#e84741] hover:underline font-medium"
+                      >
+                        Syarat & Ketentuan
+                      </button>{" "}
+                      dan{" "}
+                      <button
+                        type="button"
+                        onClick={() => setModalContent(PRIVACY_POLICY_CONTENT)}
+                        className="text-[#e84741] hover:underline font-medium"
+                      >
+                        Kebijakan Privasi
+                      </button>
+                    </label>
                 </div>
 
                 <button
@@ -983,6 +1058,13 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+      <PolicyModal
+        isOpen={modalContent !== null}
+        onClose={() => setModalContent(null)}
+        title={modalContent?.title || ""}
+      >
+        {modalContent?.content}
+      </PolicyModal>
     </div>
   );
 }

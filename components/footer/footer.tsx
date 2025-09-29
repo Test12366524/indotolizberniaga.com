@@ -26,8 +26,7 @@ export default function Footer() {
 
   const faqs = [
     {
-      question:
-        "Bagaimana cara menjadi anggota Koperasi Merah Putih?",
+      question: "Bagaimana cara menjadi anggota Koperasi Merah Putih?",
       answer:
         "Anda dapat mendaftar melalui aplikasi internal kami atau menghubungi tim kami. Prosesnya cepat dan mudah!",
     },
@@ -55,16 +54,26 @@ export default function Footer() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
               {/* Company Info */}
               <div className="lg:col-span-2">
-                <div className="flex items-center gap-3 mb-3">
+                {/* --- PERUBAHAN DIMULAI DI SINI --- */}
+                {/* Struktur diubah agar logo dan teks sejajar */}
+                <div className="flex items-center gap-4 mb-4">
+                  <Image
+                    src="/logo-koperasi-merah-putih-online.webp"
+                    alt="Koperasi Merah Putih Logo"
+                    width={75}
+                    height={75}
+                    className="flex-shrink-0 object-contain"
+                  />
                   <div>
-                    <Image
-                      src="/images/new/logo/yameiya-skincare.png"
-                      alt="Koperasi Merah Putih Logo"
-                      width={75}
-                      height={40}
-                    />
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Koperasi Merah Putih
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Koperasi Simpan Pinjam & Marketplace untuk UMKM
+                    </p>
                   </div>
                 </div>
+                {/* --- PERUBAHAN SELESAI DI SINI --- */}
 
                 <p className="text-sm text-gray-600 leading-relaxed mb-3">
                   Mewujudkan kemandirian dan kesejahteraan anggota melalui unit

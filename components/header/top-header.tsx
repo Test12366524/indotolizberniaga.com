@@ -52,7 +52,7 @@ export default function Header() {
       about: "Tentang Kami",
       news: "Artikel",
       testimonials: "Testimoni",
-      tagline: "Kecantikan Alami, Seutuhnya",
+      tagline: "Koperasi Merah Putih",
       switchLanguage: "Ganti ke English",
     },
     en: {
@@ -63,7 +63,7 @@ export default function Header() {
       about: "About Us",
       news: "Articles",
       testimonials: "Testimonials",
-      tagline: "Beauty Redefined, Naturally",
+      tagline: "Koperasi Merah Putih",
       switchLanguage: "Switch to Bahasa",
     },
   };
@@ -187,17 +187,23 @@ export default function Header() {
             {/* Logo */}
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
-                <div className="w-full h-12 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Image
-                    src="/images/new/logo/yameiya-skincare.png"
-                    alt="Koperasi Merah Putih"
-                    width={120}
-                    height={48}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 font-medium leading-tight">
-                  {t.tagline}
-                </p>
+                <div className="flex items-center gap-1">
+                    <Image
+                      src="/logo-koperasi-merah-putih-online.webp"
+                      alt="Koperasi Merah Putih Logo"
+                      width={50}
+                      height={50}
+                      className="flex-shrink-0 object-contain"
+                    />
+                    <div>
+                      <h2 className="text-lg font-semibold text-gray-800">
+                        Koperasi Merah Putih
+                      </h2>
+                      <p className="text-xs text-gray-600 mt-[-5px]">
+                        Simpan Pinjam & Marketplace
+                      </p>
+                    </div>
+                  </div>
               </div>
             </Link>
 
