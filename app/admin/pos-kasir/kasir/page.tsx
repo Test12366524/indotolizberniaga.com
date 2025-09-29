@@ -27,7 +27,7 @@ interface CartItem {
   product_id: number;
   name: string;
   price: number;
-  type: string;
+  category_name: string;
   quantity: number;
 }
 
@@ -50,7 +50,6 @@ export default function KasirPage() {
   const { data: productsData, isLoading: isLoadingProducts } = useGetProductListQuery({
     page: 1,
     paginate: 100,
-    product_merk_id: null,
   });
 
   const { data: anggotaData } = useGetPosAnggotaQuery({
@@ -81,9 +80,9 @@ export default function KasirPage() {
     }
 
     if (selectedCategory && selectedCategory !== "all") {
-      // filtered = filtered.filter(product =>
-        // product.category?.name === selectedCategory
-      // );
+      filtered = filtered.filter(product =>
+        product.category_name === selectedCategory
+      );
     }
 
     return filtered;
@@ -91,11 +90,11 @@ export default function KasirPage() {
 
   // Get unique categories
   const categories = useMemo(() => {
-    // const uniqueCategories = new Set(products.map(p => p.category?.name).filter(Boolean));
-    // return Array.from(uniqueCategories);
+    const uniqueCategories = new Set(products.map(p => p.category_name).filter(Boolean));
+    return Array.from(uniqueCategories);
   }, [products]);
 
-  const addToCart = (product: { id: number; name: string; price: number; type: string }) => {
+  const addToCart = (product: { id: number; name: string; price: number; category_name: string }) => {
     const existingItem = cartItems.find(item => item.product_id === product.id);
     
     if (existingItem) {
@@ -111,7 +110,7 @@ export default function KasirPage() {
         product_id: product.id,
         name: product.name,
         price: product.price,
-        type: product.type,
+        category_name: product.category_name,
         quantity: 1,
       }]);
     }
@@ -224,14 +223,14 @@ export default function KasirPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Semua Kategori" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Semua Kategori</SelectItem>
-                    {/* {categories.map((category) => ( */}
-                      {/* <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))} */}
-                  </SelectContent>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Kategori</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                 </Select>
               </div>
             </div>
@@ -260,14 +259,14 @@ export default function KasirPage() {
                           <span className="font-medium text-green-600">
                             Rp {product.price?.toLocaleString('id-ID') || '0'}
                           </span>
-                          <Badge variant="outline" className="text-xs">
-                            {/* {product.type || 'Produk'} */}
-                          </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {product.category_name || 'Produk'}
+                            </Badge>
                         </div>
                       </div>
                       <Button
                         size="sm"
-                        // onClick={() => addToCart(product)}
+                        onClick={() => addToCart(product)}
                         className="ml-2"
                       >
                         <Plus className="h-4 w-4 mr-1" /> 

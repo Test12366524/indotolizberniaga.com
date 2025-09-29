@@ -399,7 +399,6 @@ export default function CartPage() {
   } = useGetProductListQuery({
     page: 1,
     paginate: 6,
-    product_merk_id: null,
   });
 
   const relatedProducts: RelatedProductView[] = useMemo(() => {

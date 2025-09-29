@@ -25,7 +25,6 @@ import {
   useUpdatePosTransactionStatusMutation,
   useUpdatePosTransactionMutation,
   useGetPosTransactionByIdQuery,
-  useCreatePosTransactionMutation,
   useGetPosAnggotaQuery,
 } from "@/services/pos-kasir.service";
 import { useGetProductListQuery } from "@/services/product.service";
@@ -67,13 +66,12 @@ export default function PosKasirPage() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
 
-  // Form state for create transaction
+  // Form state for update transaction
   const [formData, setFormData] = useState({
     user_id: "",
     guest_name: "",
@@ -86,6 +84,7 @@ export default function PosKasirPage() {
     products: [{ product_id: 1, quantity: 1 }],
     voucher: [] as number[],
   });
+
 
   // Helper function to format currency in Rupiah
   const formatRupiah = (amount: number | string) => {
@@ -134,8 +133,8 @@ export default function PosKasirPage() {
   const { data: productData } = useGetProductListQuery({
     page: 1,
     paginate: 1000,
-    product_merk_id: null,
   });
+
 
   const {
     data: transactionDetail,
@@ -175,7 +174,6 @@ export default function PosKasirPage() {
   const [deleteTransaction] = useDeletePosTransactionMutation();
   const [updateTransactionStatus] = useUpdatePosTransactionStatusMutation();
   const [updateTransaction] = useUpdatePosTransactionMutation();
-  const [createTransaction] = useCreatePosTransactionMutation();
 
   const handleDelete = async (item: PosTransaction) => {
     const confirm = await Swal.fire({
@@ -248,46 +246,6 @@ export default function PosKasirPage() {
     }
   };
 
-  const handleCreateTransaction = async () => {
-    try {
-      const createData = {
-        user_id: formData.user_id || undefined,
-        guest_name: formData.guest_name || undefined,
-        guest_email: formData.guest_email || undefined,
-        guest_phone: formData.guest_phone || undefined,
-        payment_type: formData.payment_type,
-        wallet_id: formData.wallet_id ? parseInt(formData.wallet_id) : undefined,
-        status: formData.status,
-        data: [
-          {
-            shop_id: formData.shop_id,
-            details: formData.products,
-          },
-        ],
-        voucher: formData.voucher.length > 0 ? formData.voucher : undefined,
-      };
-
-      await createTransaction(createData).unwrap();
-      await refetch();
-      setIsCreateModalOpen(false);
-      setFormData({
-        user_id: "",
-        guest_name: "",
-        guest_email: "",
-        guest_phone: "",
-        payment_type: "manual",
-        wallet_id: "",
-        status: 0,
-        shop_id: 1,
-        products: [{ product_id: 1, quantity: 1 }],
-        voucher: [],
-      });
-      Swal.fire("Berhasil", "Transaksi POS berhasil dibuat", "success");
-    } catch (error) {
-      Swal.fire("Gagal", "Gagal membuat transaksi POS", "error");
-      console.error(error);
-    }
-  };
 
   const handleUpdateTransaction = async () => {
     if (!selectedTransaction) return;
@@ -359,11 +317,7 @@ export default function PosKasirPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">POS Kasir</h1>
-        <Button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Buat Transaksi Baru
-        </Button>
+        <h1 className="text-2xl font-bold">POS Kasir History</h1>
       </div>
 
       <ProdukToolbar onSearchChange={setQuery} onCategoryChange={setCategory} />
@@ -516,206 +470,6 @@ export default function PosKasirPage() {
         </div>
       </Card>
 
-      {/* Create Transaction Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Buat Transaksi POS Baru</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="payment_type">Tipe Pembayaran</Label>
-                <Select
-                  value={formData.payment_type}
-                  onValueChange={(value: "automatic" | "manual" | "saldo") =>
-                    setFormData(prev => ({ ...prev, payment_type: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="automatic">Automatic</SelectItem>
-                    <SelectItem value="saldo">Saldo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status.toString()}
-                  onValueChange={(value) =>
-                    setFormData(prev => ({ ...prev, status: parseInt(value) }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">PENDING</SelectItem>
-                    <SelectItem value="1">CAPTURED</SelectItem>
-                    <SelectItem value="2">SETTLEMENT</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {formData.payment_type === "saldo" && (
-              <div>
-                <Label htmlFor="user_id">Anggota</Label>
-                <Select
-                  value={formData.user_id}
-                  onValueChange={(value) => {
-                    const selectedAnggota = anggotaData?.data?.data?.find((anggota) => anggota.user_id.toString() === value);
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      user_id: value,
-                      wallet_id: selectedAnggota?.id?.toString() || ""
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih anggota" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {anggotaData?.data?.data?.map((anggota) => (
-                      <SelectItem key={anggota.id} value={anggota.user_id.toString()}>
-                        {anggota.name} - {anggota.reference} (Saldo: {formatRupiah(anggota.balance)})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="guest_name">Nama Guest</Label>
-                <Input
-                  id="guest_name"
-                  value={formData.guest_name}
-                  onChange={(e) =>
-                    setFormData(prev => ({ ...prev, guest_name: e.target.value }))
-                  }
-                  placeholder="Nama guest (opsional)"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="guest_email">Email Guest</Label>
-                <Input
-                  id="guest_email"
-                  type="email"
-                  value={formData.guest_email}
-                  onChange={(e) =>
-                    setFormData(prev => ({ ...prev, guest_email: e.target.value }))
-                  }
-                  placeholder="Email guest (opsional)"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="guest_phone">Telepon Guest</Label>
-              <Input
-                id="guest_phone"
-                value={formData.guest_phone}
-                onChange={(e) =>
-                  setFormData(prev => ({ ...prev, guest_phone: e.target.value }))
-                }
-                placeholder="Telepon guest (opsional)"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label>Produk</Label>
-                <Button type="button" onClick={addProduct} size="sm">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Tambah Produk
-                </Button>
-              </div>
-              {formData.products.map((product, index) => (
-                <div key={index} className="flex gap-2 mb-2">
-                  <div className="flex-1">
-                    <Select
-                      value={product.product_id.toString()}
-                      onValueChange={(value) =>
-                        updateProduct(index, "product_id", parseInt(value))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih Produk" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {productData?.data?.map((prod) => (
-                          <SelectItem key={prod.id} value={prod.id.toString()}>
-                            {prod.name} - {formatRupiah(prod.price)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="w-24">
-                    <Input
-                      type="number"
-                      placeholder="Qty"
-                      value={product.quantity}
-                      onChange={(e) =>
-                        updateProduct(index, "quantity", parseInt(e.target.value) || 1)
-                      }
-                      min="1"
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => removeProduct(index)}
-                    disabled={formData.products.length === 1}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <Label htmlFor="voucher">Voucher (Opsional)</Label>
-              <Input
-                id="voucher"
-                placeholder="Masukkan ID voucher (pisahkan dengan koma untuk multiple voucher)"
-                value={formData.voucher.join(", ")}
-                onChange={(e) => {
-                  const voucherIds = e.target.value
-                    .split(",")
-                    .map(id => parseInt(id.trim()))
-                    .filter(id => !isNaN(id));
-                  setFormData(prev => ({ ...prev, voucher: voucherIds }));
-                }}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Contoh: 1, 2, 3 (untuk multiple voucher)
-              </p>
-            </div>
-
-            <div className="flex gap-2 justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setIsCreateModalOpen(false)}
-              >
-                Batal
-              </Button>
-              <Button onClick={handleCreateTransaction}>
-                Buat Transaksi
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Update Transaction Modal */}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>

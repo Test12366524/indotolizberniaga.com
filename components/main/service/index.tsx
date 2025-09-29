@@ -28,7 +28,6 @@ export default function ServicesPage() {
   const { data: shopProductsData, isLoading, error } = useGetProductListQuery({
     page: currentPage,
     paginate: 9, // Tampilkan 9 layanan per halaman
-    product_merk_id: 2
   });
 
   // Transform API data to Service format

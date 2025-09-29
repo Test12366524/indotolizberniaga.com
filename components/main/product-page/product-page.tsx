@@ -53,7 +53,6 @@ export default function ProductsPage() {
   } = useGetProductListQuery({
     page: currentPage,
     paginate: ITEMS_PER_PAGE,
-    product_merk_id: 1,
   });
 
   const totalPages = useMemo(() => listResp?.last_page ?? 1, [listResp]);

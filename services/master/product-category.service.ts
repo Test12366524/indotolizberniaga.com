@@ -12,14 +12,16 @@ export const productCategoryApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number; is_parent?: number; parent_id?: number }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, is_parent, parent_id }) => ({
         url: `/master/product-categories`,
         method: "GET",
         params: {
           page,
           paginate,
+          ...(is_parent !== undefined && { is_parent }),
+          ...(parent_id !== undefined && { parent_id }),
         },
       }),
       transformResponse: (response: {
