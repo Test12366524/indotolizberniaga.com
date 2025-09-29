@@ -4,6 +4,12 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Store, CreditCard, ShoppingCart } from "lucide-react";
 import {
+  useGetDashboardHeadQuery,
+  useGetTransactionChartQuery,
+  useGetTopSellersQuery,
+  useGetTopProductsQuery,
+} from "@/services/dashboard-marketplace.service";
+import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
@@ -55,58 +61,47 @@ const last12MonthLabels = (): string[] => {
   return labels;
 };
 
-/* ===================== Mock Data (ganti dengan API) ===================== */
-const mockMonthly = (base: number, jitter: number): number[] =>
-  Array.from({ length: 12 }).map((_, i) => {
-    const seasonal = Math.sin((i / 12) * Math.PI * 2) * 0.15;
-    const v = base * (1 + seasonal) + Math.random() * jitter;
-    return Math.max(0, Math.round(v));
-  });
-
 export default function MarketplaceDashboardPage() {
+  // Get current year for API call
+  const currentYear = new Date().getFullYear();
+
+  // API calls
+  const { data: dashboardHead, isLoading: isLoadingHead } = useGetDashboardHeadQuery();
+  const { data: transactionChart, isLoading: isLoadingChart } = useGetTransactionChartQuery({ year: currentYear });
+  const { data: topSellers, isLoading: isLoadingSellers } = useGetTopSellersQuery();
+  const { data: topProducts, isLoading: isLoadingProducts } = useGetTopProductsQuery();
+
   // Labels 12 bulan
   const labels = useMemo(last12MonthLabels, []);
 
-  // Transaksi per bulan (GMV) & Order per bulan
-  const monthlyGMV = useMemo(() => mockMonthly(150_000_000, 40_000_000), []);
-  const monthlyOrders = useMemo(() => mockMonthly(1200, 300), []);
+  // Process transaction chart data
+  const monthlyGMV = useMemo(() => {
+    if (!transactionChart) return Array(12).fill(0);
+    return transactionChart.map(item => item.total_transaction);
+  }, [transactionChart]);
 
-  // Top 5 sellers & produk (berdasar GMV)
-  const top5Seller = useMemo(
-    () =>
-      [
-        { name: "Toko Nusantara", amount: 420_000_000 },
-        { name: "Mega Elektronik", amount: 360_000_000 },
-        { name: "FashionX", amount: 305_000_000 },
-        { name: "Dapur Kita", amount: 260_000_000 },
-        { name: "GadgetHub", amount: 230_000_000 },
-      ] as const,
-    []
-  );
+  const monthlyOrders = useMemo(() => {
+    if (!transactionChart) return Array(12).fill(0);
+    return transactionChart.map(item => item.total_order);
+  }, [transactionChart]);
 
-  const top5Product = useMemo(
-    () =>
-      [
-        { name: "Smartphone A", amount: 190_000_000 },
-        { name: "Air Fryer Pro", amount: 165_000_000 },
-        { name: "Sneakers Z", amount: 150_000_000 },
-        { name: "Headset X", amount: 120_000_000 },
-        { name: "Kemeja Linen", amount: 100_000_000 },
-      ] as const,
-    []
-  );
+  // Process top sellers data (limit to 5)
+  const top5Seller = useMemo(() => {
+    if (!topSellers) return [];
+    return topSellers.slice(0, 5);
+  }, [topSellers]);
 
-  // Ringkasan
-  const totalCustomer = 12_350;
-  const totalSeller = 845;
-  const totalTransaksi = useMemo(
-    () => monthlyGMV.reduce((a, b) => a + b, 0),
-    [monthlyGMV]
-  );
-  const totalOrder = useMemo(
-    () => monthlyOrders.reduce((a, b) => a + b, 0),
-    [monthlyOrders]
-  );
+  // Process top products data (limit to 5)
+  const top5Product = useMemo(() => {
+    if (!topProducts) return [];
+    return topProducts.slice(0, 5);
+  }, [topProducts]);
+
+  // Ringkasan from API
+  const totalCustomer = dashboardHead?.total_customer || 0;
+  const totalSeller = dashboardHead?.total_seller || 0;
+  const totalTransaksi = dashboardHead?.total_transaction || 0;
+  const totalOrder = dashboardHead?.total_order || 0;
 
   const cards = [
     {
@@ -281,7 +276,74 @@ export default function MarketplaceDashboardPage() {
     },
   };
 
+  // Loading state
+  const isLoading = isLoadingHead || isLoadingChart || isLoadingSellers || isLoadingProducts;
+
   /* ===================== Render ===================== */
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Informasi dan Grafik
+          </h1>
+          <p className="text-sm text-gray-500">
+            Ringkasan customer, seller, transaksi, dan order
+          </p>
+        </div>
+        
+        {/* Loading Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-full bg-gray-200">
+                    <div className="h-4 w-4 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-6 w-16 bg-gray-200 rounded mx-auto"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Loading Charts */}
+        <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+          <Card className="h-80 2xl:col-span-3">
+            <CardHeader>
+              <div className="h-6 w-48 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <div className="h-full bg-gray-100 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-80">
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <div className="h-full bg-gray-100 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-80">
+            <CardHeader>
+              <div className="h-6 w-32 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <div className="h-full bg-gray-100 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -342,7 +404,13 @@ export default function MarketplaceDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
-            <Bar data={topSellerData} options={topSellerOptions} />
+            {top5Seller.length > 0 ? (
+              <Bar data={topSellerData} options={topSellerOptions} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <p>Tidak ada data seller</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -353,7 +421,13 @@ export default function MarketplaceDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
-            <Bar data={topProdukData} options={topProdukOptions} />
+            {top5Product.length > 0 ? (
+              <Bar data={topProdukData} options={topProdukOptions} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <p>Tidak ada data produk</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

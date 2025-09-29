@@ -3,6 +3,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Banknote, CreditCard, CalendarDays } from "lucide-react";
 import { useMemo } from "react";
+import {
+  useGetDashboardKoperasiHeadQuery,
+  useGetSimpananChartQuery,
+  useGetPinjamanChartQuery,
+} from "@/services/dashboard-koperasi.service";
 
 // Chart.js + types
 import {
@@ -55,37 +60,35 @@ const last12MonthLabels = (): string[] => {
   return labels;
 };
 
-// ===== MOCK: ganti dengan data API =====
-function mockMonthly(amountBase: number, jitter: number): number[] {
-  const out: number[] = [];
-  for (let i = 0; i < 12; i++) {
-    const seasonal = Math.sin((i / 12) * Math.PI * 2) * 0.15;
-    const val = amountBase * (1 + seasonal) + Math.random() * jitter;
-    out.push(Math.max(0, Math.round(val)));
-  }
-  return out;
-}
-
 export default function DashboardPage() {
-  // Data bulanan (dummy)
-  const labels = useMemo(last12MonthLabels, []);
-  const monthlySimpanan = useMemo(() => mockMonthly(25_000_000, 5_000_000), []);
-  const monthlyPinjaman = useMemo(
-    () => mockMonthly(60_000_000, 10_000_000),
-    []
-  );
+  // Get current year for API call
+  const currentYear = new Date().getFullYear();
 
-  // Ringkasan
-  const totalSimpanan = useMemo(
-    () => monthlySimpanan.reduce((a, b) => a + b, 0),
-    [monthlySimpanan]
-  );
-  const totalPinjaman = useMemo(
-    () => monthlyPinjaman.reduce((a, b) => a + b, 0),
-    [monthlyPinjaman]
-  );
-  const totalAnggota = 850;
-  const totalTagihanBulanIni = 125_000_000;
+  // API calls
+  const { data: dashboardHead, isLoading: isLoadingHead } = useGetDashboardKoperasiHeadQuery();
+  const { data: simpananChart, isLoading: isLoadingSimpanan } = useGetSimpananChartQuery({ year: currentYear });
+  const { data: pinjamanChart, isLoading: isLoadingPinjaman } = useGetPinjamanChartQuery({ year: currentYear });
+
+  // Labels 12 bulan
+  const labels = useMemo(last12MonthLabels, []);
+
+  // Process simpanan chart data
+  const monthlySimpanan = useMemo(() => {
+    if (!simpananChart) return Array(12).fill(0);
+    return simpananChart.map(item => Number(item.total));
+  }, [simpananChart]);
+
+  // Process pinjaman chart data
+  const monthlyPinjaman = useMemo(() => {
+    if (!pinjamanChart) return Array(12).fill(0);
+    return pinjamanChart.map(item => Number(item.total));
+  }, [pinjamanChart]);
+
+  // Ringkasan from API
+  const totalAnggota = dashboardHead?.total_anggota || 0;
+  const totalSimpanan = Number(dashboardHead?.total_simpanan || 0);
+  const totalPinjaman = Number(dashboardHead?.total_pinjaman || 0);
+  const totalTagihanBulanIni = dashboardHead?.total_tagihan_pinjaman_this_month || 0;
 
   const cards = [
     {
@@ -176,6 +179,62 @@ export default function DashboardPage() {
     ],
   };
 
+  // Loading state
+  const isLoading = isLoadingHead || isLoadingSimpanan || isLoadingPinjaman;
+
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Koperasi</h1>
+          <p className="text-sm text-gray-500">
+            Ringkasan anggota, simpanan, pinjaman, & tagihan
+          </p>
+        </div>
+        
+        {/* Loading Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-2">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 rounded-full bg-gray-200">
+                    <div className="h-4 w-4 bg-gray-300 rounded"></div>
+                  </div>
+                  <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-6 w-16 bg-gray-200 rounded mx-auto"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Loading Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="h-80">
+            <CardHeader>
+              <div className="h-6 w-48 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <div className="h-full bg-gray-100 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+
+          <Card className="h-80">
+            <CardHeader>
+              <div className="h-6 w-48 bg-gray-200 rounded"></div>
+            </CardHeader>
+            <CardContent className="h-[260px]">
+              <div className="h-full bg-gray-100 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -223,7 +282,13 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
-            <Line data={simpananData} options={commonOptions} />
+            {simpananChart && simpananChart.length > 0 ? (
+              <Line data={simpananData} options={commonOptions} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <p>Tidak ada data simpanan</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -234,7 +299,13 @@ export default function DashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-[260px]">
-            <Line data={pinjamanData} options={commonOptions} />
+            {pinjamanChart && pinjamanChart.length > 0 ? (
+              <Line data={pinjamanData} options={commonOptions} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500">
+                <p>Tidak ada data pinjaman</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
