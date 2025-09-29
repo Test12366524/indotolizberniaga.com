@@ -347,16 +347,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
           >
             {/* Logo Area */}
             <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center mr-4">
-                <span className="text-white font-bold text-2xl">K</span>
-              </div>
-              <div>
-                <h2 className="text-3xl font-bold text-red-800 tracking-tight">
-                  Koperasi
-                </h2>
-                <h3 className="text-xl font-semibold text-red-600">
-                  Merah Putih
-                </h3>
+              <div className="flex items-center gap-1">
+                <Image
+                  src="/logo-koperasi-merah-putih-online.webp"
+                  alt="Koperasi Merah Putih Logo"
+                  width={50}
+                  height={50}
+                  className="flex-shrink-0 object-contain"
+                />
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    Koperasi Merah Putih
+                  </h2>
+                  <p className="text-xs text-gray-600 mt-[-5px]">
+                    Simpan Pinjam & Marketplace
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -416,16 +422,20 @@ export default function AuthForm({ mode }: AuthFormProps) {
         >
           {/* Header dengan Logo Koperasi */}
           <motion.div variants={variants} className="text-center">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-xl">K</span>
-              </div>
-              <div className="text-left">
-                <h1 className="text-2xl font-bold text-red-800">
-                  {isLogin ? "Masuk ke Sistem" : "Daftar Anggota"}
-                </h1>
-                <p className="text-sm text-red-600 font-medium">
+            <div className="flex items-center justify-center mb-4 gap-1">
+              <Image
+                src="/logo-koperasi-merah-putih-online.webp"
+                alt="Koperasi Merah Putih Logo"
+                width={50}
+                height={50}
+                className="flex-shrink-0 object-contain"
+              />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">
                   Koperasi Merah Putih
+                </h2>
+                <p className="text-xs text-gray-600 mt-[-5px]">
+                  Simpan Pinjam & Marketplace
                 </p>
               </div>
             </div>
