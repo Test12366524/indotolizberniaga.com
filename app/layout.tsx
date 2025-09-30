@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Koperasi Merah Putih",
-  description: "Raih Kulit Sehat & Bersinar dengan Koperasi Merah Putih",
+  description: "Mewujudkan kemandirian dan kesejahteraan anggota melalui unit usaha simpan pinjam dan marketplace yang terintegrasi.",
   icons: {
-    icon: "/images/new/logo/yameiya-skincare.png",
+    icon: "/logo-koperasi-merah-putih-online.webp",
   },
 };
 
