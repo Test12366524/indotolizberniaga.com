@@ -71,7 +71,7 @@ const Hero = () => {
             <div className="relative">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden shadow-2xl">
                 <Image
-                  src="/images/new/hero/koperasi-merah-putih-hero-about.webp"
+                  src="/hero-tentang-kami.webp"
                   alt="Koperasi Merah Putih Anggota"
                   fill
                   className="object-cover"

@@ -152,9 +152,9 @@ export default function ProductPage() {
         payload.append("product_category_id", String(form.product_category_id));
       if (form.product_merk_id)
         payload.append("product_merk_id", String(form.product_merk_id));
-      if (typeof form.status === "boolean") {
-        payload.append("status", form.status ? "1" : "0");
-      }
+      payload.append("status", form.status ? "1" : "0");
+
+      console.log(payload);
 
       // === IMAGE HANDLING ===
       const imageFields = [
