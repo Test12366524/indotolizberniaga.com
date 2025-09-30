@@ -142,14 +142,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "#",
       children: [
         {
-          id: "data-keuangan/saldo-simpanan",
-          label: "Saldo Simpanan",
-          href: "/admin/data-keuangan/saldo-simpanan",
-        },
-        {
           id: "data-keuangan/pemotongan-gaji",
           label: "Data Pemotongan Gaji",
-          href: "/admin/data-keuangan/pemotongan-gaji",
+          href: "/admin/keuangan/gaji",
         },
         {
           id: "data-keuangan/angsuran-pinjaman",
