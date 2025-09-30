@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import { Eye, Edit, Trash2, Plus, Minus } from "lucide-react";
 import Swal from "sweetalert2";
 import {
   useGetKodeTransaksiListQuery,
+  useGetKodeTransaksiByIdQuery,
   useCreateKodeTransaksiMutation,
   useUpdateKodeTransaksiMutation,
   useDeleteKodeTransaksiMutation,
@@ -32,6 +33,7 @@ export default function KodeTransaksiPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<KodeTransaksi | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
   const [formData, setFormData] = useState<CreateKodeTransaksiRequest>({
     code: "",
     module: "",
@@ -51,9 +53,36 @@ export default function KodeTransaksiPage() {
     paginate: 100, // Get more COAs for dropdown
   });
 
+  const { data: selectedItemData, isLoading: isLoadingSelectedItem } = useGetKodeTransaksiByIdQuery(
+    selectedItemId!,
+    {
+      skip: !selectedItemId,
+    }
+  );
+
   const [createKodeTransaksi] = useCreateKodeTransaksiMutation();
   const [updateKodeTransaksi] = useUpdateKodeTransaksiMutation();
   const [deleteKodeTransaksi] = useDeleteKodeTransaksiMutation();
+
+  // Populate form data when detailed item data is loaded
+  useEffect(() => {
+    if (selectedItemData && isEditModalOpen) {
+      setFormData({
+        code: selectedItemData.code,
+        module: selectedItemData.module,
+        description: selectedItemData.description,
+        status: selectedItemData.status,
+        debits: selectedItemData.debits?.map(debit => ({
+          coa_id: debit.coa_id,
+          order: debit.order
+        })) || [{ coa_id: 0, order: 1 }],
+        credits: selectedItemData.credits?.map(credit => ({
+          coa_id: credit.coa_id,
+          order: credit.order
+        })) || [{ coa_id: 0, order: 1 }],
+      });
+    }
+  }, [selectedItemData, isEditModalOpen]);
 
   const filteredData = useMemo(() => {
     if (!kodeTransaksiData?.data) return [];
@@ -97,14 +126,7 @@ export default function KodeTransaksiPage() {
 
   const handleEdit = (item: KodeTransaksi) => {
     setSelectedItem(item);
-    setFormData({
-      code: item.code,
-      module: item.module,
-      description: item.description,
-      status: item.status,
-      debits: [{ coa_id: 0, order: 1 }], // Default values since API doesn't return these
-      credits: [{ coa_id: 0, order: 1 }],
-    });
+    setSelectedItemId(item.id);
     setIsEditModalOpen(true);
   };
 
@@ -353,6 +375,7 @@ export default function KodeTransaksiPage() {
           setIsCreateModalOpen(false);
           setIsEditModalOpen(false);
           setSelectedItem(null);
+          setSelectedItemId(null);
         }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -361,7 +384,12 @@ export default function KodeTransaksiPage() {
               {selectedItem ? "Edit Kode Transaksi" : "Tambah Kode Transaksi"}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {isEditModalOpen && isLoadingSelectedItem ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-pulse">Loading...</div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="code">Kode</Label>
@@ -522,6 +550,7 @@ export default function KodeTransaksiPage() {
                   setIsCreateModalOpen(false);
                   setIsEditModalOpen(false);
                   setSelectedItem(null);
+                  setSelectedItemId(null);
                 }}
               >
                 Batal
@@ -531,6 +560,7 @@ export default function KodeTransaksiPage() {
               </Button>
             </div>
           </form>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -8,6 +8,46 @@ export interface KodeTransaksi {
   status: number;
   created_at: string;
   updated_at: string;
+  debits?: Array<{
+    id: number;
+    journal_template_id: number;
+    coa_id: number;
+    order: number;
+    type: string;
+    created_at: string;
+    updated_at: string;
+    coa: {
+      id: number;
+      coa_id: number;
+      code: string;
+      name: string;
+      description: string;
+      level: number;
+      type: string;
+      created_at: string;
+      updated_at: string;
+    };
+  }>;
+  credits?: Array<{
+    id: number;
+    journal_template_id: number;
+    coa_id: number;
+    order: number;
+    type: string;
+    created_at: string;
+    updated_at: string;
+    coa: {
+      id: number;
+      coa_id: number;
+      code: string;
+      name: string;
+      description: string;
+      level: number;
+      type: string;
+      created_at: string;
+      updated_at: string;
+    };
+  }>;
 }
 
 export interface CreateKodeTransaksiRequest {
