@@ -79,6 +79,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           label: "Kategori Simpanan",
           href: "/admin/simpanan/kategori",
         },
+        {
+          id: "penarikan-simpanan",
+          label: "Penarikan Simpanan",
+          href: "/admin/penarikan-simpanan",
+        },
       ],
     },
     {
@@ -98,12 +103,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           href: "/admin/pinjaman/pinjaman-kategori",
         },
       ],
-    },
-    {
-      id: "penarikan-simpanan",
-      label: "Penarikan Simpanan",
-      icon: <CreditCard className="h-5 w-5" />,
-      href: "/admin/penarikan-simpanan",
     },
     {
       id: "stock-opname",

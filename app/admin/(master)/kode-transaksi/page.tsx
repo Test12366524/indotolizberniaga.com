@@ -189,13 +189,13 @@ export default function KodeTransaksiPage() {
     }
   };
 
-  const updateDebitEntry = (index: number, field: string, value: any) => {
+  const updateDebitEntry = (index: number, field: string, value: number | string) => {
     const updatedDebits = [...formData.debits];
     updatedDebits[index] = { ...updatedDebits[index], [field]: value };
     setFormData({ ...formData, debits: updatedDebits });
   };
 
-  const updateCreditEntry = (index: number, field: string, value: any) => {
+  const updateCreditEntry = (index: number, field: string, value: number | string) => {
     const updatedCredits = [...formData.credits];
     updatedCredits[index] = { ...updatedCredits[index], [field]: value };
     setFormData({ ...formData, credits: updatedCredits });
