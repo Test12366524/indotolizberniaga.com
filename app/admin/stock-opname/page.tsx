@@ -29,10 +29,14 @@ import {
 import { useGetMeQuery } from "@/services/admin/shop.service";
 import { useGetProductListQuery } from "@/services/admin/product.service";
 import { useGetTokoListQuery } from "@/services/admin/toko.service";
-import { StockOpname, CreateStockOpnameRequest } from "@/types/admin/stock-opname";
+import {
+  StockOpname,
+  CreateStockOpnameRequest,
+} from "@/types/admin/stock-opname";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Edit, Trash2, Package, Eye } from "lucide-react";
+import { Package } from "lucide-react";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function StockOpnamePage() {
   const itemsPerPage = 10;
@@ -84,11 +88,11 @@ export default function StockOpnamePage() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "";
-      
+
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
       return `${year}-${month}-${day}`;
     } catch {
       return "";
@@ -118,45 +122,49 @@ export default function StockOpnamePage() {
   const stockOpnameList = useMemo(() => data?.data || [], [data]);
   const productsList = useMemo(() => productsData?.data || [], [productsData]);
   const shopsList = useMemo(() => shopsData?.data || [], [shopsData]);
-  
+
   // Create shop categories for filter
   const shopCategories = useMemo(() => {
     const categories = [{ value: "all", label: "Semua Toko" }];
-    shopsList.forEach(shop => {
+    shopsList.forEach((shop) => {
       categories.push({ value: shop.id.toString(), label: shop.name });
     });
     return categories;
   }, [shopsList]);
-  
+
   // Filter list by search query and shop
   const filteredList = useMemo(() => {
     let filtered = stockOpnameList;
-    
+
     // Filter by shop if not "all"
     if (selectedShop !== "all") {
       const shopId = Number(selectedShop);
-      filtered = filtered.filter(item => item.shop_id === shopId);
+      filtered = filtered.filter((item) => item.shop_id === shopId);
     }
-    
+
     // Filter by search query
     if (query.trim()) {
       const q = query.toLowerCase();
-      filtered = filtered.filter(
-        (item) => {
-          const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
-          const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
-          const productName = item.product?.name || productsList.find(p => p.id === item.product_id)?.name || '';
-          
-          return (
-            userName.toLowerCase().includes(q) ||
-            shopName.toLowerCase().includes(q) ||
-            productName.toLowerCase().includes(q) ||
-            item.notes?.toLowerCase().includes(q)
-          );
-        }
-      );
+      filtered = filtered.filter((item) => {
+        const userName =
+          item.user?.name || (meData?.id === item.user_id ? meData.name : "");
+        const shopName =
+          item.shop?.name ||
+          (meData?.shop?.id === item.shop_id ? meData.shop.name : "");
+        const productName =
+          item.product?.name ||
+          productsList.find((p) => p.id === item.product_id)?.name ||
+          "";
+
+        return (
+          userName.toLowerCase().includes(q) ||
+          shopName.toLowerCase().includes(q) ||
+          productName.toLowerCase().includes(q) ||
+          item.notes?.toLowerCase().includes(q)
+        );
+      });
     }
-    
+
     return filtered;
   }, [stockOpnameList, query, selectedShop, meData, productsList]);
 
@@ -227,7 +235,11 @@ export default function StockOpnamePage() {
 
   const handleSubmit = async () => {
     if (!form.user_id || !form.shop_id || !form.product_id || !form.date) {
-      Swal.fire("Error", "User ID, Shop ID, Product ID, dan Tanggal harus diisi", "error");
+      Swal.fire(
+        "Error",
+        "User ID, Shop ID, Product ID, dan Tanggal harus diisi",
+        "error"
+      );
       return;
     }
 
@@ -291,7 +303,7 @@ export default function StockOpnamePage() {
   };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('id-ID').format(num);
+    return new Intl.NumberFormat("id-ID").format(num);
   };
 
   return (
@@ -338,47 +350,32 @@ export default function StockOpnamePage() {
                 filteredList.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenDetailModal(item)}
-                          className="flex items-center gap-1 h-8 px-3"
-                        >
-                          <Eye className="h-3 w-3" />
-                          Detail
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenEditModal(item)}
-                          className="flex items-center gap-1 h-8 px-3"
-                        >
-                          <Edit className="h-3 w-3" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                          className="h-8 px-3"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleOpenDetailModal(item)}
+                        handleEdit={() => handleOpenEditModal(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     {/* <td className="px-4 py-2 whitespace-nowrap">
                       {item.id}
                     </td> */}
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.user?.name || (meData?.id === item.user_id ? meData.name : `User ID: ${item.user_id}`)}
+                      {item.user?.name ||
+                        (meData?.id === item.user_id
+                          ? meData.name
+                          : `User ID: ${item.user_id}`)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : `Shop ID: ${item.shop_id}`)}
+                      {item.shop?.name ||
+                        (meData?.shop?.id === item.shop_id
+                          ? meData.shop.name
+                          : `Shop ID: ${item.shop_id}`)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.product?.name || productsList.find(p => p.id === item.product_id)?.name || `Product ID: ${item.product_id}`}
+                      {item.product?.name ||
+                        productsList.find((p) => p.id === item.product_id)
+                          ?.name ||
+                        `Product ID: ${item.product_id}`}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {formatNumber(item.initial_stock)}
@@ -387,10 +384,13 @@ export default function StockOpnamePage() {
                       {formatNumber(item.counted_stock)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      <Badge 
-                        variant={item.difference >= 0 ? "success" : "destructive"}
+                      <Badge
+                        variant={
+                          item.difference >= 0 ? "success" : "destructive"
+                        }
                       >
-                        {item.difference >= 0 ? "+" : ""}{formatNumber(item.difference)}
+                        {item.difference >= 0 ? "+" : ""}
+                        {formatNumber(item.difference)}
                       </Badge>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
@@ -445,12 +445,17 @@ export default function StockOpnamePage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="user_id" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="user_id"
+                  className="text-sm font-medium text-gray-700"
+                >
                   User
                 </Label>
                 <Select
                   value={form.user_id ? form.user_id.toString() : undefined}
-                  onValueChange={(value) => setForm({ ...form, user_id: Number(value) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, user_id: Number(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="👤 Pilih User..." />
@@ -458,17 +463,23 @@ export default function StockOpnamePage() {
                   <SelectContent className="max-h-60">
                     {!meData?.shop ? (
                       <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">User harus memiliki shop untuk membuat stock opname</span>
+                        <span className="text-gray-500">
+                          User harus memiliki shop untuk membuat stock opname
+                        </span>
                       </SelectItem>
                     ) : (
                       <>
                         <SelectItem value="placeholder-user" disabled>
-                          <span className="text-gray-400 italic">👤 Pilih User...</span>
+                          <span className="text-gray-400 italic">
+                            👤 Pilih User...
+                          </span>
                         </SelectItem>
                         <SelectItem value={meData.id.toString()}>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{meData.name}</span>
-                            <span className="text-sm text-gray-500">({meData.email})</span>
+                            <span className="text-sm text-gray-500">
+                              ({meData.email})
+                            </span>
                           </div>
                         </SelectItem>
                       </>
@@ -478,12 +489,17 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shop_id" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="shop_id"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Shop
                 </Label>
                 <Select
                   value={form.shop_id ? form.shop_id.toString() : undefined}
-                  onValueChange={(value) => setForm({ ...form, shop_id: Number(value) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, shop_id: Number(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="🏪 Pilih Shop..." />
@@ -491,17 +507,25 @@ export default function StockOpnamePage() {
                   <SelectContent className="max-h-60">
                     {!meData?.shop ? (
                       <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">Tidak ada shop tersedia</span>
+                        <span className="text-gray-500">
+                          Tidak ada shop tersedia
+                        </span>
                       </SelectItem>
                     ) : (
                       <>
                         <SelectItem value="placeholder-shop" disabled>
-                          <span className="text-gray-400 italic">🏪 Pilih Shop...</span>
+                          <span className="text-gray-400 italic">
+                            🏪 Pilih Shop...
+                          </span>
                         </SelectItem>
                         <SelectItem value={meData.shop.id.toString()}>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{meData.shop.name}</span>
-                            <span className="text-sm text-gray-500">({meData.shop.email})</span>
+                            <span className="font-medium">
+                              {meData.shop.name}
+                            </span>
+                            <span className="text-sm text-gray-500">
+                              ({meData.shop.email})
+                            </span>
                           </div>
                         </SelectItem>
                       </>
@@ -511,12 +535,19 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="product_id" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="product_id"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Product
                 </Label>
                 <Select
-                  value={form.product_id ? form.product_id.toString() : undefined}
-                  onValueChange={(value) => setForm({ ...form, product_id: Number(value) })}
+                  value={
+                    form.product_id ? form.product_id.toString() : undefined
+                  }
+                  onValueChange={(value) =>
+                    setForm({ ...form, product_id: Number(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="📦 Pilih Product..." />
@@ -524,19 +555,32 @@ export default function StockOpnamePage() {
                   <SelectContent className="max-h-60">
                     {productsList.length === 0 ? (
                       <SelectItem value="no-products" disabled>
-                        <span className="text-gray-500">Tidak ada product tersedia</span>
+                        <span className="text-gray-500">
+                          Tidak ada product tersedia
+                        </span>
                       </SelectItem>
                     ) : (
                       <>
                         <SelectItem value="placeholder-product" disabled>
-                          <span className="text-gray-400 italic">📦 Pilih Product...</span>
+                          <span className="text-gray-400 italic">
+                            📦 Pilih Product...
+                          </span>
                         </SelectItem>
                         {productsList.map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
+                          <SelectItem
+                            key={product.id}
+                            value={product.id.toString()}
+                          >
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{product.name}</span>
-                              <span className="text-sm text-gray-500">- {product.category_name}</span>
-                              <span className="text-xs text-blue-500">({product.merk_name})</span>
+                              <span className="font-medium">
+                                {product.name}
+                              </span>
+                              <span className="text-sm text-gray-500">
+                                - {product.category_name}
+                              </span>
+                              <span className="text-xs text-blue-500">
+                                ({product.merk_name})
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
@@ -547,7 +591,10 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="date"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Tanggal
                 </Label>
                 <Input
@@ -560,7 +607,10 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="initial_stock" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="initial_stock"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Stok Awal
                 </Label>
                 <Input
@@ -570,10 +620,10 @@ export default function StockOpnamePage() {
                   value={form.initial_stock || ""}
                   onChange={(e) => {
                     const value = Number(e.target.value);
-                    setForm({ 
-                      ...form, 
+                    setForm({
+                      ...form,
                       initial_stock: value,
-                      difference: (form.counted_stock || 0) - value
+                      difference: (form.counted_stock || 0) - value,
                     });
                   }}
                   className="h-11"
@@ -581,7 +631,10 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="counted_stock" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="counted_stock"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Stok Terhitung
                 </Label>
                 <Input
@@ -591,10 +644,10 @@ export default function StockOpnamePage() {
                   value={form.counted_stock || ""}
                   onChange={(e) => {
                     const value = Number(e.target.value);
-                    setForm({ 
-                      ...form, 
+                    setForm({
+                      ...form,
                       counted_stock: value,
-                      difference: value - (form.initial_stock || 0)
+                      difference: value - (form.initial_stock || 0),
                     });
                   }}
                   className="h-11"
@@ -602,7 +655,10 @@ export default function StockOpnamePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="difference" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="difference"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Selisih
                 </Label>
                 <Input
@@ -617,7 +673,10 @@ export default function StockOpnamePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="notes"
+                className="text-sm font-medium text-gray-700"
+              >
                 Catatan
               </Label>
               <Textarea
@@ -641,7 +700,13 @@ export default function StockOpnamePage() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !form.user_id || !form.shop_id || !form.product_id || !form.date}
+              disabled={
+                isSubmitting ||
+                !form.user_id ||
+                !form.shop_id ||
+                !form.product_id ||
+                !form.date
+              }
               className="h-10 px-6"
             >
               {isSubmitting ? (
@@ -676,56 +741,93 @@ export default function StockOpnamePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">ID</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      ID
+                    </Label>
                     <p className="text-lg font-semibold">{selectedItem.id}</p>
                   </div>
-                  
+
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">User</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      User
+                    </Label>
                     <p className="text-lg">
-                      {selectedItem.user?.name || (meData?.id === selectedItem.user_id ? meData.name : `User ID: ${selectedItem.user_id}`)}
+                      {selectedItem.user?.name ||
+                        (meData?.id === selectedItem.user_id
+                          ? meData.name
+                          : `User ID: ${selectedItem.user_id}`)}
                     </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Shop</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Shop
+                    </Label>
                     <p className="text-lg">
-                      {selectedItem.shop?.name || (meData?.shop?.id === selectedItem.shop_id ? meData.shop.name : `Shop ID: ${selectedItem.shop_id}`)}
+                      {selectedItem.shop?.name ||
+                        (meData?.shop?.id === selectedItem.shop_id
+                          ? meData.shop.name
+                          : `Shop ID: ${selectedItem.shop_id}`)}
                     </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Product</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Product
+                    </Label>
                     <p className="text-lg">
-                      {selectedItem.product?.name || productsList.find(p => p.id === selectedItem.product_id)?.name || `Product ID: ${selectedItem.product_id}`}
+                      {selectedItem.product?.name ||
+                        productsList.find(
+                          (p) => p.id === selectedItem.product_id
+                        )?.name ||
+                        `Product ID: ${selectedItem.product_id}`}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Tanggal</Label>
-                    <p className="text-lg">{formatDateTime(selectedItem.date)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Tanggal
+                    </Label>
+                    <p className="text-lg">
+                      {formatDateTime(selectedItem.date)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Stok Awal</Label>
-                    <p className="text-lg font-semibold">{formatNumber(selectedItem.initial_stock)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Stok Awal
+                    </Label>
+                    <p className="text-lg font-semibold">
+                      {formatNumber(selectedItem.initial_stock)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Stok Terhitung</Label>
-                    <p className="text-lg font-semibold">{formatNumber(selectedItem.counted_stock)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Stok Terhitung
+                    </Label>
+                    <p className="text-lg font-semibold">
+                      {formatNumber(selectedItem.counted_stock)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Selisih</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Selisih
+                    </Label>
                     <div className="mt-1">
-                      <Badge 
-                        variant={selectedItem.difference >= 0 ? "success" : "destructive"}
+                      <Badge
+                        variant={
+                          selectedItem.difference >= 0
+                            ? "success"
+                            : "destructive"
+                        }
                         className="text-sm px-3 py-1"
                       >
-                        {selectedItem.difference >= 0 ? "+" : ""}{formatNumber(selectedItem.difference)}
+                        {selectedItem.difference >= 0 ? "+" : ""}
+                        {formatNumber(selectedItem.difference)}
                       </Badge>
                     </div>
                   </div>
@@ -734,19 +836,31 @@ export default function StockOpnamePage() {
 
               {selectedItem.notes && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Catatan</Label>
-                  <p className="text-lg mt-1 p-3 bg-gray-50 rounded-md">{selectedItem.notes}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Catatan
+                  </Label>
+                  <p className="text-lg mt-1 p-3 bg-gray-50 rounded-md">
+                    {selectedItem.notes}
+                  </p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Dibuat</Label>
-                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.created_at || "")}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Dibuat
+                  </Label>
+                  <p className="text-sm text-gray-600">
+                    {formatDateTime(selectedItem.created_at || "")}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Diperbarui</Label>
-                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.updated_at || "")}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Diperbarui
+                  </Label>
+                  <p className="text-sm text-gray-600">
+                    {formatDateTime(selectedItem.updated_at || "")}
+                  </p>
                 </div>
               </div>
             </div>

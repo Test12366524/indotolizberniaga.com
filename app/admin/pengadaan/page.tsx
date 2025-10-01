@@ -21,10 +21,14 @@ import {
 } from "@/services/admin/pengadaan.service";
 import { useGetMeQuery } from "@/services/admin/shop.service";
 import { useGetProductListQuery } from "@/services/admin/product.service";
-import { PurchaseOrder, CreatePurchaseOrderRequest, PurchaseOrderDetail } from "@/types/admin/pengadaan";
+import {
+  PurchaseOrder,
+  CreatePurchaseOrderRequest,
+  PurchaseOrderDetail,
+} from "@/types/admin/pengadaan";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Edit, Trash2, ShoppingCart, Plus, Minus, Eye } from "lucide-react";
+import { ShoppingCart, Plus, Minus } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -32,6 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function PengadaanPage() {
   const itemsPerPage = 10;
@@ -85,11 +90,11 @@ export default function PengadaanPage() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return "";
-      
+
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+
       return `${year}-${month}-${day}`;
     } catch {
       return "";
@@ -112,44 +117,47 @@ export default function PengadaanPage() {
 
   const purchaseOrderList = useMemo(() => data?.data || [], [data]);
   const productsList = useMemo(() => productsData?.data || [], [productsData]);
-  
+
   // Create supplier categories for filter
   const supplierCategories = useMemo(() => {
     const categories = [{ value: "all", label: "Semua Supplier" }];
-    const uniqueSuppliers = Array.from(new Set(purchaseOrderList.map(item => item.supplier).filter(Boolean)));
-    uniqueSuppliers.forEach(supplier => {
+    const uniqueSuppliers = Array.from(
+      new Set(purchaseOrderList.map((item) => item.supplier).filter(Boolean))
+    );
+    uniqueSuppliers.forEach((supplier) => {
       categories.push({ value: supplier, label: supplier });
     });
     return categories;
   }, [purchaseOrderList]);
-  
+
   // Filter list by search query and supplier
   const filteredList = useMemo(() => {
     let filtered = purchaseOrderList;
-    
+
     // Filter by supplier if not "all"
     if (selectedSupplier !== "all") {
-      filtered = filtered.filter(item => item.supplier === selectedSupplier);
+      filtered = filtered.filter((item) => item.supplier === selectedSupplier);
     }
-    
+
     // Filter by search query
     if (query.trim()) {
       const q = query.toLowerCase();
-      filtered = filtered.filter(
-        (item) => {
-          const userName = item.user?.name || (meData?.id === item.user_id ? meData.name : '');
-          const shopName = item.shop?.name || (meData?.shop?.id === item.shop_id ? meData.shop.name : '');
-          
-          return (
-            item.supplier?.toLowerCase().includes(q) ||
-            userName.toLowerCase().includes(q) ||
-            shopName.toLowerCase().includes(q) ||
-            item.notes?.toLowerCase().includes(q)
-          );
-        }
-      );
+      filtered = filtered.filter((item) => {
+        const userName =
+          item.user?.name || (meData?.id === item.user_id ? meData.name : "");
+        const shopName =
+          item.shop?.name ||
+          (meData?.shop?.id === item.shop_id ? meData.shop.name : "");
+
+        return (
+          item.supplier?.toLowerCase().includes(q) ||
+          userName.toLowerCase().includes(q) ||
+          shopName.toLowerCase().includes(q) ||
+          item.notes?.toLowerCase().includes(q)
+        );
+      });
     }
-    
+
     return filtered;
   }, [purchaseOrderList, query, selectedSupplier, meData]);
 
@@ -239,17 +247,23 @@ export default function PengadaanPage() {
     setForm({ ...form, details: newDetails });
   };
 
-  const updateDetail = (index: number, field: keyof PurchaseOrderDetail, value: number) => {
+  const updateDetail = (
+    index: number,
+    field: keyof PurchaseOrderDetail,
+    value: number
+  ) => {
     const newDetails = [...form.details];
     newDetails[index] = { ...newDetails[index], [field]: value };
-    
+
     // Calculate tax (11% of subtotal)
-    const subtotal = (newDetails[index].quantity * newDetails[index].price) - newDetails[index].discount;
+    const subtotal =
+      newDetails[index].quantity * newDetails[index].price -
+      newDetails[index].discount;
     newDetails[index].tax = Math.round(subtotal * 0.11);
-    
+
     // Calculate total
     newDetails[index].total = subtotal + newDetails[index].tax;
-    
+
     setForm({ ...form, details: newDetails });
   };
 
@@ -257,12 +271,16 @@ export default function PengadaanPage() {
   React.useEffect(() => {
     const total = form.details.reduce((sum, detail) => sum + detail.total, 0);
     const due = total - form.paid;
-    setForm(prev => ({ ...prev, total, due }));
+    setForm((prev) => ({ ...prev, total, due }));
   }, [form.details, form.paid]);
 
   const handleSubmit = async () => {
     if (!form.user_id || !form.shop_id || !form.supplier || !form.date) {
-      Swal.fire("Error", "User ID, Shop ID, Supplier, dan Tanggal harus diisi", "error");
+      Swal.fire(
+        "Error",
+        "User ID, Shop ID, Supplier, dan Tanggal harus diisi",
+        "error"
+      );
       return;
     }
 
@@ -330,14 +348,15 @@ export default function PengadaanPage() {
     }
   };
 
-
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount).replace('IDR', 'Rp');
+    })
+      .format(amount)
+      .replace("IDR", "Rp");
   };
 
   return (
@@ -384,35 +403,11 @@ export default function PengadaanPage() {
                 filteredList.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenDetailModal(item)}
-                          className="flex items-center gap-1 h-8 px-3"
-                        >
-                          <Eye className="h-3 w-3" />
-                          Detail
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenEditModal(item)}
-                          className="flex items-center gap-1 h-8 px-3"
-                        >
-                          <Edit className="h-3 w-3" />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                          className="h-8 px-3"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleOpenDetailModal(item)}
+                        handleEdit={() => handleOpenEditModal(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     {/* <td className="px-4 py-2 whitespace-nowrap">
                       {item.id}
@@ -421,7 +416,10 @@ export default function PengadaanPage() {
                       {item.supplier}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.user?.name || (meData?.id === item.user_id ? meData.name : `User ID: ${item.user_id}`)}
+                      {item.user?.name ||
+                        (meData?.id === item.user_id
+                          ? meData.name
+                          : `User ID: ${item.user_id}`)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap font-medium text-green-600">
                       {formatCurrency(item.total)}
@@ -486,12 +484,17 @@ export default function PengadaanPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="user_id" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="user_id"
+                  className="text-sm font-medium text-gray-700"
+                >
                   User
                 </Label>
                 <Select
                   value={form.user_id ? form.user_id.toString() : undefined}
-                  onValueChange={(value) => setForm({ ...form, user_id: Number(value) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, user_id: Number(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="👤 Pilih User..." />
@@ -499,12 +502,16 @@ export default function PengadaanPage() {
                   <SelectContent className="max-h-60">
                     {!meData?.shop ? (
                       <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">User harus memiliki shop untuk membuat pengadaan</span>
+                        <span className="text-gray-500">
+                          User harus memiliki shop untuk membuat pengadaan
+                        </span>
                       </SelectItem>
                     ) : (
                       <>
                         <SelectItem value="placeholder-user" disabled>
-                          <span className="text-gray-400 italic">👤 Pilih User...</span>
+                          <span className="text-gray-400 italic">
+                            👤 Pilih User...
+                          </span>
                         </SelectItem>
                         <SelectItem value={meData.id.toString()}>
                           <div className="flex items-center gap-2">
@@ -518,12 +525,17 @@ export default function PengadaanPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="shop_id" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="shop_id"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Shop
                 </Label>
                 <Select
                   value={form.shop_id ? form.shop_id.toString() : undefined}
-                  onValueChange={(value) => setForm({ ...form, shop_id: Number(value) })}
+                  onValueChange={(value) =>
+                    setForm({ ...form, shop_id: Number(value) })
+                  }
                 >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="🏪 Pilih Shop..." />
@@ -531,16 +543,22 @@ export default function PengadaanPage() {
                   <SelectContent className="max-h-60">
                     {!meData?.shop ? (
                       <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">Tidak ada shop tersedia</span>
+                        <span className="text-gray-500">
+                          Tidak ada shop tersedia
+                        </span>
                       </SelectItem>
                     ) : (
                       <>
                         <SelectItem value="placeholder-shop" disabled>
-                          <span className="text-gray-400 italic">🏪 Pilih Shop...</span>
+                          <span className="text-gray-400 italic">
+                            🏪 Pilih Shop...
+                          </span>
                         </SelectItem>
                         <SelectItem value={meData.shop.id.toString()}>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{meData.shop.name}</span>
+                            <span className="font-medium">
+                              {meData.shop.name}
+                            </span>
                           </div>
                         </SelectItem>
                       </>
@@ -550,20 +568,28 @@ export default function PengadaanPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="supplier" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="supplier"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Supplier
                 </Label>
                 <Input
                   id="supplier"
                   placeholder="Masukkan nama supplier"
                   value={form.supplier || ""}
-                  onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, supplier: e.target.value })
+                  }
                   className="h-11"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="date"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Tanggal
                 </Label>
                 <Input
@@ -576,7 +602,10 @@ export default function PengadaanPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="paid" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="paid"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Jumlah Dibayar
                 </Label>
                 <Input
@@ -593,13 +622,18 @@ export default function PengadaanPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="status"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Status
                 </Label>
                 <select
                   id="status"
                   value={form.status ? "1" : "0"}
-                  onChange={(e) => setForm({ ...form, status: e.target.value === "1" })}
+                  onChange={(e) =>
+                    setForm({ ...form, status: e.target.value === "1" })
+                  }
                   className="w-full h-11 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="1">Lunas</option>
@@ -609,7 +643,10 @@ export default function PengadaanPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="notes" className="text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="notes"
+                className="text-sm font-medium text-gray-700"
+              >
                 Catatan
               </Label>
               <Textarea
@@ -660,8 +697,14 @@ export default function PengadaanPage() {
                         Product
                       </Label>
                       <Select
-                        value={detail.product_id ? detail.product_id.toString() : undefined}
-                        onValueChange={(value) => updateDetail(index, 'product_id', Number(value))}
+                        value={
+                          detail.product_id
+                            ? detail.product_id.toString()
+                            : undefined
+                        }
+                        onValueChange={(value) =>
+                          updateDetail(index, "product_id", Number(value))
+                        }
                       >
                         <SelectTrigger className="h-10">
                           <SelectValue placeholder="📦 Pilih Product..." />
@@ -669,19 +712,32 @@ export default function PengadaanPage() {
                         <SelectContent className="max-h-60">
                           {productsList.length === 0 ? (
                             <SelectItem value="no-products" disabled>
-                              <span className="text-gray-500">Tidak ada product tersedia</span>
+                              <span className="text-gray-500">
+                                Tidak ada product tersedia
+                              </span>
                             </SelectItem>
                           ) : (
                             <>
                               <SelectItem value="placeholder-product" disabled>
-                                <span className="text-gray-400 italic">📦 Pilih Product...</span>
+                                <span className="text-gray-400 italic">
+                                  📦 Pilih Product...
+                                </span>
                               </SelectItem>
                               {productsList.map((product) => (
-                                <SelectItem key={product.id} value={product.id.toString()}>
+                                <SelectItem
+                                  key={product.id}
+                                  value={product.id.toString()}
+                                >
                                   <div className="flex items-center gap-2">
-                                    <span className="font-medium">{product.name}</span>
-                                    <span className="text-sm text-gray-500">- {product.category_name}</span>
-                                    <span className="text-xs text-blue-500">({product.merk_name})</span>
+                                    <span className="font-medium">
+                                      {product.name}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      - {product.category_name}
+                                    </span>
+                                    <span className="text-xs text-blue-500">
+                                      ({product.merk_name})
+                                    </span>
                                   </div>
                                 </SelectItem>
                               ))}
@@ -699,7 +755,13 @@ export default function PengadaanPage() {
                         type="number"
                         placeholder="Quantity"
                         value={detail.quantity || ""}
-                        onChange={(e) => updateDetail(index, 'quantity', Number(e.target.value))}
+                        onChange={(e) =>
+                          updateDetail(
+                            index,
+                            "quantity",
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10"
                       />
                     </div>
@@ -712,7 +774,9 @@ export default function PengadaanPage() {
                         type="number"
                         placeholder="Price"
                         value={detail.price || ""}
-                        onChange={(e) => updateDetail(index, 'price', Number(e.target.value))}
+                        onChange={(e) =>
+                          updateDetail(index, "price", Number(e.target.value))
+                        }
                         className="h-10"
                       />
                     </div>
@@ -725,7 +789,13 @@ export default function PengadaanPage() {
                         type="number"
                         placeholder="Discount"
                         value={detail.discount || ""}
-                        onChange={(e) => updateDetail(index, 'discount', Number(e.target.value))}
+                        onChange={(e) =>
+                          updateDetail(
+                            index,
+                            "discount",
+                            Number(e.target.value)
+                          )
+                        }
                         className="h-10"
                       />
                     </div>
@@ -761,11 +831,15 @@ export default function PengadaanPage() {
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center text-lg font-semibold">
                     <span>Total Purchase Order:</span>
-                    <span className="text-green-600">{formatCurrency(form.total)}</span>
+                    <span className="text-green-600">
+                      {formatCurrency(form.total)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-sm text-gray-600">
                     <span>Due Amount:</span>
-                    <span className="text-orange-600">{formatCurrency(form.due)}</span>
+                    <span className="text-orange-600">
+                      {formatCurrency(form.due)}
+                    </span>
                   </div>
                 </div>
               )}
@@ -783,7 +857,14 @@ export default function PengadaanPage() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={isSubmitting || !form.user_id || !form.shop_id || !form.supplier || !form.date || form.details.length === 0}
+              disabled={
+                isSubmitting ||
+                !form.user_id ||
+                !form.shop_id ||
+                !form.supplier ||
+                !form.date ||
+                form.details.length === 0
+              }
               className="h-10 px-6"
             >
               {isSubmitting ? (
@@ -818,61 +899,99 @@ export default function PengadaanPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">ID</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      ID
+                    </Label>
                     <p className="text-lg font-semibold">{selectedItem.id}</p>
                   </div>
-                  
+
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Reference</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Reference
+                    </Label>
                     <p className="text-lg font-mono">{`PO/${selectedItem.id}`}</p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">User</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      User
+                    </Label>
                     <p className="text-lg">
-                      {selectedItem.user?.name || (meData?.id === selectedItem.user_id ? meData.name : `User ID: ${selectedItem.user_id}`)}
+                      {selectedItem.user?.name ||
+                        (meData?.id === selectedItem.user_id
+                          ? meData.name
+                          : `User ID: ${selectedItem.user_id}`)}
                     </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Shop</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Shop
+                    </Label>
                     <p className="text-lg">
-                      {selectedItem.shop?.name || (meData?.shop?.id === selectedItem.shop_id ? meData.shop.name : `Shop ID: ${selectedItem.shop_id}`)}
+                      {selectedItem.shop?.name ||
+                        (meData?.shop?.id === selectedItem.shop_id
+                          ? meData.shop.name
+                          : `Shop ID: ${selectedItem.shop_id}`)}
                     </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Supplier</Label>
-                    <p className="text-lg font-semibold">{selectedItem.supplier}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Supplier
+                    </Label>
+                    <p className="text-lg font-semibold">
+                      {selectedItem.supplier}
+                    </p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Tanggal</Label>
-                    <p className="text-lg">{formatDateTime(selectedItem.date)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Tanggal
+                    </Label>
+                    <p className="text-lg">
+                      {formatDateTime(selectedItem.date)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Total</Label>
-                    <p className="text-lg font-semibold text-green-600">{formatCurrency(selectedItem.total)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Total
+                    </Label>
+                    <p className="text-lg font-semibold text-green-600">
+                      {formatCurrency(selectedItem.total)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Dibayar</Label>
-                    <p className="text-lg font-semibold text-blue-600">{formatCurrency(selectedItem.paid)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Dibayar
+                    </Label>
+                    <p className="text-lg font-semibold text-blue-600">
+                      {formatCurrency(selectedItem.paid)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Sisa</Label>
-                    <p className="text-lg font-semibold text-orange-600">{formatCurrency(selectedItem.due)}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Sisa
+                    </Label>
+                    <p className="text-lg font-semibold text-orange-600">
+                      {formatCurrency(selectedItem.due)}
+                    </p>
                   </div>
 
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">Status</Label>
+                    <Label className="text-sm font-medium text-gray-500">
+                      Status
+                    </Label>
                     <div className="mt-1">
-                      <Badge 
-                        variant={selectedItem.status ? "success" : "destructive"}
+                      <Badge
+                        variant={
+                          selectedItem.status ? "success" : "destructive"
+                        }
                         className="text-sm px-3 py-1"
                       >
                         {selectedItem.status ? "Lunas" : "Belum Lunas"}
@@ -884,37 +1003,61 @@ export default function PengadaanPage() {
 
               {selectedItem.notes && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Catatan</Label>
-                  <p className="text-lg mt-1 p-3 bg-gray-50 rounded-md">{selectedItem.notes}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Catatan
+                  </Label>
+                  <p className="text-lg mt-1 p-3 bg-gray-50 rounded-md">
+                    {selectedItem.notes}
+                  </p>
                 </div>
               )}
 
               {selectedItem.details && selectedItem.details.length > 0 && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500 mb-3 block">Detail Produk</Label>
+                  <Label className="text-sm font-medium text-gray-500 mb-3 block">
+                    Detail Produk
+                  </Label>
                   <div className="space-y-3">
                     {selectedItem.details.map((detail, index) => {
-                      const product = productsList.find(p => p.id === detail.product_id);
+                      const product = productsList.find(
+                        (p) => p.id === detail.product_id
+                      );
                       return (
-                        <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                        <div
+                          key={index}
+                          className="border rounded-lg p-4 bg-gray-50"
+                        >
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
-                              <Label className="text-xs font-medium text-gray-500">Produk</Label>
+                              <Label className="text-xs font-medium text-gray-500">
+                                Produk
+                              </Label>
                               <p className="text-sm font-medium">
-                                {product?.name || `Product ID: ${detail.product_id}`}
+                                {product?.name ||
+                                  `Product ID: ${detail.product_id}`}
                               </p>
                             </div>
                             <div>
-                              <Label className="text-xs font-medium text-gray-500">Quantity</Label>
+                              <Label className="text-xs font-medium text-gray-500">
+                                Quantity
+                              </Label>
                               <p className="text-sm">{detail.quantity}</p>
                             </div>
                             <div>
-                              <Label className="text-xs font-medium text-gray-500">Harga</Label>
-                              <p className="text-sm">{formatCurrency(detail.price)}</p>
+                              <Label className="text-xs font-medium text-gray-500">
+                                Harga
+                              </Label>
+                              <p className="text-sm">
+                                {formatCurrency(detail.price)}
+                              </p>
                             </div>
                             <div>
-                              <Label className="text-xs font-medium text-gray-500">Total</Label>
-                              <p className="text-sm font-semibold">{formatCurrency(detail.total)}</p>
+                              <Label className="text-xs font-medium text-gray-500">
+                                Total
+                              </Label>
+                              <p className="text-sm font-semibold">
+                                {formatCurrency(detail.total)}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -926,12 +1069,20 @@ export default function PengadaanPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Dibuat</Label>
-                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.created_at || "")}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Dibuat
+                  </Label>
+                  <p className="text-sm text-gray-600">
+                    {formatDateTime(selectedItem.created_at || "")}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Diperbarui</Label>
-                  <p className="text-sm text-gray-600">{formatDateTime(selectedItem.updated_at || "")}</p>
+                  <Label className="text-sm font-medium text-gray-500">
+                    Diperbarui
+                  </Label>
+                  <p className="text-sm text-gray-600">
+                    {formatDateTime(selectedItem.updated_at || "")}
+                  </p>
                 </div>
               </div>
             </div>

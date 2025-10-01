@@ -31,6 +31,7 @@ import useModal from "@/hooks/use-modal";
 import FormPenarikanSimpanan from "@/components/form-modal/penarikan-simpanan-form";
 import { PenarikanSimpanan } from "@/types/admin/penarikan-simpanan";
 import Swal from "sweetalert2";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 const Page = () => {
   const [form, setForm] = useState<Partial<PenarikanSimpanan>>({});
@@ -278,89 +279,40 @@ const Page = () => {
                 filteredData.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex items-center gap-2">
-                        {/* Primary Actions */}
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDetail(item)}
-                            title="Lihat Detail"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(item)}
-                            title="Edit"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        {/* Status Actions for Pending */}
-                        {item.status === 0 && (
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleStatusUpdate(item, "1")}
-                              title="Approve"
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleStatusUpdate(item, "2")}
-                              title="Reject"
-                            >
-                              <XCircle className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-
-                        {/* Dropdown for Additional Actions */}
-                        <div className="relative dropdown-container">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenDropdownId(
-                                openDropdownId === item.id ? null : item.id
-                              );
-                            }}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-
-                          {/* Dropdown Menu */}
-                          {openDropdownId === item.id && (
-                            <div
-                              className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-xl z-[99999] min-w-[160px]"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(item);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                      <ActionsGroup
+                        handleDetail={() => {
+                          handleDetail(item);
+                        }}
+                        handleEdit={() => {
+                          handleEdit(item);
+                        }}
+                        handleDelete={() => {
+                          handleDelete(item);
+                        }}
+                        additionalActions={
+                          <>
+                            {item.status === 0 && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleStatusUpdate(item, "1")}
+                                  title="Approve"
+                                  className="bg-green-600 hover:bg-green-700"
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  Hapus Penarikan
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                                  <CheckCircle className="size-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleStatusUpdate(item, "2")}
+                                  title="Reject"
+                                >
+                                  <XCircle className="size-4 bg-red-600 hover:bg-red-700" />
+                                </Button>
+                              </>
+                            )}
+                          </>
+                        }
+                      />
                     </td>
                     <td className="px-4 py-2">{item.reference}</td>
                     <td className="px-4 py-2">{item.bank_account_name}</td>

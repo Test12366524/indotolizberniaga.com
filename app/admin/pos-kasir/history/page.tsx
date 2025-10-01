@@ -31,7 +31,8 @@ import { useGetProductListQuery } from "@/services/product.service";
 import { PosTransaction, POS_PAYMENT_TYPES } from "@/types/pos-kasir";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Plus, Trash2, Eye, Edit } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 // Status enum mapping
 type TransactionStatusKey = 0 | 1 | 2 | -1 | -2 | -3;
@@ -40,14 +41,15 @@ type TransactionStatusInfo = {
   variant: "secondary" | "default" | "success" | "destructive";
 };
 
-const TRANSACTION_STATUS: Record<TransactionStatusKey, TransactionStatusInfo> = {
-  0: { label: "PENDING", variant: "secondary" },
-  1: { label: "CAPTURED", variant: "default" },
-  2: { label: "SETTLEMENT", variant: "success" },
-  [-1]: { label: "DENY", variant: "destructive" },
-  [-2]: { label: "EXPIRED", variant: "destructive" },
-  [-3]: { label: "CANCEL", variant: "destructive" },
-};
+const TRANSACTION_STATUS: Record<TransactionStatusKey, TransactionStatusInfo> =
+  {
+    0: { label: "PENDING", variant: "secondary" },
+    1: { label: "CAPTURED", variant: "default" },
+    2: { label: "SETTLEMENT", variant: "success" },
+    [-1]: { label: "DENY", variant: "destructive" },
+    [-2]: { label: "EXPIRED", variant: "destructive" },
+    [-3]: { label: "CANCEL", variant: "destructive" },
+  };
 
 const CATEGORY_TO_STATUS: Record<string, TransactionStatusKey> = {
   pending: 0,
@@ -61,13 +63,16 @@ const CATEGORY_TO_STATUS: Record<string, TransactionStatusKey> = {
 export default function PosKasirPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTransaction, setSelectedTransaction] = useState<PosTransaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<PosTransaction | null>(null);
   const [newStatus, setNewStatus] = useState<string>("");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [selectedTransactionId, setSelectedTransactionId] = useState<number | null>(null);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<
+    number | null
+  >(null);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
 
@@ -84,7 +89,6 @@ export default function PosKasirPage() {
     products: [{ product_id: 1, quantity: 1 }],
     voucher: [] as number[],
   });
-
 
   // Helper function to format currency in Rupiah
   const formatRupiah = (amount: number | string) => {
@@ -135,7 +139,6 @@ export default function PosKasirPage() {
     paginate: 1000,
   });
 
-
   const {
     data: transactionDetail,
     isLoading: isDetailLoading,
@@ -146,7 +149,7 @@ export default function PosKasirPage() {
   );
 
   const categoryList = useMemo(() => data?.data?.data || [], [data]);
-  
+
   // Filter based on search & category (status)
   const filteredList = useMemo(() => {
     let list = categoryList;
@@ -246,7 +249,6 @@ export default function PosKasirPage() {
     }
   };
 
-
   const handleUpdateTransaction = async () => {
     if (!selectedTransaction) return;
 
@@ -257,7 +259,9 @@ export default function PosKasirPage() {
         guest_email: formData.guest_email || undefined,
         guest_phone: formData.guest_phone || undefined,
         payment_type: formData.payment_type,
-        wallet_id: formData.wallet_id ? parseInt(formData.wallet_id) : undefined,
+        wallet_id: formData.wallet_id
+          ? parseInt(formData.wallet_id)
+          : undefined,
         status: formData.status,
         data: [
           {
@@ -283,25 +287,29 @@ export default function PosKasirPage() {
   };
 
   const addProduct = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      products: [...prev.products, { product_id: 1, quantity: 1 }]
+      products: [...prev.products, { product_id: 1, quantity: 1 }],
     }));
   };
 
   const removeProduct = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      products: prev.products.filter((_, i) => i !== index)
+      products: prev.products.filter((_, i) => i !== index),
     }));
   };
 
-  const updateProduct = (index: number, field: 'product_id' | 'quantity', value: number) => {
-    setFormData(prev => ({
+  const updateProduct = (
+    index: number,
+    field: "product_id" | "quantity",
+    value: number
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      products: prev.products.map((product, i) => 
+      products: prev.products.map((product, i) =>
         i === index ? { ...product, [field]: value } : product
-      )
+      ),
     }));
   };
 
@@ -333,7 +341,9 @@ export default function PosKasirPage() {
                 <th className="px-4 py-2 whitespace-nowrap">Customer</th>
                 <th className="px-4 py-2 whitespace-nowrap">Harga</th>
                 <th className="px-4 py-2 whitespace-nowrap">Diskon</th>
-                <th className="px-4 py-2 whitespace-nowrap">Biaya Pengiriman</th>
+                <th className="px-4 py-2 whitespace-nowrap">
+                  Biaya Pengiriman
+                </th>
                 <th className="px-4 py-2 whitespace-nowrap">Total harga</th>
                 <th className="px-4 py-2 whitespace-nowrap">Tipe Pembayaran</th>
                 <th className="px-4 py-2 whitespace-nowrap">Payment Link</th>
@@ -360,29 +370,11 @@ export default function PosKasirPage() {
                   return (
                     <tr key={item.id} className="border-t">
                       <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditClick(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleDetailClick(item.id)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <ActionsGroup
+                          handleDetail={() => handleDetailClick(item.id)}
+                          handleEdit={() => handleEditClick(item)}
+                          handleDelete={() => handleDelete(item)}
+                        />
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.reference}
@@ -407,7 +399,11 @@ export default function PosKasirPage() {
                       </td>
                       <td className="px-4 py-2">
                         <Badge variant="outline">
-                          {POS_PAYMENT_TYPES[item.payment_type as keyof typeof POS_PAYMENT_TYPES]}
+                          {
+                            POS_PAYMENT_TYPES[
+                              item.payment_type as keyof typeof POS_PAYMENT_TYPES
+                            ]
+                          }
                         </Badge>
                       </td>
                       <td className="px-4 py-2">
@@ -416,7 +412,14 @@ export default function PosKasirPage() {
                             size="sm"
                             variant="outline"
                             className="text-xs px-2 py-1 h-auto"
-                            onClick={() => item.payment_link && window.open(item.payment_link, "_blank", "noopener,noreferrer")}
+                            onClick={() =>
+                              item.payment_link &&
+                              window.open(
+                                item.payment_link,
+                                "_blank",
+                                "noopener,noreferrer"
+                              )
+                            }
                           >
                             Buka Link
                           </Button>
@@ -470,7 +473,6 @@ export default function PosKasirPage() {
         </div>
       </Card>
 
-
       {/* Update Transaction Modal */}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
         <DialogContent className="max-w-4xl">
@@ -484,7 +486,7 @@ export default function PosKasirPage() {
                 <Select
                   value={formData.payment_type}
                   onValueChange={(value: "automatic" | "manual" | "saldo") =>
-                    setFormData(prev => ({ ...prev, payment_type: value }))
+                    setFormData((prev) => ({ ...prev, payment_type: value }))
                   }
                 >
                   <SelectTrigger>
@@ -503,7 +505,10 @@ export default function PosKasirPage() {
                 <Select
                   value={formData.status.toString()}
                   onValueChange={(value) =>
-                    setFormData(prev => ({ ...prev, status: parseInt(value) }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: parseInt(value),
+                    }))
                   }
                 >
                   <SelectTrigger>
@@ -524,11 +529,13 @@ export default function PosKasirPage() {
                 <Select
                   value={formData.user_id}
                   onValueChange={(value) => {
-                    const selectedAnggota = anggotaData?.data?.data?.find((anggota) => anggota.user_id.toString() === value);
-                    setFormData(prev => ({ 
-                      ...prev, 
+                    const selectedAnggota = anggotaData?.data?.data?.find(
+                      (anggota) => anggota.user_id.toString() === value
+                    );
+                    setFormData((prev) => ({
+                      ...prev,
                       user_id: value,
-                      wallet_id: selectedAnggota?.id?.toString() || ""
+                      wallet_id: selectedAnggota?.id?.toString() || "",
                     }));
                   }}
                 >
@@ -537,8 +544,12 @@ export default function PosKasirPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {anggotaData?.data?.data?.map((anggota) => (
-                      <SelectItem key={anggota.id} value={anggota.user_id.toString()}>
-                        {anggota.name} - {anggota.reference} (Saldo: {formatRupiah(anggota.balance)})
+                      <SelectItem
+                        key={anggota.id}
+                        value={anggota.user_id.toString()}
+                      >
+                        {anggota.name} - {anggota.reference} (Saldo:{" "}
+                        {formatRupiah(anggota.balance)})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -553,7 +564,10 @@ export default function PosKasirPage() {
                   id="guest_name"
                   value={formData.guest_name}
                   onChange={(e) =>
-                    setFormData(prev => ({ ...prev, guest_name: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      guest_name: e.target.value,
+                    }))
                   }
                   placeholder="Nama guest (opsional)"
                 />
@@ -566,7 +580,10 @@ export default function PosKasirPage() {
                   type="email"
                   value={formData.guest_email}
                   onChange={(e) =>
-                    setFormData(prev => ({ ...prev, guest_email: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      guest_email: e.target.value,
+                    }))
                   }
                   placeholder="Email guest (opsional)"
                 />
@@ -579,7 +596,10 @@ export default function PosKasirPage() {
                 id="guest_phone"
                 value={formData.guest_phone}
                 onChange={(e) =>
-                  setFormData(prev => ({ ...prev, guest_phone: e.target.value }))
+                  setFormData((prev) => ({
+                    ...prev,
+                    guest_phone: e.target.value,
+                  }))
                 }
                 placeholder="Telepon guest (opsional)"
               />
@@ -620,7 +640,11 @@ export default function PosKasirPage() {
                       placeholder="Qty"
                       value={product.quantity}
                       onChange={(e) =>
-                        updateProduct(index, "quantity", parseInt(e.target.value) || 1)
+                        updateProduct(
+                          index,
+                          "quantity",
+                          parseInt(e.target.value) || 1
+                        )
                       }
                       min="1"
                     />
@@ -647,9 +671,9 @@ export default function PosKasirPage() {
                 onChange={(e) => {
                   const voucherIds = e.target.value
                     .split(",")
-                    .map(id => parseInt(id.trim()))
-                    .filter(id => !isNaN(id));
-                  setFormData(prev => ({ ...prev, voucher: voucherIds }));
+                    .map((id) => parseInt(id.trim()))
+                    .filter((id) => !isNaN(id));
+                  setFormData((prev) => ({ ...prev, voucher: voucherIds }));
                 }}
               />
               <p className="text-xs text-muted-foreground mt-1">
@@ -684,7 +708,9 @@ export default function PosKasirPage() {
                 Transaksi: {selectedTransaction?.reference}
               </p>
               <p className="text-sm text-muted-foreground mb-4">
-                Customer: {selectedTransaction?.user_name || selectedTransaction?.guest_name}
+                Customer:{" "}
+                {selectedTransaction?.user_name ||
+                  selectedTransaction?.guest_name}
               </p>
             </div>
 
@@ -742,21 +768,27 @@ export default function PosKasirPage() {
                 <h3 className="text-lg font-semibold">Ringkasan Transaksi</h3>
                 <div className="space-y-2 text-sm">
                   <p>
-                    <strong>ID Transaksi:</strong> {transactionDetail.data.reference}
+                    <strong>ID Transaksi:</strong>{" "}
+                    {transactionDetail.data.reference}
                   </p>
                   <p>
-                    <strong>Ref Number:</strong> {transactionDetail.data.ref_number}
+                    <strong>Ref Number:</strong>{" "}
+                    {transactionDetail.data.ref_number}
                   </p>
                   <p>
                     <strong>Order ID:</strong> {transactionDetail.data.order_id}
                   </p>
                   <p>
                     <strong>Nama Pelanggan:</strong>{" "}
-                    {transactionDetail.data.user_name || transactionDetail.data.guest_name || "Guest"}
+                    {transactionDetail.data.user_name ||
+                      transactionDetail.data.guest_name ||
+                      "Guest"}
                   </p>
                   <p>
                     <strong>Email:</strong>{" "}
-                    {transactionDetail.data.user_email || transactionDetail.data.guest_email || "-"}
+                    {transactionDetail.data.user_email ||
+                      transactionDetail.data.guest_email ||
+                      "-"}
                   </p>
                   <p>
                     <strong>Telepon:</strong>{" "}
@@ -769,14 +801,21 @@ export default function PosKasirPage() {
                   <p>
                     <strong>Status:</strong>{" "}
                     <Badge
-                      variant={getStatusInfo(transactionDetail.data.status).variant}
+                      variant={
+                        getStatusInfo(transactionDetail.data.status).variant
+                      }
                     >
                       {getStatusInfo(transactionDetail.data.status).label}
                     </Badge>
                   </p>
                   <p>
                     <strong>Tipe Pembayaran:</strong>{" "}
-                    {POS_PAYMENT_TYPES[transactionDetail.data.payment_type as keyof typeof POS_PAYMENT_TYPES]}
+                    {
+                      POS_PAYMENT_TYPES[
+                        transactionDetail.data
+                          .payment_type as keyof typeof POS_PAYMENT_TYPES
+                      ]
+                    }
                   </p>
                   <p>
                     <strong>Tipe:</strong> {transactionDetail.data.type}
@@ -807,16 +846,22 @@ export default function PosKasirPage() {
                     </div>
                     <div className="flex justify-between text-orange-600">
                       <span>Diskon:</span>
-                      <span>{formatRupiah(transactionDetail.data.discount_total)}</span>
+                      <span>
+                        {formatRupiah(transactionDetail.data.discount_total)}
+                      </span>
                     </div>
                     <div className="flex justify-between text-blue-600">
                       <span>Biaya Pengiriman:</span>
-                      <span>{formatRupiah(transactionDetail.data.shipment_cost)}</span>
+                      <span>
+                        {formatRupiah(transactionDetail.data.shipment_cost)}
+                      </span>
                     </div>
                     <div className="border-t pt-2">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total Akhir:</span>
-                        <span>{formatRupiah(transactionDetail.data.grand_total)}</span>
+                        <span>
+                          {formatRupiah(transactionDetail.data.grand_total)}
+                        </span>
                       </div>
                     </div>
                   </div>

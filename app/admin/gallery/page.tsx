@@ -17,6 +17,7 @@ import {
 import { GaleriItem } from "@/types/gallery";
 import FormGallery from "@/components/form-modal/admin/gallery-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function GalleryPage() {
   const [form, setForm] = useState<Partial<GaleriItem>>();
@@ -155,21 +156,11 @@ export default function GalleryPage() {
                 list.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleDetail(item)}>
-                          Detail
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(item)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     <td className="px-4 py-2">
                       {typeof item.image === "string" && item.image ? (

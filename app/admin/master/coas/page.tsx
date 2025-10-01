@@ -16,6 +16,7 @@ import {
 import type { CoaKoperasi } from "@/types/koperasi-types/master/coa";
 import CoaForm from "@/components/form-modal/koperasi-modal/master/coa-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function CoaPage() {
   // ⬇️ level tidak diset default, type default "Global"
@@ -173,21 +174,11 @@ export default function CoaPage() {
                 filtered.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleDetail(item)}>
-                          Detail
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(item)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     <td className="px-4 py-2 font-mono text-sm">{item.code}</td>
                     <td className="px-4 py-2 font-medium">{item.name}</td>

@@ -11,15 +11,19 @@ import {
   useUpdatePinjamanCategoryMutation,
   useDeletePinjamanCategoryMutation,
 } from "@/services/master/pinjaman-category.service";
-import { CreatePinjamanCategoryRequest, PinjamanCategory } from "@/types/master/pinjaman-category";
+import {
+  CreatePinjamanCategoryRequest,
+  PinjamanCategory,
+} from "@/types/master/pinjaman-category";
 import FormPinjamanCategory from "@/components/form-modal/pinjaman-category-form";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function PinjamanKategoriPage() {
   const [form, setForm] = useState<Partial<PinjamanCategory>>({
     status: 1,
-    type: 'admin',
+    type: "admin",
     admin_fee: 0,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,14 +53,17 @@ export default function PinjamanKategoriPage() {
         code: form.code || "",
         name: form.name || "",
         description: form.description || "",
-        type: (form.type === "admin" || form.type === "admin+margin") ? form.type : "admin",
+        type:
+          form.type === "admin" || form.type === "admin+margin"
+            ? form.type
+            : "admin",
         admin_fee: form.admin_fee !== undefined ? form.admin_fee : 0,
         status: form.status !== undefined ? form.status : 1,
-        margin: 0
+        margin: 0,
       };
 
       // Only include margin field if type is 'admin+margin'
-      if (form.type === 'admin+margin') {
+      if (form.type === "admin+margin") {
         payload.margin = form.margin !== undefined ? form.margin : 0;
       }
 
@@ -68,7 +75,7 @@ export default function PinjamanKategoriPage() {
         Swal.fire("Sukses", "Kategori pinjaman ditambahkan", "success");
       }
 
-      setForm({ status: 1, type: 'admin', admin_fee: 0 });
+      setForm({ status: 1, type: "admin", admin_fee: 0 });
       setEditingId(null);
       await refetch();
       closeModal();
@@ -128,10 +135,7 @@ export default function PinjamanKategoriPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <ProdukToolbar
-        openModal={openModal}
-        onSearchChange={setQuery}
-      />
+      <ProdukToolbar openModal={openModal} onSearchChange={setQuery} />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -165,49 +169,47 @@ export default function PinjamanKategoriPage() {
                 filteredData.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleDetail(item)}>
-                          Detail
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(item)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     <td className="px-4 py-2 font-mono text-sm">{item.code}</td>
                     <td className="px-4 py-2 font-medium">{item.name}</td>
                     <td className="px-4 py-2">
-                      <Badge variant={item.type === 'admin' ? 'default' : 'secondary'}>
-                        {item.type === 'admin' ? 'Biaya Admin' : 'Margin + Biaya Admin'}
+                      <Badge
+                        variant={
+                          item.type === "admin" ? "default" : "secondary"
+                        }
+                      >
+                        {item.type === "admin"
+                          ? "Biaya Admin"
+                          : "Margin + Biaya Admin"}
                       </Badge>
                     </td>
                     <td className="px-4 py-2 font-medium">
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
                         minimumFractionDigits: 0,
                       }).format(item.admin_fee)}
                     </td>
                     <td className="px-4 py-2 font-medium">
-                      {item.type === 'admin+margin' ? `${item.margin}%` : '-'}
+                      {item.type === "admin+margin" ? `${item.margin}%` : "-"}
                     </td>
                     <td className="px-4 py-2 text-gray-600 max-w-xs truncate">
                       {item.description}
                     </td>
                     <td className="px-4 py-2">
-                      <Badge variant={item.status === 1 ? "success" : "destructive"}>
+                      <Badge
+                        variant={item.status === 1 ? "success" : "destructive"}
+                      >
                         {item.status === 1 ? "Aktif" : "Nonaktif"}
                       </Badge>
                     </td>
                     <td className="px-4 py-2 text-sm text-gray-500">
-                      {new Date(item.created_at).toLocaleDateString('id-ID')}
+                      {new Date(item.created_at).toLocaleDateString("id-ID")}
                     </td>
                   </tr>
                 ))
@@ -246,7 +248,7 @@ export default function PinjamanKategoriPage() {
             form={form}
             setForm={setForm}
             onCancel={() => {
-              setForm({ status: 1, type: 'admin', admin_fee: 0 });
+              setForm({ status: 1, type: "admin", admin_fee: 0 });
               setEditingId(null);
               setReadonly(false);
               closeModal();

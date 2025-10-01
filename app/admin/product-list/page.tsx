@@ -16,6 +16,7 @@ import { Product } from "@/types/admin/product";
 import FormProduct from "@/components/form-modal/admin/product-form";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function ProductPage() {
   const [form, setForm] = useState<Partial<Product>>({
@@ -288,21 +289,11 @@ export default function ProductPage() {
                 filteredList.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleDetail(item)}>
-                          Detail
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(item)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.category_name}

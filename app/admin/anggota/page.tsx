@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import AnggotaForm from "@/components/form-modal/koperasi-modal/anggota-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { useRouter } from "next/navigation";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 type AnggotaPayload = {
   name: string;
@@ -120,32 +121,32 @@ export default function AnggotaPage() {
 
       // Create FormData for file uploads
       const formData = new FormData();
-      formData.append('name', form.name);
-      formData.append('email', form.email);
-      formData.append('phone', form.phone);
-      formData.append('address', form.address ?? "");
-      formData.append('gender', form.gender as string);
-      formData.append('birth_date', form.birth_date ?? "");
-      formData.append('birth_place', form.birth_place ?? "");
-      formData.append('nik', form.nik);
-      formData.append('npwp', form.npwp ?? "");
-      formData.append('status', String(form.status));
+      formData.append("name", form.name);
+      formData.append("email", form.email);
+      formData.append("phone", form.phone);
+      formData.append("address", form.address ?? "");
+      formData.append("gender", form.gender as string);
+      formData.append("birth_date", form.birth_date ?? "");
+      formData.append("birth_place", form.birth_place ?? "");
+      formData.append("nik", form.nik);
+      formData.append("npwp", form.npwp ?? "");
+      formData.append("status", String(form.status));
 
       // Add optional fields
-      if (form.nip) formData.append('nip', form.nip);
-      if (form.unit_kerja) formData.append('unit_kerja', form.unit_kerja);
-      if (form.jabatan) formData.append('jabatan', form.jabatan);
+      if (form.nip) formData.append("nip", form.nip);
+      if (form.unit_kerja) formData.append("unit_kerja", form.unit_kerja);
+      if (form.jabatan) formData.append("jabatan", form.jabatan);
 
       // Add password fields for create
       if (!editingId && form.password && form.password_confirmation) {
-        formData.append('password', form.password);
-        formData.append('password_confirmation', form.password_confirmation);
+        formData.append("password", form.password);
+        formData.append("password_confirmation", form.password_confirmation);
       }
 
       // Add file uploads
-      if (form.ktp) formData.append('ktp', form.ktp);
-      if (form.photo) formData.append('photo', form.photo);
-      if (form.slip_gaji) formData.append('slip_gaji', form.slip_gaji);
+      if (form.ktp) formData.append("ktp", form.ktp);
+      if (form.photo) formData.append("photo", form.photo);
+      if (form.slip_gaji) formData.append("slip_gaji", form.slip_gaji);
 
       if (editingId) {
         await updateAnggota({ id: editingId, payload: formData }).unwrap();
@@ -247,7 +248,10 @@ export default function AnggotaPage() {
 
       <Card>
         <div className="px-4">
-          <Button variant="default" onClick={() => router.push("/admin/history")}>
+          <Button
+            variant="default"
+            onClick={() => router.push("/admin/history")}
+          >
             Lihat History
           </Button>
         </div>
@@ -282,21 +286,11 @@ export default function AnggotaPage() {
                 filteredList.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => handleDetail(item)}>
-                          Detail
-                        </Button>
-                        <Button size="sm" onClick={() => handleEdit(item)}>
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDelete(item)}
-                        >
-                          Hapus
-                        </Button>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                      />
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>
                     <td className="px-4 py-2 whitespace-nowrap">

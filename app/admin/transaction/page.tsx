@@ -26,6 +26,7 @@ import {
 import { Transaction } from "@/types/admin/transaction";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 // Status enum mapping
 type TransactionStatusKey = 0 | 1 | 2 | -1 | -2 | -3;
@@ -267,22 +268,10 @@ export default function TransactionPage() {
                   return (
                     <tr key={item.id} className="border-t">
                       <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item)}
-                          >
-                            Hapus
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="default"
-                            onClick={() => handleDetailClick(item.id)}
-                          >
-                            Detail
-                          </Button>
-                        </div>
+                        <ActionsGroup
+                          handleDetail={() => handleDetailClick(item.id)}
+                          handleDelete={() => handleDelete(item)}
+                        />
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.reference}

@@ -5,7 +5,12 @@ import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import useModal from "@/hooks/use-modal";
 import {
   useGetPinjamanListQuery,
@@ -15,9 +20,7 @@ import {
   useDeletePinjamanMutation,
   useUpdatePinjamanStatusMutation,
 } from "@/services/admin/pinjaman.service";
-import {
-  useCreatePaymentMutation,
-} from "@/services/installment.service";
+import { useCreatePaymentMutation } from "@/services/installment.service";
 import { Pinjaman } from "@/types/admin/pinjaman";
 import FormPinjaman from "@/components/form-modal/pinjaman-form";
 import { useGetPinjamanCategoryListQuery } from "@/services/master/pinjaman-category.service";
@@ -34,6 +37,7 @@ import {
   CreditCard,
   DollarSign,
 } from "lucide-react";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function PinjamanAnggotaPage() {
   const [form, setForm] = useState<Partial<Pinjaman>>({});
@@ -53,8 +57,9 @@ export default function PinjamanAnggotaPage() {
     status: boolean;
   } | null>(null);
   const [paymentFile, setPaymentFile] = useState<File | null>(null);
-  const [paymentType, setPaymentType] = useState<'manual' | 'automatic'>('manual');
-
+  const [paymentType, setPaymentType] = useState<"manual" | "automatic">(
+    "manual"
+  );
 
   // Pagination
   const itemsPerPage = 10;
@@ -120,10 +125,13 @@ export default function PinjamanAnggotaPage() {
   // const [generateInstallments] = useGenerateInstallmentsMutation();
 
   // Get pinjaman details with installments when a pinjaman is selected
-  const { data: pinjamanDetails, isLoading: isLoadingInstallments, refetch: refetchInstallments } = useGetPinjamanDetailsQuery(
-    selectedPinjaman?.id || 0,
-    { skip: !selectedPinjaman?.id }
-  );
+  const {
+    data: pinjamanDetails,
+    isLoading: isLoadingInstallments,
+    refetch: refetchInstallments,
+  } = useGetPinjamanDetailsQuery(selectedPinjaman?.id || 0, {
+    skip: !selectedPinjaman?.id,
+  });
 
   const handleSubmit = async () => {
     try {
@@ -207,15 +215,18 @@ export default function PinjamanAnggotaPage() {
     setPaymentModalOpen(true);
   };
 
-
   const handleCreatePayment = async () => {
     if (!selectedInstallment || !selectedPinjaman) {
       Swal.fire("Error", "Data tidak lengkap", "error");
       return;
     }
 
-    if (paymentType === 'manual' && !paymentFile) {
-      Swal.fire("Error", "Pilih file bukti pembayaran terlebih dahulu", "error");
+    if (paymentType === "manual" && !paymentFile) {
+      Swal.fire(
+        "Error",
+        "Pilih file bukti pembayaran terlebih dahulu",
+        "error"
+      );
       return;
     }
 
@@ -225,22 +236,21 @@ export default function PinjamanAnggotaPage() {
         pinjaman_detail_id: selectedInstallment.id,
         amount: selectedInstallment.remaining,
         type: paymentType,
-        image: paymentType === 'manual' ? paymentFile || undefined : undefined,
+        image: paymentType === "manual" ? paymentFile || undefined : undefined,
       }).unwrap();
-      
+
       await refetchInstallments();
       setPaymentModalOpen(false);
       setSelectedInstallment(null);
       setPaymentFile(null);
-      setPaymentType('manual');
-      
+      setPaymentType("manual");
+
       Swal.fire("Berhasil", "Pembayaran berhasil diproses", "success");
     } catch (error) {
       Swal.fire("Gagal", "Gagal memproses pembayaran", "error");
       console.error(error);
     }
   };
-
 
   const handleExport = async () => {
     if (filteredData.length === 0) {
@@ -347,33 +357,35 @@ export default function PinjamanAnggotaPage() {
   // Filter data based on all filters
   const filteredData = useMemo(() => {
     let filtered = pinjamanList;
-    
+
     // Apply category filter
     if (filters.category_id) {
       filtered = filtered.filter(
         (item) => item.pinjaman_category_id === Number(filters.category_id)
       );
     }
-    
+
     // Apply status filter
     if (filters.status) {
       filtered = filtered.filter(
         (item) => String(item.status) === filters.status
       );
     }
-    
+
     // Apply search filter
     if (filters.search) {
       filtered = filtered.filter(
         (item) =>
-          item.user?.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
+          item.user?.name
+            ?.toLowerCase()
+            .includes(filters.search.toLowerCase()) ||
           item.pinjaman_category?.name
             ?.toLowerCase()
             .includes(filters.search.toLowerCase()) ||
           item.description?.toLowerCase().includes(filters.search.toLowerCase())
       );
     }
-    
+
     return filtered;
   }, [pinjamanList, filters.category_id, filters.status, filters.search]);
 
@@ -387,22 +399,50 @@ export default function PinjamanAnggotaPage() {
 
   const getStatusBadge = (status: string | number) => {
     const statusConfig = {
-      "0": { variant: "secondary" as const, label: "Pending", className: "bg-yellow-100 text-yellow-800" },
-      "1": { variant: "success" as const, label: "Approved", className: "bg-green-100 text-green-800" },
-      "2": { variant: "destructive" as const, label: "Ditolak", className: "bg-red-100 text-red-800" },
-      pending: { variant: "secondary" as const, label: "Pending", className: "bg-yellow-100 text-yellow-800" },
-      approved: { variant: "success" as const, label: "Approved", className: "bg-green-100 text-green-800" },
-      rejected: { variant: "destructive" as const, label: "Ditolak", className: "bg-red-100 text-red-800" },
+      "0": {
+        variant: "secondary" as const,
+        label: "Pending",
+        className: "bg-yellow-100 text-yellow-800",
+      },
+      "1": {
+        variant: "success" as const,
+        label: "Approved",
+        className: "bg-green-100 text-green-800",
+      },
+      "2": {
+        variant: "destructive" as const,
+        label: "Ditolak",
+        className: "bg-red-100 text-red-800",
+      },
+      pending: {
+        variant: "secondary" as const,
+        label: "Pending",
+        className: "bg-yellow-100 text-yellow-800",
+      },
+      approved: {
+        variant: "success" as const,
+        label: "Approved",
+        className: "bg-green-100 text-green-800",
+      },
+      rejected: {
+        variant: "destructive" as const,
+        label: "Ditolak",
+        className: "bg-red-100 text-red-800",
+      },
     };
 
     const statusKey = String(status);
     const config = statusConfig[statusKey as keyof typeof statusConfig] || {
       variant: "destructive" as const,
       label: String(status),
-      className: "bg-gray-100 text-gray-800"
+      className: "bg-gray-100 text-gray-800",
     };
 
-    return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {config.label}
+      </Badge>
+    );
   };
 
   return (
@@ -534,111 +574,77 @@ export default function PinjamanAnggotaPage() {
                 filteredData.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <TooltipProvider>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {/* Basic Actions */}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDetail(item)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Lihat Detail</p>
-                            </TooltipContent>
-                          </Tooltip>
+                      <ActionsGroup
+                        handleDetail={() => {
+                          handleDetail(item);
+                        }}
+                        handleEdit={() => {
+                          handleEdit(item);
+                        }}
+                        handleDelete={() => {
+                          handleDelete(item);
+                        }}
+                        additionalActions={
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    handlePaymentHistory(item);
+                                  }}
+                                >
+                                  <CreditCard className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>History Pembayaran</p>
+                              </TooltipContent>
+                            </Tooltip>
 
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(item)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit Pinjaman</p>
-                            </TooltipContent>
-                          </Tooltip>
+                            {(String(item.status) === "0" ||
+                              item.status === "pending" ||
+                              Number(item.status) === 0) && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleStatusUpdate(item, "1")
+                                      }
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <CheckCircle className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Approve Pinjaman</p>
+                                  </TooltipContent>
+                                </Tooltip>
 
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handlePaymentHistory(item)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <CreditCard className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>History Pembayaran</p>
-                            </TooltipContent>
-                          </Tooltip>
-
-                          {/* Validation Actions - Only show for pending loans */}
-                          {(String(item.status) === "0" || item.status === "pending" || Number(item.status) === 0) && (
-                            <>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="default"
-                                    onClick={() => handleStatusUpdate(item, "1")}
-                                    className="h-8 w-8 p-0 bg-green-600 hover:bg-green-700"
-                                  >
-                                    <CheckCircle className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Approve Pinjaman</p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => handleStatusUpdate(item, "2")}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <XCircle className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Reject Pinjaman</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </>
-                          )}
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(item)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Hapus Pinjaman</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleStatusUpdate(item, "2")
+                                      }
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      <XCircle className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Reject Pinjaman</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                          </>
+                        }
+                      />
                     </td>
                     <td className="px-4 py-2">
                       <div>
@@ -665,9 +671,7 @@ export default function PinjamanAnggotaPage() {
                     </td>
                     <td className="px-4 py-2">{item.tenor} bulan</td>
                     <td className="px-4 py-2">{item.interest_rate}%</td>
-                    <td className="px-4 py-2">
-                      {getStatusBadge(item.status)}
-                    </td>
+                    <td className="px-4 py-2">{getStatusBadge(item.status)}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">
                       {new Date(item.date).toLocaleDateString("id-ID")}
                     </td>
@@ -729,13 +733,19 @@ export default function PinjamanAnggotaPage() {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h2 className="text-lg font-semibold">
-                  History Pembayaran - {pinjamanDetails?.user?.name || selectedPinjaman.user?.name}
+                  History Pembayaran -{" "}
+                  {pinjamanDetails?.user?.name || selectedPinjaman.user?.name}
                 </h2>
                 <p className="text-sm text-gray-500">
-                  Pinjaman: {formatCurrency(pinjamanDetails?.nominal || selectedPinjaman.nominal)} - {pinjamanDetails?.tenor || selectedPinjaman.tenor} bulan
+                  Pinjaman:{" "}
+                  {formatCurrency(
+                    pinjamanDetails?.nominal || selectedPinjaman.nominal
+                  )}{" "}
+                  - {pinjamanDetails?.tenor || selectedPinjaman.tenor} bulan
                 </p>
                 <p className="text-xs text-gray-400">
-                  Angsuran per bulan: {formatCurrency(pinjamanDetails?.monthly_installment || 0)}
+                  Angsuran per bulan:{" "}
+                  {formatCurrency(pinjamanDetails?.monthly_installment || 0)}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -762,7 +772,9 @@ export default function PinjamanAnggotaPage() {
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-5 w-5 text-green-600" />
                         <div>
-                          <p className="text-sm text-gray-500">Total Angsuran</p>
+                          <p className="text-sm text-gray-500">
+                            Total Angsuran
+                          </p>
                           <p className="font-semibold">
                             {pinjamanDetails?.details?.length || 0} bulan
                           </p>
@@ -777,7 +789,10 @@ export default function PinjamanAnggotaPage() {
                         <div>
                           <p className="text-sm text-gray-500">Sudah Dibayar</p>
                           <p className="font-semibold">
-                            {pinjamanDetails?.details?.filter(i => i.status === true).length || 0} bulan
+                            {pinjamanDetails?.details?.filter(
+                              (i) => i.status === true
+                            ).length || 0}{" "}
+                            bulan
                           </p>
                         </div>
                       </div>
@@ -790,7 +805,10 @@ export default function PinjamanAnggotaPage() {
                         <div>
                           <p className="text-sm text-gray-500">Belum Dibayar</p>
                           <p className="font-semibold">
-                            {pinjamanDetails?.details?.filter(i => i.status === false).length || 0} bulan
+                            {pinjamanDetails?.details?.filter(
+                              (i) => i.status === false
+                            ).length || 0}{" "}
+                            bulan
                           </p>
                         </div>
                       </div>
@@ -814,9 +832,13 @@ export default function PinjamanAnggotaPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {!pinjamanDetails?.details || pinjamanDetails.details.length === 0 ? (
+                          {!pinjamanDetails?.details ||
+                          pinjamanDetails.details.length === 0 ? (
                             <tr>
-                              <td colSpan={6} className="text-center p-8 text-gray-500">
+                              <td
+                                colSpan={6}
+                                className="text-center p-8 text-gray-500"
+                              >
                                 Belum ada data angsuran.
                               </td>
                             </tr>
@@ -830,20 +852,33 @@ export default function PinjamanAnggotaPage() {
                                   {formatCurrency(installment.remaining)}
                                 </td>
                                 <td className="px-4 py-2">
-                                  {new Date(installment.due_date).toLocaleDateString("id-ID")}
+                                  {new Date(
+                                    installment.due_date
+                                  ).toLocaleDateString("id-ID")}
                                 </td>
                                 <td className="px-4 py-2">
-                                  {installment.paid_at 
-                                    ? new Date(installment.paid_at).toLocaleDateString("id-ID")
-                                    : "-"
-                                  }
+                                  {installment.paid_at
+                                    ? new Date(
+                                        installment.paid_at
+                                      ).toLocaleDateString("id-ID")
+                                    : "-"}
                                 </td>
                                 <td className="px-4 py-2">
-                                  <Badge 
-                                    variant={installment.status ? "success" : "secondary"}
-                                    className={installment.status ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}
+                                  <Badge
+                                    variant={
+                                      installment.status
+                                        ? "success"
+                                        : "secondary"
+                                    }
+                                    className={
+                                      installment.status
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                    }
                                   >
-                                    {installment.status ? "Lunas" : "Belum Bayar"}
+                                    {installment.status
+                                      ? "Lunas"
+                                      : "Belum Bayar"}
                                   </Badge>
                                 </td>
                                 <td className="px-4 py-2">
@@ -862,7 +897,10 @@ export default function PinjamanAnggotaPage() {
                                       </Button>
                                     ) : (
                                       <div className="flex items-center gap-2">
-                                        <Badge variant="success" className="text-xs">
+                                        <Badge
+                                          variant="success"
+                                          className="text-xs"
+                                        >
                                           Lunas
                                         </Badge>
                                       </div>
@@ -888,32 +926,39 @@ export default function PinjamanAnggotaPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">
-                Pembayaran Angsuran
-              </h2>
+              <h2 className="text-lg font-semibold">Pembayaran Angsuran</h2>
               <Button
                 variant="ghost"
                 onClick={() => {
                   setPaymentModalOpen(false);
                   setSelectedInstallment(null);
                   setPaymentFile(null);
-                  setPaymentType('manual');
+                  setPaymentType("manual");
                 }}
               >
                 ✕
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 mb-2">
-                  Angsuran Bulan Ke: <strong>{selectedInstallment.month}</strong>
+                  Angsuran Bulan Ke:{" "}
+                  <strong>{selectedInstallment.month}</strong>
                 </p>
                 <p className="text-sm text-gray-600 mb-2">
-                  Nominal: <strong>{formatCurrency(selectedInstallment.remaining)}</strong>
+                  Nominal:{" "}
+                  <strong>
+                    {formatCurrency(selectedInstallment.remaining)}
+                  </strong>
                 </p>
                 <p className="text-sm text-gray-600 mb-4">
-                  Jatuh Tempo: <strong>{new Date(selectedInstallment.due_date).toLocaleDateString("id-ID")}</strong>
+                  Jatuh Tempo:{" "}
+                  <strong>
+                    {new Date(selectedInstallment.due_date).toLocaleDateString(
+                      "id-ID"
+                    )}
+                  </strong>
                 </p>
               </div>
 
@@ -928,8 +973,10 @@ export default function PinjamanAnggotaPage() {
                       type="radio"
                       name="paymentType"
                       value="manual"
-                      checked={paymentType === 'manual'}
-                      onChange={(e) => setPaymentType(e.target.value as 'manual' | 'automatic')}
+                      checked={paymentType === "manual"}
+                      onChange={(e) =>
+                        setPaymentType(e.target.value as "manual" | "automatic")
+                      }
                       className="mr-2"
                     />
                     Manual (Upload Bukti)
@@ -939,8 +986,10 @@ export default function PinjamanAnggotaPage() {
                       type="radio"
                       name="paymentType"
                       value="automatic"
-                      checked={paymentType === 'automatic'}
-                      onChange={(e) => setPaymentType(e.target.value as 'manual' | 'automatic')}
+                      checked={paymentType === "automatic"}
+                      onChange={(e) =>
+                        setPaymentType(e.target.value as "manual" | "automatic")
+                      }
                       className="mr-2"
                     />
                     Otomatis
@@ -949,7 +998,7 @@ export default function PinjamanAnggotaPage() {
               </div>
 
               {/* Manual Payment - File Upload */}
-              {paymentType === 'manual' && (
+              {paymentType === "manual" && (
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Pilih File Bukti Pembayaran
@@ -957,7 +1006,9 @@ export default function PinjamanAnggotaPage() {
                   <input
                     type="file"
                     accept="image/*,.pdf"
-                    onChange={(e) => setPaymentFile(e.target.files?.[0] || null)}
+                    onChange={(e) =>
+                      setPaymentFile(e.target.files?.[0] || null)
+                    }
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <p className="text-xs text-gray-500 mt-1">
@@ -967,12 +1018,15 @@ export default function PinjamanAnggotaPage() {
               )}
 
               {/* Automatic Payment - Summary */}
-              {paymentType === 'automatic' && (
+              {paymentType === "automatic" && (
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium text-blue-900 mb-2">Ringkasan Pembayaran Otomatis</h3>
+                  <h3 className="font-medium text-blue-900 mb-2">
+                    Ringkasan Pembayaran Otomatis
+                  </h3>
                   <p className="text-sm text-blue-800">
-                    Pembayaran akan diproses secara otomatis dengan nominal yang tertera.
-                    Pastikan saldo mencukupi untuk melakukan pembayaran.
+                    Pembayaran akan diproses secara otomatis dengan nominal yang
+                    tertera. Pastikan saldo mencukupi untuk melakukan
+                    pembayaran.
                   </p>
                 </div>
               )}
@@ -984,17 +1038,19 @@ export default function PinjamanAnggotaPage() {
                     setPaymentModalOpen(false);
                     setSelectedInstallment(null);
                     setPaymentFile(null);
-                    setPaymentType('manual');
+                    setPaymentType("manual");
                   }}
                 >
                   Batal
                 </Button>
                 <Button
                   onClick={handleCreatePayment}
-                  disabled={paymentType === 'manual' && !paymentFile}
+                  disabled={paymentType === "manual" && !paymentFile}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  {paymentType === 'manual' ? 'Upload & Bayar' : 'Bayar Otomatis'}
+                  {paymentType === "manual"
+                    ? "Upload & Bayar"
+                    : "Bayar Otomatis"}
                 </Button>
               </div>
             </div>

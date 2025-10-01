@@ -21,13 +21,8 @@ import {
   Download,
   Filter,
   Plus,
-  Eye,
-  Edit,
-  Trash2,
   CheckCircle,
   XCircle,
-  MoreVertical,
-  CreditCard,
   CalendarIcon,
 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -37,25 +32,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format } from "date-fns";
+import ActionsGroup from "@/components/admin-components/actions-group";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 export default function SimpananAnggotaPage() {
   const [form, setForm] = useState<Partial<Simpanan>>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedSimpanan, setSelectedSimpanan] = useState<Simpanan | null>(
-    null
-  );
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
-
-  // Close dropdown when modal opens
-  useEffect(() => {
-    if (isOpen || paymentModalOpen) {
-      setOpenDropdownId(null);
-    }
-  }, [isOpen, paymentModalOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -228,11 +218,6 @@ export default function SimpananAnggotaPage() {
       Swal.fire("Gagal", "Gagal memperbarui status", "error");
       console.error(error);
     }
-  };
-
-  const handlePaymentHistory = (item: Simpanan) => {
-    setSelectedSimpanan(item);
-    setPaymentModalOpen(true);
   };
 
   const handleExport = async () => {
@@ -543,100 +528,53 @@ export default function SimpananAnggotaPage() {
                 filteredData.map((item) => (
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
-                      <div className="flex items-center gap-2">
-                        {/* Primary Actions */}
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDetail(item)}
-                            title="Lihat Detail"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(item)}
-                            title="Edit"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        {/* Status Actions for Pending */}
-                        {item.status === 0 && (
-                          <div className="flex gap-1">
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleStatusUpdate(item, "1")}
-                              title="Approve"
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleStatusUpdate(item, "2")}
-                              title="Reject"
-                            >
-                              <XCircle className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-
-                        {/* Dropdown for Additional Actions */}
-                        <div className="relative dropdown-container">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenDropdownId(
-                                openDropdownId === item.id ? null : item.id
-                              );
-                            }}
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-
-                          {/* Dropdown Menu */}
-                          {openDropdownId === item.id && (
-                            <div
-                              className="absolute right-0 top-8 bg-white border border-gray-200 rounded-md shadow-xl z-[99999] min-w-[160px]"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="py-1">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePaymentHistory(item);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <CreditCard className="h-4 w-4" />
-                                  History Pembayaran
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDelete(item);
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Hapus Simpanan
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                      <ActionsGroup
+                        handleDetail={() => handleDetail(item)}
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item)}
+                        additionalActions={
+                          <>
+                            {item.status === 0 && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleStatusUpdate(item, "1")
+                                      }
+                                      title="Approve"
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <CheckCircle className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Approve</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      onClick={() =>
+                                        handleStatusUpdate(item, "2")
+                                      }
+                                      title="Reject"
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      <XCircle className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Reject</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                          </>
+                        }
+                      />
                     </td>
                     <td className="px-4 py-2">
                       <div>
@@ -717,28 +655,6 @@ export default function SimpananAnggotaPage() {
             readonly={readonly}
             isLoading={isCreating || isUpdating}
           />
-        </div>
-      )}
-
-      {/* Payment History Modal */}
-      {paymentModalOpen && selectedSimpanan && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-4xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold">
-                History Pembayaran - {selectedSimpanan.user_name}
-              </h2>
-              <Button
-                variant="ghost"
-                onClick={() => setPaymentModalOpen(false)}
-              >
-                ✕
-              </Button>
-            </div>
-            <div className="text-center py-8 text-gray-500">
-              Fitur history pembayaran akan segera tersedia
-            </div>
-          </div>
         </div>
       )}
     </div>

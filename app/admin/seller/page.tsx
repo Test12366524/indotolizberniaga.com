@@ -6,12 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Eye, MapPin, Star, Phone, Mail, Store } from "lucide-react";
-import { useGetSellerListQuery, type Seller } from "@/services/admin/seller.service";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Star, Phone, Mail } from "lucide-react";
+import {
+  useGetSellerListQuery,
+  type Seller,
+} from "@/services/admin/seller.service";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function SellerPage() {
   const [filters, setFilters] = useState({
@@ -29,19 +42,21 @@ export default function SellerPage() {
 
   const filteredData = useMemo(() => {
     if (!sellerData?.data) return [];
-    
+
     return sellerData.data.filter((seller) => {
-      const matchesSearch = 
+      const matchesSearch =
         seller.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         seller.email.toLowerCase().includes(filters.search.toLowerCase()) ||
         seller.phone.toLowerCase().includes(filters.search.toLowerCase()) ||
-        seller.anggota_reference.toLowerCase().includes(filters.search.toLowerCase()) ||
+        seller.anggota_reference
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
         seller.shop.name.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesStatus = 
-        filters.status === "all" || 
+
+      const matchesStatus =
+        filters.status === "all" ||
         String(seller.shop.status) === filters.status;
-      
+
       return matchesSearch && matchesStatus;
     });
   }, [sellerData?.data, filters]);
@@ -68,20 +83,20 @@ export default function SellerPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+    return new Date(dateString).toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleString("id-ID", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -89,9 +104,7 @@ export default function SellerPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Seller</h1>
-        <p className="text-sm text-gray-500">
-          Kelola data seller marketplace
-        </p>
+        <p className="text-sm text-gray-500">Kelola data seller marketplace</p>
       </div>
 
       {/* Filters */}
@@ -104,15 +117,19 @@ export default function SellerPage() {
                 id="search"
                 placeholder="Cari nama, email, phone, toko..."
                 value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                onChange={(e) =>
+                  setFilters({ ...filters, search: e.target.value })
+                }
               />
             </div>
-            
+
             <div>
               <Label htmlFor="status">Status Toko</Label>
               <Select
                 value={filters.status}
-                onValueChange={(value) => setFilters({ ...filters, status: value })}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, status: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Pilih status" />
@@ -167,7 +184,10 @@ export default function SellerPage() {
                   </tr>
                 ) : filteredData.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td
+                      colSpan={7}
+                      className="px-6 py-4 text-center text-gray-500"
+                    >
                       Tidak ada data
                     </td>
                   </tr>
@@ -175,24 +195,9 @@ export default function SellerPage() {
                   filteredData.map((seller) => (
                     <tr key={seller.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex items-center gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDetail(seller)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Detail</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
+                        <ActionsGroup
+                          handleDetail={() => handleDetail(seller)}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -259,7 +264,8 @@ export default function SellerPage() {
       {sellerData && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Menampilkan {sellerData.from} sampai {sellerData.to} dari {sellerData.total} data
+            Menampilkan {sellerData.from} sampai {sellerData.to} dari{" "}
+            {sellerData.total} data
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -300,28 +306,40 @@ export default function SellerPage() {
                   <div className="space-y-3">
                     <div>
                       <Label className="font-medium">Nama</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.name}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Referensi Anggota</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.anggota_reference}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.anggota_reference}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Status Anggota</Label>
-                      <div className="mt-1">{getAnggotaStatusBadge(selectedSeller.anggota_status)}</div>
+                      <div className="mt-1">
+                        {getAnggotaStatusBadge(selectedSeller.anggota_status)}
+                      </div>
                     </div>
                     <div>
                       <Label className="font-medium">Email</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.email}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.email}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Phone</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.phone}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.phone}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Email Verified</Label>
                       <p className="text-sm text-gray-600">
-                        {selectedSeller.email_verified_at ? formatDateTime(selectedSeller.email_verified_at) : 'Belum diverifikasi'}
+                        {selectedSeller.email_verified_at
+                          ? formatDateTime(selectedSeller.email_verified_at)
+                          : "Belum diverifikasi"}
                       </p>
                     </div>
                   </div>
@@ -332,23 +350,33 @@ export default function SellerPage() {
                   <div className="space-y-3">
                     <div>
                       <Label className="font-medium">Nama Toko</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.name}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.name}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Slug</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.slug}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.slug}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Alamat</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.address}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.address}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Deskripsi</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.description}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.description}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Status Toko</Label>
-                      <div className="mt-1">{getStatusBadge(selectedSeller.shop.status)}</div>
+                      <div className="mt-1">
+                        {getStatusBadge(selectedSeller.shop.status)}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -361,16 +389,21 @@ export default function SellerPage() {
                   <div className="space-y-3">
                     <div>
                       <Label className="font-medium">Email Toko</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.email}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.email}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Phone Toko</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.phone}</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.phone}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Koordinat</Label>
                       <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.latitude}, {selectedSeller.shop.longitude}
+                        {selectedSeller.shop.latitude},{" "}
+                        {selectedSeller.shop.longitude}
                       </p>
                     </div>
                   </div>
@@ -383,63 +416,78 @@ export default function SellerPage() {
                       <Label className="font-medium">Rating</Label>
                       <div className="flex items-center">
                         <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        <span className="text-sm font-medium">{selectedSeller.shop.rating}</span>
+                        <span className="text-sm font-medium">
+                          {selectedSeller.shop.rating}
+                        </span>
                       </div>
                     </div>
                     <div>
                       <Label className="font-medium">Total Review</Label>
-                      <p className="text-sm text-gray-600">{selectedSeller.shop.total_reviews} review</p>
+                      <p className="text-sm text-gray-600">
+                        {selectedSeller.shop.total_reviews} review
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Tanggal Dibuat</Label>
-                      <p className="text-sm text-gray-600">{formatDateTime(selectedSeller.shop.created_at)}</p>
+                      <p className="text-sm text-gray-600">
+                        {formatDateTime(selectedSeller.shop.created_at)}
+                      </p>
                     </div>
                     <div>
                       <Label className="font-medium">Terakhir Diupdate</Label>
-                      <p className="text-sm text-gray-600">{formatDateTime(selectedSeller.shop.updated_at)}</p>
+                      <p className="text-sm text-gray-600">
+                        {formatDateTime(selectedSeller.shop.updated_at)}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Media */}
-              {selectedSeller.shop.media && selectedSeller.shop.media.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Media Toko</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedSeller.shop.media.map((media) => (
-                      <div key={media.id} className="border rounded-lg p-4">
-                        <div className="space-y-2">
-                          <div>
-                            <Label className="font-medium">Tipe</Label>
-                            <p className="text-sm text-gray-600 capitalize">{media.collection_name}</p>
-                          </div>
-                          <div>
-                            <Label className="font-medium">File</Label>
-                            <p className="text-sm text-gray-600">{media.file_name}</p>
-                          </div>
-                          <div>
-                            <Label className="font-medium">Size</Label>
-                            <p className="text-sm text-gray-600">{(media.size / 1024).toFixed(2)} KB</p>
-                          </div>
-                          {media.original_url && (
+              {selectedSeller.shop.media &&
+                selectedSeller.shop.media.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">Media Toko</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {selectedSeller.shop.media.map((media) => (
+                        <div key={media.id} className="border rounded-lg p-4">
+                          <div className="space-y-2">
                             <div>
-                              <Label className="font-medium">Preview</Label>
-                              <div className="mt-2">
-                                <img 
-                                  src={media.original_url} 
-                                  alt={media.name}
-                                  className="w-full h-32 object-cover rounded"
-                                />
-                              </div>
+                              <Label className="font-medium">Tipe</Label>
+                              <p className="text-sm text-gray-600 capitalize">
+                                {media.collection_name}
+                              </p>
                             </div>
-                          )}
+                            <div>
+                              <Label className="font-medium">File</Label>
+                              <p className="text-sm text-gray-600">
+                                {media.file_name}
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="font-medium">Size</Label>
+                              <p className="text-sm text-gray-600">
+                                {(media.size / 1024).toFixed(2)} KB
+                              </p>
+                            </div>
+                            {media.original_url && (
+                              <div>
+                                <Label className="font-medium">Preview</Label>
+                                <div className="mt-2">
+                                  <img
+                                    src={media.original_url}
+                                    alt={media.name}
+                                    className="w-full h-32 object-cover rounded"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
         </DialogContent>

@@ -15,6 +15,7 @@ import {
   useDeleteVoucherMutation,
 } from "@/services/voucher.service";
 import VoucherForm from "@/components/form-modal/voucher-form";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function VoucherPage() {
   const [form, setForm] = useState<Partial<Voucher>>({});
@@ -191,17 +192,11 @@ export default function VoucherPage() {
               ) : (
                 filteredList.map((item, idx) => (
                   <tr key={item.id} className="border-t">
-                    <td className="px-4 py-2 space-x-2">
-                      <Button size="sm" onClick={() => handleEdit(item)}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        Hapus
-                      </Button>
+                    <td className="px-4 py-2">
+                      <ActionsGroup
+                        handleEdit={() => handleEdit(item)}
+                        handleDelete={() => handleDelete(item.id)}
+                      />
                     </td>
                     <td className="px-4 py-2">{(page - 1) * 10 + idx + 1}</td>
                     <td className="px-4 py-2">{item.code}</td>

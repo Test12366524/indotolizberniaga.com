@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   useGetCustomerListQuery,
   useCreateCustomerMutation,
@@ -21,7 +20,7 @@ import {
 } from "@/services/admin/customer.service";
 import { Customer } from "@/types/admin/customer";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Tag } from "lucide-react";
+import { Edit, Trash2, Tag } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -30,6 +29,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
+import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function CustomerPage() {
   const itemsPerPage = 10;
@@ -257,26 +257,10 @@ export default function CustomerPage() {
                   return (
                     <tr key={item.id} className="border-t">
                       <td className="px-4 py-2">
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenEditModal(item)}
-                            className="flex items-center gap-1 h-8 px-3"
-                          >
-                            <Edit className="h-3 w-3" />
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(item)}
-                            className="h-8 px-3"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Hapus
-                          </Button>
-                        </div>
+                        <ActionsGroup
+                          handleEdit={() => handleOpenEditModal(item)}
+                          handleDelete={() => handleDelete(item)}
+                        />
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.name}
