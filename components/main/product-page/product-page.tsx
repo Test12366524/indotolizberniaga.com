@@ -16,6 +16,7 @@ import Image from "next/image";
 import { Product } from "@/types/admin/product";
 import {
   useGetProductListQuery,
+  useGetProductListPublicQuery,
   useGetProductBySlugQuery,
 } from "@/services/product.service";
 import DotdLoader from "@/components/loader/3dot";

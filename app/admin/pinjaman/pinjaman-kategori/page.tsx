@@ -11,7 +11,7 @@ import {
   useUpdatePinjamanCategoryMutation,
   useDeletePinjamanCategoryMutation,
 } from "@/services/master/pinjaman-category.service";
-import { PinjamanCategory } from "@/types/master/pinjaman-category";
+import { CreatePinjamanCategoryRequest, PinjamanCategory } from "@/types/master/pinjaman-category";
 import FormPinjamanCategory from "@/components/form-modal/pinjaman-category-form";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
@@ -45,13 +45,14 @@ export default function PinjamanKategoriPage() {
 
   const handleSubmit = async () => {
     try {
-      const payload: any = {
+      const payload: CreatePinjamanCategoryRequest = {
         code: form.code || "",
         name: form.name || "",
         description: form.description || "",
-        type: form.type || 'admin',
+        type: (form.type === "admin" || form.type === "admin+margin") ? form.type : "admin",
         admin_fee: form.admin_fee !== undefined ? form.admin_fee : 0,
         status: form.status !== undefined ? form.status : 1,
+        margin: 0
       };
 
       // Only include margin field if type is 'admin+margin'
