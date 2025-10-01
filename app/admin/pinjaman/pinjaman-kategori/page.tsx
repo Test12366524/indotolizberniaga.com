@@ -19,6 +19,8 @@ import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 export default function PinjamanKategoriPage() {
   const [form, setForm] = useState<Partial<PinjamanCategory>>({
     status: 1,
+    type: 'admin',
+    admin_fee: 0,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [readonly, setReadonly] = useState(false);
@@ -43,12 +45,19 @@ export default function PinjamanKategoriPage() {
 
   const handleSubmit = async () => {
     try {
-      const payload = {
+      const payload: any = {
         code: form.code || "",
         name: form.name || "",
         description: form.description || "",
+        type: form.type || 'admin',
+        admin_fee: form.admin_fee !== undefined ? form.admin_fee : 0,
         status: form.status !== undefined ? form.status : 1,
       };
+
+      // Only include margin field if type is 'admin+margin'
+      if (form.type === 'admin+margin') {
+        payload.margin = form.margin !== undefined ? form.margin : 0;
+      }
 
       if (editingId) {
         await updateCategory({ id: editingId, payload }).unwrap();
@@ -58,7 +67,7 @@ export default function PinjamanKategoriPage() {
         Swal.fire("Sukses", "Kategori pinjaman ditambahkan", "success");
       }
 
-      setForm({ status: 1 });
+      setForm({ status: 1, type: 'admin', admin_fee: 0 });
       setEditingId(null);
       await refetch();
       closeModal();
@@ -109,7 +118,10 @@ export default function PinjamanKategoriPage() {
       (item) =>
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         item.code.toLowerCase().includes(query.toLowerCase()) ||
-        item.description.toLowerCase().includes(query.toLowerCase())
+        item.description.toLowerCase().includes(query.toLowerCase()) ||
+        item.type.toLowerCase().includes(query.toLowerCase()) ||
+        item.admin_fee.toString().includes(query) ||
+        item.margin.toString().includes(query)
     );
   }, [categoryList, query]);
 
@@ -128,7 +140,9 @@ export default function PinjamanKategoriPage() {
                 <th className="px-4 py-2">Aksi</th>
                 <th className="px-4 py-2">Kode</th>
                 <th className="px-4 py-2">Nama</th>
-                <th className="px-4 py-2">Deskripsi</th>
+                <th className="px-4 py-2">Tipe</th>
+                <th className="px-4 py-2">Biaya Admin</th>
+                <th className="px-4 py-2">Margin</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Dibuat</th>
               </tr>
@@ -136,13 +150,13 @@ export default function PinjamanKategoriPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-4">
+                  <td colSpan={8} className="text-center p-4">
                     Memuat data...
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-4">
+                  <td colSpan={8} className="text-center p-4">
                     Tidak ada data
                   </td>
                 </tr>
@@ -168,6 +182,21 @@ export default function PinjamanKategoriPage() {
                     </td>
                     <td className="px-4 py-2 font-mono text-sm">{item.code}</td>
                     <td className="px-4 py-2 font-medium">{item.name}</td>
+                    <td className="px-4 py-2">
+                      <Badge variant={item.type === 'admin' ? 'default' : 'secondary'}>
+                        {item.type === 'admin' ? 'Biaya Admin' : 'Margin + Biaya Admin'}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-2 font-medium">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(item.admin_fee)}
+                    </td>
+                    <td className="px-4 py-2 font-medium">
+                      {item.type === 'admin+margin' ? `${item.margin}%` : '-'}
+                    </td>
                     <td className="px-4 py-2 text-gray-600 max-w-xs truncate">
                       {item.description}
                     </td>
@@ -216,7 +245,7 @@ export default function PinjamanKategoriPage() {
             form={form}
             setForm={setForm}
             onCancel={() => {
-              setForm({ status: 1 });
+              setForm({ status: 1, type: 'admin', admin_fee: 0 });
               setEditingId(null);
               setReadonly(false);
               closeModal();

@@ -70,6 +70,18 @@ export default function FormSimpananCategory({
           />
         </div>
 
+        <div className="flex flex-col gap-y-1">
+          <Label>Nominal</Label>
+          <Input
+            type="number"
+            value={form.nominal || ""}
+            onChange={(e) => setForm({ ...form, nominal: Number(e.target.value) })}
+            readOnly={readonly}
+            placeholder="Masukkan nominal"
+            min="0"
+          />
+        </div>
+
         <div className="flex flex-col gap-y-1 col-span-2">
           <Label>Deskripsi</Label>
           <Textarea

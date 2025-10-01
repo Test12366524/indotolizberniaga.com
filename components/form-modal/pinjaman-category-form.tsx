@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PinjamanCategory } from "@/types/master/pinjaman-category";
 
 interface FormPinjamanCategoryProps {
@@ -29,10 +30,22 @@ export default function FormPinjamanCategory({
       setForm({
         ...form,
         status: 1,
+        type: 'admin',
+        admin_fee: 0,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.id, form.status]);
+
+  // Handle type change - clear margin when switching to 'admin'
+  useEffect(() => {
+    if (form.type === 'admin' && form.margin !== undefined) {
+      setForm({ ...form, margin: undefined });
+    } else if (form.type === 'admin+margin' && form.margin === undefined) {
+      setForm({ ...form, margin: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.type]);
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-2xl space-y-4">
@@ -69,6 +82,50 @@ export default function FormPinjamanCategory({
             placeholder="Masukkan nama kategori"
           />
         </div>
+
+        <div className="flex flex-col gap-y-1">
+          <Label>Tipe</Label>
+          <Select
+            value={form.type || 'admin'}
+            onValueChange={(value: 'admin' | 'admin+margin') => setForm({ ...form, type: value })}
+            disabled={readonly}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih tipe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="admin">Biaya Admin</SelectItem>
+              <SelectItem value="admin+margin">Margin + Biaya Admin</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-y-1">
+          <Label>Biaya Admin (Rp)</Label>
+          <Input
+            type="number"
+            value={form.admin_fee || ""}
+            onChange={(e) => setForm({ ...form, admin_fee: Number(e.target.value) })}
+            readOnly={readonly}
+            placeholder="Masukkan biaya admin"
+            min="0"
+          />
+        </div>
+
+        {form.type === 'admin+margin' && (
+          <div className="flex flex-col gap-y-1">
+            <Label>Margin (%)</Label>
+            <Input
+              type="number"
+              value={form.margin || ""}
+              onChange={(e) => setForm({ ...form, margin: Number(e.target.value) })}
+              readOnly={readonly}
+              placeholder="Masukkan persentase margin"
+              min="0"
+              step="0.01"
+            />
+          </div>
+        )}
 
         <div className="flex flex-col gap-y-1 col-span-2">
           <Label>Deskripsi</Label>

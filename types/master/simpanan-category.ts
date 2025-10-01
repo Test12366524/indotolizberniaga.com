@@ -3,6 +3,7 @@ export interface SimpananCategory {
   code: string;
   name: string;
   description: string;
+  nominal: number;
   status: number;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,7 @@ export interface CreateSimpananCategoryRequest {
   code: string;
   name: string;
   description: string;
+  nominal: number;
   status: number;
 }
 
@@ -44,5 +46,6 @@ export interface UpdateSimpananCategoryRequest {
   code?: string;
   name?: string;
   description?: string;
+  nominal?: number;
   status?: number;
 }

@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 export default function PinjamanKategoriPage() {
   const [form, setForm] = useState<Partial<SimpananCategory>>({
     status: 1,
+    nominal: 0,
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [readonly, setReadonly] = useState(false);
@@ -47,6 +48,7 @@ export default function PinjamanKategoriPage() {
         code: form.code || "",
         name: form.name || "",
         description: form.description || "",
+        nominal: form.nominal !== undefined ? form.nominal : 0,
         status: form.status !== undefined ? form.status : 1,
       };
 
@@ -58,7 +60,7 @@ export default function PinjamanKategoriPage() {
         Swal.fire("Sukses", "Kategori pinjaman ditambahkan", "success");
       }
 
-      setForm({ status: 1 });
+      setForm({ status: 1, nominal: 0 });
       setEditingId(null);
       await refetch();
       closeModal();
@@ -109,7 +111,8 @@ export default function PinjamanKategoriPage() {
       (item) =>
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         item.code.toLowerCase().includes(query.toLowerCase()) ||
-        item.description.toLowerCase().includes(query.toLowerCase())
+        item.description.toLowerCase().includes(query.toLowerCase()) ||
+        item.nominal.toString().includes(query)
     );
   }, [categoryList, query]);
 
@@ -146,6 +149,7 @@ export default function PinjamanKategoriPage() {
                 <th className="px-4 py-2">Aksi</th>
                 <th className="px-4 py-2">Kode</th>
                 <th className="px-4 py-2">Nama</th>
+                <th className="px-4 py-2">Nominal</th>
                 <th className="px-4 py-2">Deskripsi</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Dibuat</th>
@@ -154,13 +158,13 @@ export default function PinjamanKategoriPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-4">
+                  <td colSpan={7} className="text-center p-4">
                     Memuat data...
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center p-4">
+                  <td colSpan={7} className="text-center p-4">
                     Tidak ada data
                   </td>
                 </tr>
@@ -186,6 +190,13 @@ export default function PinjamanKategoriPage() {
                     </td>
                     <td className="px-4 py-2 font-mono text-sm">{item.code}</td>
                     <td className="px-4 py-2 font-medium">{item.name}</td>
+                    <td className="px-4 py-2 font-medium">
+                      {new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0,
+                      }).format(item.nominal)}
+                    </td>
                     <td className="px-4 py-2 text-gray-600 max-w-xs truncate">
                       {item.description}
                     </td>
@@ -236,7 +247,7 @@ export default function PinjamanKategoriPage() {
             form={form}
             setForm={setForm}
             onCancel={() => {
-              setForm({ status: 1 });
+              setForm({ status: 1, nominal: 0 });
               setEditingId(null);
               setReadonly(false);
               closeModal();

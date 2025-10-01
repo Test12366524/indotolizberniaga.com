@@ -4,6 +4,9 @@ export interface PinjamanCategory {
   name: string;
   description: string;
   status: number;
+  type: 'admin' | 'admin+margin';
+  admin_fee: number;
+  margin: number;
   created_at: string;
   updated_at: string;
 }
@@ -37,6 +40,9 @@ export interface CreatePinjamanCategoryRequest {
   code: string;
   name: string;
   description: string;
+  type: 'admin' | 'admin+margin';
+  admin_fee: number;
+  margin: number;
   status: number;
 }
 
@@ -44,5 +50,8 @@ export interface UpdatePinjamanCategoryRequest {
   code?: string;
   name?: string;
   description?: string;
+  type?: 'admin' | 'admin+margin';
+  admin_fee?: number;
+  margin?: number;
   status?: number;
 }
