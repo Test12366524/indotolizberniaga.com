@@ -17,6 +17,16 @@ import AnggotaForm from "@/components/form-modal/koperasi-modal/anggota-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { useRouter } from "next/navigation";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  CreditCard,
+  HistoryIcon
+} from "lucide-react";
 
 type AnggotaPayload = {
   name: string;
@@ -247,14 +257,6 @@ export default function AnggotaPage() {
       />
 
       <Card>
-        <div className="px-4">
-          <Button
-            variant="default"
-            onClick={() => router.push("/admin/history")}
-          >
-            Lihat History
-          </Button>
-        </div>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left">
@@ -290,6 +292,26 @@ export default function AnggotaPage() {
                         handleDetail={() => handleDetail(item)}
                         handleEdit={() => handleEdit(item)}
                         handleDelete={() => handleDelete(item)}
+                        additionalActions={
+                          <>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    router.push("/admin/history")
+                                  }}
+                                >
+                                  <HistoryIcon className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>History Anggota</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </>
+                        }
                       />
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>

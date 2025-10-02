@@ -56,7 +56,7 @@ export function ProdukToolbar({
   initialCategory,
   extraSelects = [],
   extraNodes,
-  addButtonLabel = "Tambah Stock Opname",
+  addButtonLabel = "Tambah Data",
 
   onImportExcel,
   onExportExcel,
@@ -91,7 +91,7 @@ export function ProdukToolbar({
         {/* Kiri: filter */}
         <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
           <Input
-            placeholder="Cari produk..."
+            placeholder="Cari data..."
             value={search}
             onChange={(e) => {
               const q = e.target.value;
