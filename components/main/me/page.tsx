@@ -30,6 +30,12 @@ import {
   Store,
   ArrowLeft,
   ArrowRight,
+  UserPlus, // Icon baru
+  ShieldCheck, // Icon baru
+  TrendingUp, // Icon baru
+  Briefcase,
+  Users,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -60,6 +66,8 @@ import { ROResponse, toList, findName } from "@/types/geo";
 import { Region } from "@/types/shop";
 import ProfileEditModal from "../profile-page/edit-modal";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+
+// ... (Interface declarations remain the same) ...
 
 interface UserProfile {
   id: string;
@@ -129,7 +137,7 @@ interface ApiTransaction {
   postal_code?: string;
 }
 
-// Add mutation hook for uploading payment proof
+// ... (useUploadPaymentProofMutation and pickImageUrl hooks remain the same) ...
 const useUploadPaymentProofMutation = () => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -175,7 +183,337 @@ const pickImageUrl = (d?: ApiTransactionDetail): string => {
   return "/api/placeholder/80/80";
 };
 
-/* ======================================================================= */
+// =======================================================================
+// NEW COMPONENT: Modal Pendaftaran Anggota Koperasi
+// =======================================================================
+const DaftarAnggotaModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const [formData, setFormData] = useState({
+    nama: "",
+    ktp: "",
+    email: "",
+    noHp: "",
+    jenisKelamin: "",
+    tempatLahir: "",
+    tanggalLahir: "",
+    npwp: "",
+    nip: "",
+    unitKerja: "",
+    jabatan: "",
+    alamat: "",
+  });
+
+  const [files, setFiles] = useState<{
+    fileKtp: File | null;
+    foto: File | null;
+    slipGaji: File | null;
+  }>({
+    fileKtp: null,
+    foto: null,
+    slipGaji: null,
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files: selectedFiles } = e.target;
+    if (selectedFiles && selectedFiles.length > 0) {
+      setFiles((prev) => ({ ...prev, [name]: selectedFiles[0] }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form Data:", formData);
+    console.log("Files:", files);
+    Swal.fire("Berhasil", "Formulir pendaftaran telah dikirim!", "success");
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const FileInput = ({
+    name,
+    label,
+    icon,
+    currentFile,
+  }: {
+    name: keyof typeof files;
+    label: string;
+    icon: React.ReactNode;
+    currentFile: File | null;
+  }) => (
+    <div>
+      <label
+        htmlFor={name}
+        className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
+      >
+        {icon}
+        <div className="flex flex-col">
+          <span className="font-semibold text-gray-700">{label}</span>
+          <span className="text-xs text-gray-500 truncate">
+            {currentFile ? currentFile.name : "Pilih file..."}
+          </span>
+        </div>
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="file"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 m-4 relative transform transition-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">
+              Formulir Pendaftaran Anggota
+            </h3>
+            <p className="text-sm text-gray-500">
+              Lengkapi data di bawah ini untuk bergabung.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            {/* Nama Lengkap */}
+            <div>
+              <label htmlFor="nama" className="block text-sm font-semibold text-gray-900 mb-2">
+                Nama Lengkap
+              </label>
+              <input
+                type="text"
+                name="nama"
+                id="nama"
+                value={formData.nama}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* No. KTP */}
+            <div>
+              <label htmlFor="ktp" className="block text-sm font-semibold text-gray-900 mb-2">
+                No. KTP
+              </label>
+              <input
+                type="number"
+                name="ktp"
+                id="ktp"
+                value={formData.ktp}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+                Email
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* No. HP */}
+            <div>
+              <label htmlFor="noHp" className="block text-sm font-semibold text-gray-900 mb-2">
+                No. HP
+              </label>
+              <input
+                type="tel"
+                name="noHp"
+                id="noHp"
+                value={formData.noHp}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* Jenis Kelamin */}
+            <div>
+              <label htmlFor="jenisKelamin" className="block text-sm font-semibold text-gray-900 mb-2">
+                Jenis Kelamin
+              </label>
+              <select
+                name="jenisKelamin"
+                id="jenisKelamin"
+                value={formData.jenisKelamin}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              >
+                <option value="">Pilih Jenis Kelamin</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+              </select>
+            </div>
+            {/* NIP */}
+            <div>
+              <label htmlFor="nip" className="block text-sm font-semibold text-gray-900 mb-2">
+                NIP (Opsional)
+              </label>
+              <input
+                type="text"
+                name="nip"
+                id="nip"
+                value={formData.nip}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              />
+            </div>
+            {/* Tempat Lahir */}
+            <div>
+              <label htmlFor="tempatLahir" className="block text-sm font-semibold text-gray-900 mb-2">
+                Tempat Lahir
+              </label>
+              <input
+                type="text"
+                name="tempatLahir"
+                id="tempatLahir"
+                value={formData.tempatLahir}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* Tanggal Lahir */}
+            <div>
+              <label htmlFor="tanggalLahir" className="block text-sm font-semibold text-gray-900 mb-2">
+                Tanggal Lahir
+              </label>
+              <input
+                type="date"
+                name="tanggalLahir"
+                id="tanggalLahir"
+                value={formData.tanggalLahir}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* NPWP */}
+            <div>
+              <label htmlFor="npwp" className="block text-sm font-semibold text-gray-900 mb-2">
+                NPWP (Opsional)
+              </label>
+              <input
+                type="text"
+                name="npwp"
+                id="npwp"
+                value={formData.npwp}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              />
+            </div>
+            {/* Jabatan */}
+            <div>
+              <label htmlFor="jabatan" className="block text-sm font-semibold text-gray-900 mb-2">
+                Jabatan
+              </label>
+              <input
+                type="text"
+                name="jabatan"
+                id="jabatan"
+                value={formData.jabatan}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              />
+            </div>
+            {/* Unit Kerja */}
+            <div className="md:col-span-2">
+              <label htmlFor="unitKerja" className="block text-sm font-semibold text-gray-900 mb-2">
+                Unit Kerja
+              </label>
+              <input
+                type="text"
+                name="unitKerja"
+                id="unitKerja"
+                value={formData.unitKerja}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              />
+            </div>
+            {/* Alamat */}
+            <div className="md:col-span-2">
+              <label htmlFor="alamat" className="block text-sm font-semibold text-gray-900 mb-2">
+                Alamat Lengkap (sesuai KTP)
+              </label>
+              <textarea
+                name="alamat"
+                id="alamat"
+                rows={3}
+                value={formData.alamat}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              ></textarea>
+            </div>
+          </div>
+          
+          <div className="border-t pt-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Upload Dokumen</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FileInput name="fileKtp" label="Upload KTP" icon={<FileText className="w-6 h-6 text-gray-500" />} currentFile={files.fileKtp} />
+              <FileInput name="foto" label="Upload Foto" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.foto} />
+              <FileInput name="slipGaji" label="Upload Slip Gaji" icon={<FileText className="w-6 h-6 text-gray-500" />} currentFile={files.slipGaji} />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors"
+            >
+              Kirim Pendaftaran
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -213,9 +551,7 @@ export default function ProfilePage() {
     | "profile"
     | "addresses"
     | "orders"
-    | "simpanan"
-    | "pinjaman"
-    | "penarikan"
+    | "anggota"
     | "seller"
   >("dashboard");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -533,19 +869,9 @@ export default function ProfilePage() {
     { id: "addresses", label: "Alamat", icon: <MapPin className="w-5 h-5" /> },
     { id: "orders", label: "Pesanan", icon: <Package className="w-5 h-5" /> },
     {
-      id: "simpanan",
-      label: "Simpanan",
+      id: "anggota",
+      label: "Anggota Koperasi",
       icon: <Landmark className="w-5 h-5" />,
-    },
-    {
-      id: "pinjaman",
-      label: "Pinjaman",
-      icon: <CreditCard className="w-5 h-5" />,
-    },
-    {
-      id: "penarikan",
-      label: "Penarikan",
-      icon: <DollarSign className="w-5 h-5" />,
     },
     { id: "seller", label: "Seller", icon: <Store className="w-5 h-5" /> },
   ] as const;
@@ -697,58 +1023,30 @@ export default function ProfilePage() {
 
   /* --------------------- UI --------------------- */
 
-  // --- Modals for new tabs (with static content for now) ---
-  const [isTambahSimpananModalOpen, setIsTambahSimpananModalOpen] =
-    useState(false);
-  const [isAjukanPinjamanModalOpen, setIsAjukanPinjamanModalOpen] =
-    useState(false);
-  const [isPenarikanModalOpen, setIsPenarikanModalOpen] = useState(false);
+  // --- Modals for new tabs ---
+  const [isDaftarAnggotaModalOpen, setIsDaftarAnggotaModalOpen] = useState(false);
   const [isDaftarSellerModalOpen, setIsDaftarSellerModalOpen] = useState(false);
-
-  const staticSimpananHistory = [
+  const benefits = [
     {
-      id: 1,
-      date: "2024-09-01",
-      type: "Wajib",
-      amount: 50000,
-      status: "Berhasil",
+      icon: <ShieldCheck className="w-8 h-8 text-[#6B6B6B]" />,
+      title: "Simpanan Aman & Menguntungkan",
+      description: "Dana Anda dikelola secara profesional dan transparan dengan bagi hasil yang kompetitif."
     },
     {
-      id: 2,
-      date: "2024-08-25",
-      type: "Sukarela",
-      amount: 100000,
-      status: "Berhasil",
+      icon: <TrendingUp className="w-8 h-8 text-[#6B6B6B]" />,
+      title: "Akses Permodalan Mudah",
+      description: "Dapatkan pinjaman dengan proses yang cepat dan bunga yang ringan untuk berbagai kebutuhan."
     },
     {
-      id: 3,
-      date: "2024-08-01",
-      type: "Wajib",
-      amount: 50000,
-      status: "Berhasil",
-    },
-  ];
-
-  const staticPinjamanHistory = [
-    {
-      id: 1,
-      date: "2024-07-15",
-      amount: 2000000,
-      status: "Lunas",
-      due: "2024-10-15",
+      icon: <Briefcase className="w-8 h-8 text-[#6B6B6B]" />,
+      title: "Program Kesejahteraan",
+      description: "Ikut serta dalam berbagai program untuk meningkatkan kesejahteraan anggota dan keluarga."
     },
     {
-      id: 2,
-      date: "2024-09-10",
-      amount: 500000,
-      status: "Aktif",
-      due: "2024-12-10",
+      icon: <Users className="w-8 h-8 text-[#6B6B6B]" />,
+      title: "Membangun Jaringan",
+      description: "Menjadi bagian dari komunitas yang solid dan saling mendukung satu sama lain."
     },
-  ];
-
-  const staticPenarikanHistory = [
-    { id: 1, date: "2024-06-05", amount: 300000, status: "Berhasil" },
-    { id: 2, date: "2024-05-18", amount: 150000, status: "Berhasil" },
   ];
 
   const hasSellerStore = false; // Static state for demo
@@ -1093,7 +1391,6 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
-
               {/* Addresses */}
               {activeTab === "addresses" && (
                 <div className="space-y-8">
@@ -1456,7 +1753,6 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
-
               {/* Orders */}
               {activeTab === "orders" && (
                 <div className="space-y-8">
@@ -1538,9 +1834,9 @@ export default function ProfilePage() {
                               <div className="text-right">
                                 <div className="font-semibold text-gray-900">
                                   Rp{" "}
-                                  {(item.price * item.quantity).toLocaleString(
-                                    "id-ID"
-                                  )}
+                                  {(
+                                    item.price * item.quantity
+                                  ).toLocaleString("id-ID")}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   @Rp {item.price.toLocaleString("id-ID")}
@@ -1604,205 +1900,158 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Simpanan */}
-              {activeTab === "simpanan" && (
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                        <Landmark className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Riwayat Simpanan
-                      </h2>
+              {/* Anggota Koperasi (REVISED) */}
+              {activeTab === "anggota" && (
+                <div className="space-y-12">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
+                      <Users className="w-6 h-6" />
                     </div>
-                    <button
-                      onClick={() => setIsTambahSimpananModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Tambah Simpanan
-                    </button>
+                    <div>
+                      <h2 className="text-3xl font-bold text-gray-900">
+                        Menjadi Anggota Koperasi
+                      </h2>
+                      <p className="text-gray-600 mt-1">
+                        Bergabunglah bersama kami dan nikmati berbagai
+                        keuntungan eksklusif.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="space-y-4">
-                    {staticSimpananHistory.map((s) => (
-                      <div
-                        key={s.id}
-                        className="border border-gray-200 rounded-2xl p-4 flex items-center justify-between"
-                      >
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            Simpanan {s.type}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {new Date(s.date).toLocaleDateString("id-ID")}
-                          </p>
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+                      Keuntungan Menjadi Anggota
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {benefits.map((benefit, index) => (
+                        <div
+                          key={index}
+                          className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5"
+                        >
+                          <div className="flex-shrink-0">{benefit.icon}</div>
+                          <div>
+                            <h4 className="font-bold text-lg text-gray-900">
+                              {benefit.title}
+                            </h4>
+                            <p className="text-gray-600 mt-1">
+                              {benefit.description}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg text-[#6B6B6B]">
-                            Rp {s.amount.toLocaleString("id-ID")}
-                          </span>
-                          <p className="text-sm text-green-600">{s.status}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Pinjaman */}
-              {activeTab === "pinjaman" && (
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                        <CreditCard className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Riwayat Pinjaman
-                      </h2>
+                      ))}
                     </div>
-                    <button
-                      onClick={() => setIsAjukanPinjamanModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Ajukan Pinjaman
-                    </button>
                   </div>
-                  <div className="space-y-4">
-                    {staticPinjamanHistory.map((p) => (
-                      <div
-                        key={p.id}
-                        className="border border-gray-200 rounded-2xl p-4 flex items-center justify-between"
-                      >
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            Pinjaman #{p.id}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            Tanggal:{" "}
-                            {new Date(p.date).toLocaleDateString("id-ID")}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Jatuh tempo:{" "}
-                            {new Date(p.due).toLocaleDateString("id-ID")}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg text-[#6B6B6B]">
-                            Rp {p.amount.toLocaleString("id-ID")}
-                          </span>
-                          <p
-                            className={`text-sm font-semibold ${
-                              p.status === "Aktif"
-                                ? "text-yellow-600"
-                                : "text-green-600"
-                            }`}
-                          >
-                            {p.status}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Penarikan */}
-              {activeTab === "penarikan" && (
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                        <DollarSign className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Riwayat Penarikan
-                      </h2>
-                    </div>
+                  <div className="text-center bg-white border border-gray-200 rounded-2xl p-8">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      Siap untuk Bergabung?
+                    </h3>
+                    <p className="text-gray-600 mt-2 max-w-xl mx-auto">
+                      Proses pendaftaran cepat dan mudah. Klik tombol di bawah
+                      ini untuk memulai langkah Anda menjadi bagian dari
+                      keluarga besar koperasi kami.
+                    </p>
                     <button
-                      onClick={() => setIsPenarikanModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors"
+                      onClick={() => setIsDaftarAnggotaModalOpen(true)}
+                      className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105 mx-auto"
                     >
-                      <Plus className="w-4 h-4" />
-                      Tarik Simpanan
+                      <UserPlus className="w-5 h-5" />
+                      Daftar Sekarang
                     </button>
-                  </div>
-                  <div className="space-y-4">
-                    {staticPenarikanHistory.map((p) => (
-                      <div
-                        key={p.id}
-                        className="border border-gray-200 rounded-2xl p-4 flex items-center justify-between"
-                      >
-                        <div>
-                          <h4 className="font-semibold text-gray-900">
-                            Penarikan Simpanan Sukarela
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {new Date(p.date).toLocaleDateString("id-ID")}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-bold text-lg text-[#6B6B6B]">
-                            Rp {p.amount.toLocaleString("id-ID")}
-                          </span>
-                          <p className="text-sm text-green-600">{p.status}</p>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
 
               {/* Seller */}
               {activeTab === "seller" && (
-                <div className="space-y-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                        <Store className="w-5 h-5" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        Marketplace Seller
+                <div className="space-y-12">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
+                      <Store className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-bold text-gray-900">
+                        Menjadi Seller di Marketplace
                       </h2>
+                      <p className="text-gray-600 mt-1">
+                        Mulai jual produk Anda di marketplace Koperasi Merah Putih dan jangkau lebih banyak pelanggan.
+                      </p>
                     </div>
                   </div>
-                  {hasSellerStore ? (
-                    <div>
-                      {/* Placeholder for seller info */}
-                      <p className="text-gray-600">
-                        Anda sudah terdaftar sebagai seller.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 bg-gray-50 rounded-2xl">
-                      <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <Store className="w-12 h-12 text-gray-500" />
+
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+                      Keuntungan Menjadi Seller
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5">
+                        <TrendingUp className="w-8 h-8 text-[#6B6B6B]" />
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">
+                            Potensi Penjualan Lebih Besar
+                          </h4>
+                          <p className="text-gray-600 mt-1">
+                            Jangkau ribuan anggota koperasi dan pelanggan marketplace.
+                          </p>
+                        </div>
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-4">
-                        Belum Terdaftar sebagai Seller
-                      </h3>
-                      <p className="text-gray-600 mb-6">
-                        Daftar sekarang untuk mulai menjual produk UMKM Anda di
-                        marketplace Koperasi Merah Putih.
-                      </p>
-                      <button
-                        onClick={() => setIsDaftarSellerModalOpen(true)}
-                        className="bg-[#6B6B6B] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors"
-                      >
-                        Daftar Sekarang
-                      </button>
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5">
+                        <CreditCard className="w-8 h-8 text-[#6B6B6B]" />
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">
+                            Pembayaran Aman & Mudah
+                          </h4>
+                          <p className="text-gray-600 mt-1">
+                            Sistem pembayaran terintegrasi dan transparan.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5">
+                        <Briefcase className="w-8 h-8 text-[#6B6B6B]" />
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">
+                            Dukungan Seller
+                          </h4>
+                          <p className="text-gray-600 mt-1">
+                            Tim support siap membantu pengembangan toko Anda.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5">
+                        <Users className="w-8 h-8 text-[#6B6B6B]" />
+                        <div>
+                          <h4 className="font-bold text-lg text-gray-900">
+                            Komunitas Seller
+                          </h4>
+                          <p className="text-gray-600 mt-1">
+                            Bergabung dengan komunitas seller koperasi untuk berbagi pengalaman dan tips.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="text-center bg-white border border-gray-200 rounded-2xl p-8">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      Siap Menjadi Seller?
+                    </h3>
+                    <p className="text-gray-600 mt-2 max-w-xl mx-auto">
+                      Proses pendaftaran seller sangat mudah. Klik tombol di bawah ini untuk memulai membuka toko Anda di marketplace kami.
+                    </p>
+                    <button
+                      onClick={() => setIsDaftarSellerModalOpen(true)}
+                      className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105 mx-auto"
+                    >
+                      <Store className="w-5 h-5" />
+                      Daftar Menjadi Seller
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
-
       {/* Profile Edit Modal */}
       {profileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1822,7 +2071,6 @@ export default function ProfilePage() {
           />
         </div>
       )}
-
       {/* Order Detail Modal */}
       {orderDetailModalOpen && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -2045,7 +2293,6 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
       {/* Payment Proof Upload Modal */}
       {paymentProofModalOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center">
@@ -2123,130 +2370,122 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
-
       {/* --- Modals for new tabs --- */}
 
-      {/* Tambah Simpanan Modal */}
-      <Modal
-        isOpen={isTambahSimpananModalOpen}
-        onClose={() => setIsTambahSimpananModalOpen(false)}
-        title="Tambah Simpanan"
-      >
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Jenis Simpanan
-            </label>
-            <select className="w-full border border-gray-200 rounded-2xl px-3 py-2">
-              <option>Wajib</option>
-              <option>Sukarela</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Jumlah
-            </label>
-            <input
-              type="number"
-              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
-              placeholder="Rp 50.000"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
-          >
-            Simpan
-          </button>
-        </form>
-      </Modal>
-
-      {/* Ajukan Pinjaman Modal */}
-      <Modal
-        isOpen={isAjukanPinjamanModalOpen}
-        onClose={() => setIsAjukanPinjamanModalOpen(false)}
-        title="Ajukan Pinjaman"
-      >
-        <form className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Jumlah Pinjaman
-            </label>
-            <input
-              type="number"
-              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
-              placeholder="Rp 1.000.000"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Tujuan Pinjaman
-            </label>
-            <textarea
-              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
-              rows={3}
-              placeholder="Untuk modal usaha, kebutuhan mendesak, dll."
-            ></textarea>
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
-          >
-            Ajukan
-          </button>
-        </form>
-      </Modal>
-
-      {/* Tarik Simpanan Modal */}
-      <Modal
-        isOpen={isPenarikanModalOpen}
-        onClose={() => setIsPenarikanModalOpen(false)}
-        title="Tarik Simpanan Sukarela"
-      >
-        <form className="space-y-4">
-          <div className="bg-red-50 p-4 rounded-xl text-sm text-red-800">
-            <p>
-              <strong>Perhatian:</strong> Penarikan hanya bisa dilakukan untuk
-              Simpanan Sukarela.
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-900 mb-2">
-              Jumlah Penarikan
-            </label>
-            <input
-              type="number"
-              className="w-full border border-gray-200 rounded-2xl px-3 py-2"
-              placeholder="Rp 100.000"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-[#6B6B6B] text-white py-3 rounded-2xl font-semibold"
-          >
-            Tarik Dana
-          </button>
-        </form>
-      </Modal>
+      {/* Daftar Anggota Modal */}
+      <DaftarAnggotaModal
+        isOpen={isDaftarAnggotaModalOpen}
+        onClose={() => setIsDaftarAnggotaModalOpen(false)}
+      />
 
       {/* Daftar Seller Modal */}
       <Modal
         isOpen={isDaftarSellerModalOpen}
         onClose={() => setIsDaftarSellerModalOpen(false)}
-        title="Daftar Menjadi Seller"
+        title="Formulir Pendaftaran Seller"
       >
-        <div className="text-center p-4">
-          <p className="text-gray-600 mb-4">
-            Anda akan diarahkan ke halaman pendaftaran seller khusus. Lengkapi
-            formulir untuk mulai menjual produk Anda di marketplace kami.
-          </p>
-          <button
-            onClick={() => router.push("/register/seller")}
-            className="bg-[#6B6B6B] text-white py-3 px-6 rounded-2xl font-semibold"
-          >
-            Mulai Pendaftaran
-          </button>
+        <form
+          className="space-y-6"
+          onSubmit={e => {
+        e.preventDefault();
+        Swal.fire("Berhasil", "Formulir pendaftaran seller telah dikirim!", "success");
+        setIsDaftarSellerModalOpen(false);
+          }}
+        >
+          <div className="grid grid-cols-1 gap-y-4">
+        {/* Nama Toko */}
+        <div>
+          <label htmlFor="namaToko" className="block text-sm font-semibold text-gray-900 mb-2">
+            Nama Toko
+          </label>
+          <input
+            type="text"
+            name="namaToko"
+            id="namaToko"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+            required
+          />
         </div>
+        {/* Email */}
+        <div>
+          <label htmlFor="emailSeller" className="block text-sm font-semibold text-gray-900 mb-2">
+            Email
+          </label>
+          <input
+            type="email"
+            name="emailSeller"
+            id="emailSeller"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+            required
+          />
+        </div>
+        {/* No. HP */}
+        <div>
+          <label htmlFor="noHpSeller" className="block text-sm font-semibold text-gray-900 mb-2">
+            No. HP
+          </label>
+          <input
+            type="tel"
+            name="noHpSeller"
+            id="noHpSeller"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+            required
+          />
+        </div>
+        {/* Alamat Toko */}
+        <div>
+          <label htmlFor="alamatToko" className="block text-sm font-semibold text-gray-900 mb-2">
+            Alamat Toko
+          </label>
+          <textarea
+            name="alamatToko"
+            id="alamatToko"
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+            required
+          ></textarea>
+        </div>
+        {/* Upload Dokumen */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-900 mb-2">
+            Upload Dokumen (Opsional)
+          </label>
+          <div className="flex flex-col gap-3">
+            <label
+          htmlFor="fileKtpSeller"
+          className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
+            >
+          <FileText className="w-6 h-6 text-gray-500" />
+          <span className="font-semibold text-gray-700">Upload KTP</span>
+            </label>
+            <input id="fileKtpSeller" name="fileKtpSeller" type="file" className="hidden" />
+            <label
+          htmlFor="fileNpwpSeller"
+          className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
+            >
+          <FileText className="w-6 h-6 text-gray-500" />
+          <span className="font-semibold text-gray-700">Upload NPWP</span>
+            </label>
+            <input id="fileNpwpSeller" name="fileNpwpSeller" type="file" className="hidden" />
+          </div>
+        </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+        <button
+          type="button"
+          onClick={() => setIsDaftarSellerModalOpen(false)}
+          className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+        >
+          Batal
+        </button>
+        <button
+          type="submit"
+          className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors"
+        >
+          Kirim Pendaftaran
+        </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

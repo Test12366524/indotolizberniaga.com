@@ -105,36 +105,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       ],
     },
     {
-      id: "stock-opname",
-      label: "Stock Opname",
-      icon: <Package className="h-5 w-5" />,
-      href: "/admin/stock-opname",
-    },
-    {
-      id: "pengadaan",
-      label: "Pengadaan",
-      icon: <Package className="h-5 w-5" />,
-      href: "/admin/pengadaan",
-    },
-    {
-      id: "pos-kasir",
-      label: "Pos Kasir",
-      icon: <CreditCard className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "pos-kasir/history",
-          label: "History",
-          href: "/admin/pos-kasir/history",
-        },
-        {
-          id: "pos-kasir/kasir",
-          label: "Kasir",
-          href: "/admin/pos-kasir/kasir",
-        },
-      ],
-    },
-    {
       id: "data-keuangan",
       label: "Data Keuangan",
       icon: <Landmark className="h-5 w-5" />,
@@ -336,6 +306,36 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Transaksi",
       icon: <ShoppingCart className="h-5 w-5" />,
       href: "/admin/transaction",
+    },
+    {
+      id: "stock-opname",
+      label: "Stock Opname",
+      icon: <Package className="h-5 w-5" />,
+      href: "/admin/stock-opname",
+    },
+    {
+      id: "pengadaan",
+      label: "Pengadaan",
+      icon: <Package className="h-5 w-5" />,
+      href: "/admin/pengadaan",
+    },
+    {
+      id: "pos-kasir",
+      label: "Pos Kasir",
+      icon: <CreditCard className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "pos-kasir/history",
+          label: "History",
+          href: "/admin/pos-kasir/history",
+        },
+        {
+          id: "pos-kasir/kasir",
+          label: "Kasir",
+          href: "/admin/pos-kasir/kasir",
+        },
+      ],
     },
     {
       id: "customer-marketplace",

@@ -40,8 +40,8 @@ export default function Footer() {
   const quickLinks = [
     { name: "Beranda", href: "/" },
     { name: "Tentang Kami", href: "/about" },
-    { name: "Simpan Pinjam", href: "/simpan-pinjam" },
-    { name: "Marketplace", href: "/marketplace" },
+    { name: "Cara Pemesanan", href: "/how-to-order" },
+    { name: "Testimoni", href: "/testimonials" },
     { name: "FAQs", href: "/faq" },
     { name: "Login Anggota", href: "/auth/login" },
   ];

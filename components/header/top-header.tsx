@@ -4,7 +4,15 @@
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect, useMemo } from "react";
-import { Menu, X, ShoppingCart, User, Globe } from "lucide-react";
+// ✨ 1. Impor ikon MessageSquare
+import {
+  Menu,
+  X,
+  ShoppingCart,
+  User,
+  Globe,
+  MessageSquare,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useCart from "@/hooks/use-cart";
@@ -17,7 +25,7 @@ interface TranslationContent {
   service: string;
   testimonials: string;
   news: string;
-  howToOrder: string;
+  ppob: string;
   tagline: string;
   switchLanguage: string;
 }
@@ -48,7 +56,7 @@ export default function Header() {
       home: "Beranda",
       products: "Produk",
       service: "Layanan",
-      howToOrder: "Cara Pemesanan",
+      ppob: "PPOB",
       about: "Tentang Kami",
       news: "Artikel",
       testimonials: "Testimoni",
@@ -59,7 +67,7 @@ export default function Header() {
       home: "Home",
       products: "Products",
       service: "Layanan",
-      howToOrder: "How to Order",
+      ppob: "PPOB",
       about: "About Us",
       news: "Articles",
       testimonials: "Testimonials",
@@ -73,53 +81,51 @@ export default function Header() {
   const menuItems = [
     { name: t.about, href: "/about" },
     { name: t.products, href: "/product" },
+    { name: t.ppob, href: "/ppob" },
     { name: t.service, href: "/service" },
-    { name: t.howToOrder, href: "/how-to-order" },
     { name: t.news, href: "/news" },
-    { name: t.testimonials, href: "/testimonials" },
   ];
 
-  // Mapping warna hover untuk setiap menu sesuai palet
   const menuItemColors = [
     {
       name: t.about,
       href: "/about",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light green
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
     {
       name: t.products,
       href: "/product",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light pink
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
     {
       name: t.service,
       href: "/service",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light pink
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
     {
-      name: t.howToOrder,
+      name: t.ppob,
       href: "/how-to-order",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light blue
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
     {
       name: t.news,
       href: "/news",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light green
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
     {
       name: t.testimonials,
       href: "/testimonials",
-      hoverBg: "hover:bg-[#F3F4F6]", // Light green
+      hoverBg: "hover:bg-[#F3F4F6]",
       activeBg: "bg-[#F3F4F6]",
       textColor: "text-[#6B7280]",
     },
@@ -188,22 +194,22 @@ export default function Header() {
             <Link href="/" className="flex items-center gap-3 group">
               <div className="relative">
                 <div className="flex items-center gap-1">
-                    <Image
-                      src="/logo-koperasi-merah-putih-online.webp"
-                      alt="Koperasi Merah Putih Logo"
-                      width={50}
-                      height={50}
-                      className="flex-shrink-0 object-contain"
-                    />
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-800">
-                        Koperasi Merah Putih
-                      </h2>
-                      <p className="text-xs text-gray-600 mt-[-5px]">
-                        Simpan Pinjam & Marketplace
-                      </p>
-                    </div>
+                  <Image
+                    src="/logo-koperasi-merah-putih-online.webp"
+                    alt="Koperasi Merah Putih Logo"
+                    width={50}
+                    height={50}
+                    className="flex-shrink-0 object-contain"
+                  />
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-800">
+                      Koperasi Merah Putih
+                    </h2>
+                    <p className="text-xs text-gray-600 mt-[-5px]">
+                      Simpan Pinjam & Marketplace
+                    </p>
                   </div>
+                </div>
               </div>
             </Link>
 
@@ -246,6 +252,17 @@ export default function Header() {
               >
                 <User className="w-5 h-5 text-[#6B6B6B]" />
               </button>
+
+              {/* ✨ BARU: Ikon Chat, hanya muncul jika sudah login */}
+              {status === "authenticated" && (
+                <button
+                  onClick={() => router.push("/chat")}
+                  className="p-3 rounded-xl hover:bg-gray-100 transition-all duration-300"
+                  aria-label="Chat"
+                >
+                  <MessageSquare className="w-5 h-5 text-[#6B6B6B]" />
+                </button>
+              )}
 
               {/* Cart */}
               <button
