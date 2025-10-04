@@ -449,7 +449,7 @@ export default function SimpananAnggotaPage() {
                 )}
               </div>
             </div>
-            
+
             {/* Kategori */}
             <div className="flex flex-col gap-y-1">
               <label className="text-sm font-medium">Kategori</label>
@@ -646,7 +646,7 @@ export default function SimpananAnggotaPage() {
                     </td>
                     <td className="px-4 py-2">
                       <div>
-                        <div className="font-medium">
+                        <div className="font-medium whitespace-nowrap">
                           {getCategoryName(item.simpanan_category_id)}
                         </div>
                         <div className="text-xs text-gray-500">
@@ -654,7 +654,7 @@ export default function SimpananAnggotaPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2 font-medium">
+                    <td className="px-4 py-2 font-medium whitespace-nowrap">
                       {formatRupiahWithRp(item.nominal)}
                     </td>
                     <td className="px-4 py-2">
