@@ -10,6 +10,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { Plus, CalendarIcon } from "lucide-react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 type Option = { value: string; label: string };
 
@@ -40,6 +48,12 @@ type Props = {
   importLabel?: string; // default: "Import Excel"
   exportLabel?: string; // default: "Export Excel"
   exportDisabled?: boolean;
+
+  /** ===== Date filter (opsional) ===== */
+  enableDateFilter?: boolean;
+  initialDateFrom?: Date;
+  initialDateTo?: Date;
+  onDateRangeChange?: (from?: Date, to?: Date) => void;
 };
 
 export function ProdukToolbar({
@@ -64,6 +78,12 @@ export function ProdukToolbar({
   importLabel = "Import Excel",
   exportLabel = "Export Excel",
   exportDisabled,
+
+  // date filter props
+  enableDateFilter = false,
+  initialDateFrom,
+  initialDateTo,
+  onDateRangeChange,
 }: Props) {
   const defaultCategory = initialCategory ?? categories[0]?.value ?? "all";
   const [search, setSearch] = useState<string>(initialSearch);
@@ -77,6 +97,10 @@ export function ProdukToolbar({
     }, {})
   );
 
+  // state untuk date filter (opsional)
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(initialDateFrom);
+  const [dateTo, setDateTo] = useState<Date | undefined>(initialDateTo);
+
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -84,6 +108,14 @@ export function ProdukToolbar({
     onCategoryChange?.(defaultCategory);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // panggil callback saat date berubah
+  useEffect(() => {
+    if (enableDateFilter) {
+      onDateRangeChange?.(dateFrom, dateTo);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFrom, dateTo, enableDateFilter]);
 
   return (
     <div className="rounded-md bg-white p-4 border border-gray-100 shadow-sm">
@@ -151,6 +183,47 @@ export function ProdukToolbar({
             );
           })}
 
+          {/* ====== Date Range Filter (opsional) ====== */}
+          {enableDateFilter && (
+            <div className="flex flex-col gap-y-1">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-10 border border-gray-300 justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateFrom ? (
+                      dateTo ? (
+                        <>
+                          {format(dateFrom, "LLL dd, y")} -{" "}
+                          {format(dateTo, "LLL dd, y")}
+                        </>
+                      ) : (
+                        format(dateFrom, "LLL dd, y")
+                      )
+                    ) : (
+                      <span>Pilih Rentang Tanggal</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    defaultMonth={dateFrom}
+                    selected={{ from: dateFrom, to: dateTo }}
+                    onSelect={(val) => {
+                      setDateFrom(val?.from);
+                      setDateTo(val?.to);
+                    }}
+                    numberOfMonths={2}
+                    required
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
           {extraNodes}
         </div>
 
@@ -168,7 +241,6 @@ export function ProdukToolbar({
                   const file = e.target.files?.[0];
                   if (file) {
                     onImportExcel(file);
-                    // reset agar bisa pilih file yang sama dua kali berturut-turut
                     e.currentTarget.value = "";
                   }
                 }}
@@ -190,7 +262,15 @@ export function ProdukToolbar({
           )}
 
           {/* Tambah data (opsional) */}
-          {openModal && <Button onClick={openModal}>{addButtonLabel}</Button>}
+          {openModal && (
+            <Button
+              onClick={openModal}
+              className="inline-flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              {addButtonLabel}
+            </Button>
+          )}
         </div>
       </div>
     </div>

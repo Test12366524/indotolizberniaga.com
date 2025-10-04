@@ -20,12 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import {
-  Plus,
-  Minus,
-  Calendar,
-  FileText,
-} from "lucide-react";
+import { Plus, Minus, Calendar, FileText } from "lucide-react";
 import Swal from "sweetalert2";
 import {
   useGetJournalListQuery,
@@ -38,12 +33,21 @@ import {
   type CreateJournalRequest,
 } from "@/services/admin/journal.service";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { displayDate, formatDate } from "@/lib/format-utils";
 
 export default function JurnalTransaksiPage() {
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    search: string;
+    status: string;
+    date_from?: Date;
+    date_to?: Date;
+  }>({
     search: "",
     status: "all",
+    date_from: undefined,
+    date_to: undefined,
   });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -104,19 +108,35 @@ export default function JurnalTransaksiPage() {
   }, [selectedItemData, isEditModalOpen]);
 
   const filteredData = useMemo(() => {
-    if (!journalData?.data) return [];
+    const list = journalData?.data ?? [];
 
-    return journalData.data.filter((item) => {
+    const fromStr = filters.date_from
+      ? formatDate(filters.date_from)
+      : undefined;
+    const toStr = filters.date_to ? formatDate(filters.date_to) : undefined;
+
+    return list.filter((item) => {
+      // ---- search
       const matchesSearch = item.description
-        .toLowerCase()
+        ?.toLowerCase()
         .includes(filters.search.toLowerCase());
 
+      // ---- status
       const matchesStatus =
         filters.status === "all" ||
         (filters.status === "1" && item.is_posted === true) ||
         (filters.status === "0" && item.is_posted === false);
 
-      return matchesSearch && matchesStatus;
+      let matchesDate = true;
+      if (fromStr || toStr) {
+        const itemDate = formatDate(item.date); // normalisasi ke "YYYY-MM-DD"
+        if (!itemDate) matchesDate = false;
+        else if (fromStr && toStr)
+          matchesDate = itemDate >= fromStr && itemDate <= toStr;
+        else if (fromStr && !toStr) matchesDate = itemDate === fromStr; // single-day
+      }
+
+      return !!matchesSearch && !!matchesStatus && !!matchesDate;
     });
   }, [journalData?.data, filters]);
 
@@ -246,14 +266,6 @@ export default function JurnalTransaksiPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   const getCOAName = (coaId: number) => {
     const coa = coaData?.data.find((c) => c.id === coaId);
     return coa ? `${coa.code} - ${coa.name}` : "Unknown COA";
@@ -270,10 +282,10 @@ export default function JurnalTransaksiPage() {
 
       {/* Toolbar */}
       <ProdukToolbar
-        addButtonLabel="Tambah Jurnal"
+        addButtonLabel="Jurnal"
         openModal={handleCreate}
-        onSearchChange={(search) => setFilters({ ...filters, search })}
-        onCategoryChange={(status) => setFilters({ ...filters, status })}
+        onSearchChange={(search) => setFilters((s) => ({ ...s, search }))}
+        onCategoryChange={(status) => setFilters((s) => ({ ...s, status }))}
         categories={[
           { value: "all", label: "Semua Status" },
           { value: "1", label: "Posted" },
@@ -281,6 +293,12 @@ export default function JurnalTransaksiPage() {
         ]}
         initialSearch={filters.search}
         initialCategory={filters.status}
+        enableDateFilter
+        initialDateFrom={filters.date_from}
+        initialDateTo={filters.date_to}
+        onDateRangeChange={(from, to) => {
+          setFilters((s) => ({ ...s, date_from: from, date_to: to }));
+        }}
       />
 
       {/* Data Table */}
@@ -338,7 +356,7 @@ export default function JurnalTransaksiPage() {
                           />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {formatDate(item.date)}
+                          {displayDate(item.date)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {item.description}
@@ -350,7 +368,7 @@ export default function JurnalTransaksiPage() {
                           {getStatusBadge(item.is_posted)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {formatDate(item.created_at)}
+                          {displayDate(item.created_at)}
                         </td>
                       </tr>
                     );
@@ -686,7 +704,7 @@ export default function JurnalTransaksiPage() {
                           Tanggal
                         </Label>
                         <p className="text-lg font-semibold text-gray-900">
-                          {formatDate(selectedItemData.date)}
+                          {displayDate(selectedItemData.date)}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -736,7 +754,7 @@ export default function JurnalTransaksiPage() {
 
                     <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
                       <span>
-                        Dibuat: {formatDate(selectedItemData.created_at)}
+                        Dibuat: {displayDate(selectedItemData.created_at)}
                       </span>
                       <span>
                         {selectedItemData.details?.length || 0} entri detail
