@@ -17,7 +17,7 @@ interface TranslationContent {
   service: string;
   testimonials: string;
   news: string;
-  howToOrder: string;
+  ppob: string;
   tagline: string;
   switchLanguage: string;
 }
@@ -48,7 +48,7 @@ export default function Header() {
       home: "Beranda",
       products: "Produk",
       service: "Layanan",
-      howToOrder: "Cara Pemesanan",
+      ppob: "PPOB",
       about: "Tentang Kami",
       news: "Artikel",
       testimonials: "Testimoni",
@@ -59,7 +59,7 @@ export default function Header() {
       home: "Home",
       products: "Products",
       service: "Layanan",
-      howToOrder: "How to Order",
+      ppob: "PPOB",
       about: "About Us",
       news: "Articles",
       testimonials: "Testimonials",
@@ -73,10 +73,9 @@ export default function Header() {
   const menuItems = [
     { name: t.about, href: "/about" },
     { name: t.products, href: "/product" },
+    { name: t.ppob, href: "/ppob" },
     { name: t.service, href: "/service" },
-    { name: t.howToOrder, href: "/how-to-order" },
     { name: t.news, href: "/news" },
-    { name: t.testimonials, href: "/testimonials" },
   ];
 
   // Mapping warna hover untuk setiap menu sesuai palet
@@ -103,7 +102,7 @@ export default function Header() {
       textColor: "text-[#6B7280]",
     },
     {
-      name: t.howToOrder,
+      name: t.ppob,
       href: "/how-to-order",
       hoverBg: "hover:bg-[#F3F4F6]", // Light blue
       activeBg: "bg-[#F3F4F6]",
