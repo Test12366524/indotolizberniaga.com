@@ -226,44 +226,8 @@ export default function GaleriPage() {
         </div>
       </section>
 
-      {/* Filter Section */}
-      <section className="px-6 lg:px-12 mb-12">
-        <div className="container mx-auto">
-          <div className="bg-white rounded-3xl p-6 shadow-lg border border-[#A3B18A]/10">
-            <div className="flex items-center gap-3 mb-4">
-              <Filter className="w-5 h-5 text-[#A3B18A]" />
-              <h3 className="text-lg font-semibold text-gray-900">
-                Filter Kategori
-              </h3>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {categories.map((category) => (
-                <button
-                  key={category.name}
-                  onClick={() => setSelectedCategory(category.name)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-medium transition-all duration-300 hover:scale-105 ${
-                    selectedCategory === category.name
-                      ? "bg-[#A3B18A] text-white shadow-lg"
-                      : `${category.color} text-gray-700 hover:bg-[#A3B18A] hover:text-white border border-gray-200`
-                  }`}
-                >
-                  {category.icon}
-                  {category.name}
-                  {selectedCategory === category.name && (
-                    <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
-                      {filteredList.length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Gallery Grid */}
-      <section className="px-6 lg:px-12 mb-12">
+      <section className="px-6 lg:px-12 my-12">
         <div className="container mx-auto">
           <div className="mb-6 flex items-center justify-between">
             {isLoading ? (
