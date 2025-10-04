@@ -49,14 +49,15 @@ export const productApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number, merk_id?: number }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, merk_id }) => ({
         url: `/public/products`,
         method: "GET",
         params: {
           page,
           paginate,
+          ...(merk_id !== undefined ? { "product_merk_id[0]": merk_id } : {}),
         },
       }),
       transformResponse: (response: {

@@ -230,7 +230,7 @@ export default function ReservationModal({
   //     ) {
   //       await Swal.fire({
   //         icon: "success",
-  //         title: "Reservasi Berhasil Dibuat",
+  //         title: "Jasa Berhasil Dibuat",
   //         text: "Silakan lanjutkan ke halaman pembayaran.",
   //         confirmButtonText: "Lanjut ke Pembayaran",
   //       });
@@ -248,8 +248,8 @@ export default function ReservationModal({
   //       console.warn("Unexpected response format:", result);
   //       await Swal.fire({
   //         icon: "success",
-  //         title: "Reservasi Berhasil",
-  //         text: "Reservasi berhasil dibuat! Kami akan menghubungi Anda segera.",
+  //         title: "Jasa Berhasil",
+  //         text: "Jasa berhasil dibuat! Kami akan menghubungi Anda segera.",
   //       });
   //       onClose();
   //     }
@@ -285,7 +285,7 @@ export default function ReservationModal({
 
   //     await Swal.fire({
   //       icon: "error",
-  //       title: "Gagal Membuat Reservasi",
+  //       title: "Gagal Membuat Jasa",
   //       html:
   //         `<p style="text-align:left">${serverMessage}</p>` +
   //         (fieldErrors
@@ -309,8 +309,8 @@ export default function ReservationModal({
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-6 bg-white z-10">
-          <h3 className="w-full text-xl md:text-center font-bold text-[#000000]">
-            Reservasi Layanan
+          <h3 className="w-full text-xl md:text-left font-bold text-[#000000]">
+            Layanan Jasa Koperasi Merah Putih
           </h3>
           <button
             onClick={onClose}
@@ -424,7 +424,7 @@ export default function ReservationModal({
               {/* Reservation Date & Time */}
               <div className="bg-[#6B6B6B]/5 p-4 rounded-2xl">
                 <h4 className="font-semibold text-[#000000] mb-4">
-                  Waktu Reservasi
+                  Jadwalkan Meeting
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2 border border-[#6B6B6B]/30 rounded-2xl px-3">
@@ -551,10 +551,10 @@ export default function ReservationModal({
                 {isSubmitting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Memproses Reservasi...
+                    Memproses Jasa...
                   </>
                 ) : (
-                  "Konfirmasi Reservasi"
+                  "Order Jasa"
                 )}
               </button>
             </form>

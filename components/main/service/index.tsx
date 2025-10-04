@@ -4,8 +4,7 @@ import { motion } from "framer-motion";
 import { Sparkles, Handshake, DollarSign, BookOpen } from "lucide-react";
 import Image from "next/image";
 import ReservationModal from "./reservation-modal";
-import { useGetProductListQuery } from "@/services/product.service";
-import DotdLoader from "@/components/loader/3dot";
+import { useGetProductListPublicQuery } from "@/services/product.service";
 
 interface Service {
   id: number;
@@ -25,47 +24,59 @@ export default function ServicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch services from API
-  const { data: shopProductsData, isLoading, error } = useGetProductListQuery({
+  const {
+    data: shopProductsData,
+    isLoading,
+    error,
+  } = useGetProductListPublicQuery({
     page: currentPage,
-    paginate: 9, // Tampilkan 9 layanan per halaman
+    paginate: 9,
+    merk_id: 2, // API call is already filtering by brand ID
   });
 
   // Transform API data to Service format
   const services = useMemo(() => {
     if (!shopProductsData?.data) return [];
-    
-    return shopProductsData.data
-      .filter(product => product.merk_name?.toLowerCase() === "jasa") // Only show Jasa services
-      .map(product => {
-        
-        // Build images array with proper filtering
-        const images = [
-          product.image,
-          product.image_2,
-          product.image_3,
-          product.image_4,
-          product.image_5,
-          product.image_6,
-          product.image_7,
-        ].filter(img => typeof img === "string" && img.trim() !== ""); // Remove empty or null images
-        
-        return {
-          id: product.id,
-          thumbnail: typeof product.image === "string" ? product.image : "/images/placeholder.jpg",
-          images: images.map(img => ({ image: typeof img === "string" ? img : "" })),
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          duration: product.stock ? `${product.stock} Menit` : "30 Menit",
-          category_name: product.category_name,
-          merk_name: product.merk_name,
-        };
-      });
+
+    // ✨ FIX: Removed redundant client-side filter for "jasa".
+    // The filtering is already handled by `merk_id: 2` in the API query.
+    return shopProductsData.data.map((product) => {
+      // Build images array with proper filtering
+      const images = [
+        product.image,
+        product.image_2,
+        product.image_3,
+        product.image_4,
+        product.image_5,
+        product.image_6,
+        product.image_7,
+      ].filter((img) => typeof img === "string" && img.trim() !== ""); // Remove empty or null images
+
+      return {
+        id: product.id,
+        thumbnail:
+          typeof product.image === "string"
+            ? product.image
+            : "/images/placeholder.jpg",
+        images: images.map((img) => ({
+          image: typeof img === "string" ? img : "",
+        })),
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        duration: product.stock ? `${product.stock} Menit` : "30 Menit",
+        category_name: product.category_name,
+        merk_name: product.merk_name,
+      };
+    });
   }, [shopProductsData]);
 
   // Pagination logic
-  const totalPages = useMemo(() => shopProductsData?.last_page ?? 1, [shopProductsData]);
-  
+  const totalPages = useMemo(
+    () => shopProductsData?.last_page ?? 1,
+    [shopProductsData]
+  );
+
   const getImageUrl = (p: Service): string => {
     if (typeof p.thumbnail === "string" && p.thumbnail) return p.thumbnail;
     const media = (p as unknown as { media?: Array<{ original_url: string }> })
@@ -84,7 +95,7 @@ export default function ServicesPage() {
   const renderPaginationButtons = () => {
     const pageButtons = [];
     const maxButtons = 5;
-    
+
     // Logic to render a limited number of page buttons with ellipses
     if (totalPages <= maxButtons) {
       for (let i = 1; i <= totalPages; i++) {
@@ -95,7 +106,11 @@ export default function ServicesPage() {
       if (currentPage > 3) {
         pageButtons.push("...");
       }
-      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+      for (
+        let i = Math.max(2, currentPage - 1);
+        i <= Math.min(totalPages - 1, currentPage + 1);
+        i++
+      ) {
         pageButtons.push(i);
       }
       if (currentPage < totalPages - 2) {
@@ -106,7 +121,9 @@ export default function ServicesPage() {
 
     return pageButtons.map((page, index) =>
       page === "..." ? (
-        <span key={index} className="px-4 py-2 text-[#6B6B6B]">...</span>
+        <span key={index} className="px-4 py-2 text-[#6B6B6B]">
+          ...
+        </span>
       ) : (
         <button
           key={page}
@@ -137,9 +154,7 @@ export default function ServicesPage() {
           {/* Title */}
           <h1 className="text-4xl lg:text-6xl font-bold mb-6">
             Wujudkan Kebutuhan Anda
-            <span className="block text-[#E53935]">
-              Dengan Layanan Koperasi
-            </span>
+            <span className="block text-[#E53935]">Dengan Layanan Koperasi</span>
           </h1>
 
           {/* Subtitle */}
@@ -231,7 +246,10 @@ export default function ServicesPage() {
                       e.currentTarget.src = "/images/placeholder.jpg";
                     }}
                     onLoad={() => {
-                      console.log("Image loaded successfully for", service.name);
+                      console.log(
+                        "Image loaded successfully for",
+                        service.name
+                      );
                     }}
                     priority={false}
                   />
@@ -269,7 +287,7 @@ export default function ServicesPage() {
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-2 mb-12">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
             className="px-4 py-2 rounded-lg border border-[#6B6B6B] text-[#6B6B6B] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E53935] hover:text-white transition-colors"
           >
@@ -277,7 +295,9 @@ export default function ServicesPage() {
           </button>
           {renderPaginationButtons()}
           <button
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
             disabled={currentPage === totalPages}
             className="px-4 py-2 rounded-lg border border-[#6B6B6B] text-[#6B6B6B] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E53935] hover:text-white transition-colors"
           >

@@ -266,7 +266,7 @@ export default function PPOBPage() {
             <div className="space-y-8">
                 <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 text-center">
                     <div className="relative h-48 mb-6">
-                        <Image src="/images/ppob-illustration.svg" alt="Ilustrasi Pembayaran Digital" layout="fill" objectFit="contain" />
+                        <Image src="/ppob.webp" alt="Ilustrasi Pembayaran Digital" layout="fill" objectFit="contain" />
                     </div>
                     <h3 className="text-2xl font-bold text-[#6B6B6B] mb-4">Kenapa Bertransaksi di Sini?</h3>
                     <div className="space-y-5 text-left">

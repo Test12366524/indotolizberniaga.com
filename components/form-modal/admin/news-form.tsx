@@ -1,13 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+// ✨ FIX: Impor useState
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { News } from "@/types/admin/news";
 import { toDatetimeLocalInput } from "@/lib/format";
+import dynamic from "next/dynamic";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/RichTextEditor"),
+  {
+    ssr: false, 
+    loading: () => <p className="p-4 border rounded-md bg-gray-100">Memuat editor...</p>,
+  }
+);
 
 interface FormNewsProps {
   form: Partial<News> | undefined;
@@ -26,17 +35,33 @@ export default function FormNews({
   readonly = false,
   isLoading = false,
 }: FormNewsProps) {
+  // ✨ FIX 1: Tambahkan state 'mounted' untuk mencegah hydration mismatch
+  const [mounted, setMounted] = useState(false);
+
+  // ✨ FIX 2: Gunakan useEffect untuk menandai komponen sudah siap di client
   useEffect(() => {
-    if (!form) {
+    setMounted(true);
+  }, []);
+
+  // ✨ FIX 3: Pindahkan logika inisialisasi form ke sini
+  useEffect(() => {
+    // Hanya inisialisasi jika form belum ada (mode tambah) dan komponen sudah mounted
+    if (mounted && !form) {
       setForm({
         title: "",
         content: "",
         published_at: "",
+        image: "",
       });
     }
-  }, [form, setForm]);
+  }, [mounted, form, setForm]);
 
-  if (!form) return null;
+  // ✨ FIX 4: Jangan render apapun jika belum siap di client atau form belum ada
+  // Ini memastikan server dan render pertama client identik
+  if (!mounted || !form) {
+    // Anda bisa menampilkan skeleton loader di sini jika mau
+    return <div className="p-8 text-center text-gray-400">Memuat formulir...</div>; 
+  }
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-2xl space-y-4">
@@ -62,13 +87,19 @@ export default function FormNews({
 
         <div className="flex flex-col gap-y-1 col-span-2">
           <Label>Konten</Label>
-          <Textarea
-            value={form.content || ""}
-            onChange={(e) => setForm({ ...form, content: e.target.value })}
-            readOnly={readonly}
-            placeholder="Masukkan konten/isi news"
-            rows={6}
-          />
+          {readonly ? (
+            <div
+              className="prose max-w-none p-3 border rounded-md bg-gray-50 min-h-[150px]"
+              dangerouslySetInnerHTML={{ __html: form.content || "<em>Tidak ada konten.</em>" }}
+            />
+          ) : (
+            <RichTextEditor
+              value={form.content || ""}
+              onChange={(html) => {
+                setForm({ ...form, content: html });
+              }}
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-y-1 col-span-2">

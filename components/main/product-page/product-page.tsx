@@ -51,9 +51,10 @@ export default function ProductsPage() {
     isLoading,
     isError,
     refetch,
-  } = useGetProductListQuery({
+  } = useGetProductListPublicQuery({
     page: currentPage,
     paginate: ITEMS_PER_PAGE,
+    merk_id: 1
   });
 
   const totalPages = useMemo(() => listResp?.last_page ?? 1, [listResp]);
