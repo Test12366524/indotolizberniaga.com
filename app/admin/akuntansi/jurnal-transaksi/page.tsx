@@ -3,8 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -12,15 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Plus, Minus, Calendar, FileText } from "lucide-react";
 import Swal from "sweetalert2";
 import {
   useGetJournalListQuery,
@@ -34,6 +24,8 @@ import {
 } from "@/services/admin/journal.service";
 import ActionsGroup from "@/components/admin-components/actions-group";
 import { displayDate, formatDate } from "@/lib/format-utils";
+import JournalForm from "@/components/form-modal/jurnal-transaksi-form";
+import { Calendar, FileText } from "lucide-react";
 
 export default function JurnalTransaksiPage() {
   const [filters, setFilters] = useState<{
@@ -54,6 +46,7 @@ export default function JurnalTransaksiPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Journal | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+
   const [formData, setFormData] = useState<CreateJournalRequest>({
     date: new Date().toISOString().split("T")[0],
     description: "",
@@ -61,47 +54,43 @@ export default function JurnalTransaksiPage() {
     details: [{ coa_id: 0, type: "debit", debit: 0, credit: 0, memo: "" }],
   });
 
-  const { data: journalData, isLoading } = useGetJournalListQuery({
+  const {
+    data: journalData,
+    isLoading,
+    refetch,
+  } = useGetJournalListQuery({
     page: currentPage,
     paginate: 10,
     orderBy: "updated_at",
     order: "desc",
   });
 
-  const { data: coaData } = useGetCOAListQuery({
-    page: 1,
-    paginate: 100,
-  });
+  const { data: coaData } = useGetCOAListQuery({ page: 1, paginate: 100 });
 
   const { data: selectedItemData, isLoading: isLoadingSelectedItem } =
-    useGetJournalByIdQuery(selectedItemId!, {
-      skip: !selectedItemId,
-    });
+    useGetJournalByIdQuery(selectedItemId!, { skip: !selectedItemId });
 
-  const [createJournal] = useCreateJournalMutation();
-  const [updateJournal] = useUpdateJournalMutation();
+  const [createJournal, { isLoading: isCreating }] = useCreateJournalMutation();
+  const [updateJournal, { isLoading: isUpdating }] = useUpdateJournalMutation();
   const [deleteJournal] = useDeleteJournalMutation();
 
-  // Populate form data when detailed item data is loaded
+  // populate saat edit
   useEffect(() => {
     if (selectedItemData && isEditModalOpen) {
-      // Format date for input field (YYYY-MM-DD)
-      const formatDateForInput = (dateString: string) => {
-        if (!dateString) return new Date().toISOString().split("T")[0];
-        const date = new Date(dateString);
-        return date.toISOString().split("T")[0];
-      };
+      const date = selectedItemData.date
+        ? new Date(selectedItemData.date).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
 
       setFormData({
-        date: formatDateForInput(selectedItemData.date),
-        description: selectedItemData.description,
+        date,
+        description: selectedItemData.description ?? "",
         is_posted: selectedItemData.is_posted ? 1 : 0,
-        details: selectedItemData.details?.map((detail) => ({
-          coa_id: detail.coa_id,
-          type: detail.type,
-          debit: detail.debit,
-          credit: detail.credit,
-          memo: detail.memo,
+        details: selectedItemData.details?.map((d) => ({
+          coa_id: d.coa_id,
+          type: d.type,
+          debit: Number(d.debit) || 0,
+          credit: Number(d.credit) || 0,
+          memo: d.memo ?? "",
         })) || [{ coa_id: 0, type: "debit", debit: 0, credit: 0, memo: "" }],
       });
     }
@@ -116,12 +105,10 @@ export default function JurnalTransaksiPage() {
     const toStr = filters.date_to ? formatDate(filters.date_to) : undefined;
 
     return list.filter((item) => {
-      // ---- search
       const matchesSearch = item.description
         ?.toLowerCase()
         .includes(filters.search.toLowerCase());
 
-      // ---- status
       const matchesStatus =
         filters.status === "all" ||
         (filters.status === "1" && item.is_posted === true) ||
@@ -129,11 +116,11 @@ export default function JurnalTransaksiPage() {
 
       let matchesDate = true;
       if (fromStr || toStr) {
-        const itemDate = formatDate(item.date); // normalisasi ke "YYYY-MM-DD"
+        const itemDate = formatDate(item.date);
         if (!itemDate) matchesDate = false;
         else if (fromStr && toStr)
           matchesDate = itemDate >= fromStr && itemDate <= toStr;
-        else if (fromStr && !toStr) matchesDate = itemDate === fromStr; // single-day
+        else if (fromStr && !toStr) matchesDate = itemDate === fromStr;
       }
 
       return !!matchesSearch && !!matchesStatus && !!matchesDate;
@@ -189,6 +176,7 @@ export default function JurnalTransaksiPage() {
     if (result.isConfirmed) {
       try {
         await deleteJournal(id).unwrap();
+        await refetch();
         Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
       } catch {
         Swal.fire("Error!", "Gagal menghapus data.", "error");
@@ -196,15 +184,10 @@ export default function JurnalTransaksiPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     try {
       if (selectedItem) {
-        await updateJournal({
-          id: selectedItem.id,
-          data: formData,
-        }).unwrap();
+        await updateJournal({ id: selectedItem.id, data: formData }).unwrap();
         Swal.fire("Berhasil!", "Data berhasil diperbarui.", "success");
         setIsEditModalOpen(false);
       } else {
@@ -214,56 +197,10 @@ export default function JurnalTransaksiPage() {
       }
       setSelectedItem(null);
       setSelectedItemId(null);
+      await refetch();
     } catch {
       Swal.fire("Error!", "Gagal menyimpan data.", "error");
     }
-  };
-
-  const addDetailEntry = () => {
-    setFormData({
-      ...formData,
-      details: [
-        ...formData.details,
-        { coa_id: 0, type: "debit", debit: 0, credit: 0, memo: "" },
-      ],
-    });
-  };
-
-  const removeDetailEntry = (index: number) => {
-    if (formData.details.length > 1) {
-      setFormData({
-        ...formData,
-        details: formData.details.filter((_, i) => i !== index),
-      });
-    }
-  };
-
-  const updateDetailEntry = (
-    index: number,
-    field: string,
-    value: string | number
-  ) => {
-    const updatedDetails = [...formData.details];
-    updatedDetails[index] = { ...updatedDetails[index], [field]: value };
-
-    // Reset the opposite field when type changes
-    if (field === "type") {
-      if (value === "debit") {
-        updatedDetails[index].credit = 0;
-      } else if (value === "credit") {
-        updatedDetails[index].debit = 0;
-      }
-    }
-
-    setFormData({ ...formData, details: updatedDetails });
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
   };
 
   const getCOAName = (coaId: number) => {
@@ -296,9 +233,9 @@ export default function JurnalTransaksiPage() {
         enableDateFilter
         initialDateFrom={filters.date_from}
         initialDateTo={filters.date_to}
-        onDateRangeChange={(from, to) => {
-          setFilters((s) => ({ ...s, date_from: from, date_to: to }));
-        }}
+        onDateRangeChange={(from, to) =>
+          setFilters((s) => ({ ...s, date_from: from, date_to: to }))
+        }
       />
 
       {/* Data Table */}
@@ -345,34 +282,32 @@ export default function JurnalTransaksiPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((item) => {
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <ActionsGroup
-                            handleDetail={() => handleDetail(item)}
-                            handleEdit={() => handleEdit(item)}
-                            handleDelete={() => handleDelete(item.id)}
-                          />
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {displayDate(item.date)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {item.description}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {item.reference || "-"}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {getStatusBadge(item.is_posted)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {displayDate(item.created_at)}
-                        </td>
-                      </tr>
-                    );
-                  })
+                  filteredData.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <ActionsGroup
+                          handleDetail={() => handleDetail(item)}
+                          handleEdit={() => handleEdit(item)}
+                          handleDelete={() => handleDelete(item.id)}
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {displayDate(item.date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {item.description}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {item.reference || "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(item.is_posted)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {displayDate(item.created_at)}
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -411,7 +346,7 @@ export default function JurnalTransaksiPage() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
+      {/* Create/Edit Modal (besar) */}
       <Dialog
         open={isCreateModalOpen || isEditModalOpen}
         onOpenChange={(open) => {
@@ -423,7 +358,7 @@ export default function JurnalTransaksiPage() {
           }
         }}
       >
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle>
               {selectedItem
@@ -438,232 +373,18 @@ export default function JurnalTransaksiPage() {
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto">
-              <form onSubmit={handleSubmit} className="space-y-6 p-1">
-                {/* Basic Information */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="text-lg font-medium mb-4">Informasi Dasar</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="date">Tanggal</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) =>
-                          setFormData({ ...formData, date: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="is_posted">Status</Label>
-                      <Select
-                        value={String(formData.is_posted)}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, is_posted: Number(value) })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Draft</SelectItem>
-                          <SelectItem value="1">Posted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="description">Deskripsi</Label>
-                      <Input
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            description: e.target.value,
-                          })
-                        }
-                        placeholder="Masukkan deskripsi jurnal"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Journal Details Section */}
-                <div className="bg-white border rounded-lg">
-                  <div className="p-4 border-b">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium">Detail Jurnal</h3>
-                      <Button
-                        type="button"
-                        onClick={addDetailEntry}
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Tambah Detail
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="p-4 space-y-4">
-                    {formData.details.map((detail, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 p-4 rounded-lg border"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-sm font-medium text-gray-700">
-                            Detail #{index + 1}
-                          </span>
-                          {formData.details.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeDetailEntry(index)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-                          <div className="md:col-span-2">
-                            <Label>COA</Label>
-                            <Select
-                              value={String(detail.coa_id)}
-                              onValueChange={(value) =>
-                                updateDetailEntry(
-                                  index,
-                                  "coa_id",
-                                  Number(value)
-                                )
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih COA" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {coaData?.data.map((coa) => (
-                                  <SelectItem
-                                    key={coa.id}
-                                    value={String(coa.id)}
-                                  >
-                                    {coa.code} - {coa.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label>Tipe</Label>
-                            <Select
-                              value={detail.type}
-                              onValueChange={(value: "debit" | "credit") =>
-                                updateDetailEntry(index, "type", value)
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Pilih tipe" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="debit">Debit</SelectItem>
-                                <SelectItem value="credit">Credit</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            {/* Debug info */}
-                            <p className="text-xs text-gray-500 mt-1">
-                              Current type: {detail.type} (index: {index})
-                            </p>
-                          </div>
-
-                          {detail.type === "debit" ? (
-                            <div>
-                              <Label>Debit</Label>
-                              <Input
-                                type="text"
-                                value={detail.debit || ""}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9]/g,
-                                    ""
-                                  );
-                                  updateDetailEntry(
-                                    index,
-                                    "debit",
-                                    Number(value) || 0
-                                  );
-                                }}
-                                placeholder="0"
-                              />
-                            </div>
-                          ) : (
-                            <div>
-                              <Label>Credit</Label>
-                              <Input
-                                type="text"
-                                value={detail.credit || ""}
-                                onChange={(e) => {
-                                  const value = e.target.value.replace(
-                                    /[^0-9]/g,
-                                    ""
-                                  );
-                                  updateDetailEntry(
-                                    index,
-                                    "credit",
-                                    Number(value) || 0
-                                  );
-                                }}
-                                placeholder="0"
-                              />
-                            </div>
-                          )}
-
-                          <div className="md:col-span-2">
-                            <Label>Memo</Label>
-                            <Input
-                              value={detail.memo}
-                              onChange={(e) =>
-                                updateDetailEntry(index, "memo", e.target.value)
-                              }
-                              placeholder="Catatan tambahan"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreateModalOpen(false);
-                      setIsEditModalOpen(false);
-                      setSelectedItem(null);
-                      setSelectedItemId(null);
-                    }}
-                    className="px-6"
-                  >
-                    Batal
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="px-6 bg-green-600 hover:bg-green-700"
-                  >
-                    {selectedItem ? "Update" : "Simpan"}
-                  </Button>
-                </div>
-              </form>
+              <JournalForm
+                form={formData}
+                setForm={setFormData}
+                onCancel={() => {
+                  setIsCreateModalOpen(false);
+                  setIsEditModalOpen(false);
+                  setSelectedItem(null);
+                  setSelectedItemId(null);
+                }}
+                onSubmit={handleSubmit}
+                isLoading={isCreating || isUpdating}
+              />
             </div>
           )}
         </DialogContent>
@@ -700,53 +421,61 @@ export default function JurnalTransaksiPage() {
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-gray-500">
                           Tanggal
-                        </Label>
+                        </span>
                         <p className="text-lg font-semibold text-gray-900">
                           {displayDate(selectedItemData.date)}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-gray-500">
                           Status
-                        </Label>
+                        </span>
                         <div className="mt-1">
                           {getStatusBadge(selectedItemData.is_posted)}
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-gray-500">
                           Total Debit
-                        </Label>
+                        </span>
                         <p className="text-lg font-bold text-green-600">
-                          {formatCurrency(
-                            selectedItemData.details?.reduce((sum, detail) => {
-                              const debit = Number(detail.debit) || 0;
-                              return sum + debit;
-                            }, 0) || 0
+                          {new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            minimumFractionDigits: 0,
+                          }).format(
+                            selectedItemData.details?.reduce(
+                              (s, d) => s + (Number(d.debit) || 0),
+                              0
+                            ) || 0
                           )}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-500">
+                        <span className="text-sm font-medium text-gray-500">
                           Total Credit
-                        </Label>
+                        </span>
                         <p className="text-lg font-bold text-red-600">
-                          {formatCurrency(
-                            selectedItemData.details?.reduce((sum, detail) => {
-                              const credit = Number(detail.credit) || 0;
-                              return sum + credit;
-                            }, 0) || 0
+                          {new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            minimumFractionDigits: 0,
+                          }).format(
+                            selectedItemData.details?.reduce(
+                              (s, d) => s + (Number(d.credit) || 0),
+                              0
+                            ) || 0
                           )}
                         </p>
                       </div>
                     </div>
 
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <Label className="text-sm font-medium text-gray-500">
+                      <span className="text-sm font-medium text-gray-500">
                         Deskripsi
-                      </Label>
+                      </span>
                       <p className="text-sm text-gray-700 mt-1">
                         {selectedItemData.description}
                       </p>
@@ -762,7 +491,7 @@ export default function JurnalTransaksiPage() {
                     </div>
                   </div>
 
-                  {/* Detail Entries */}
+                  {/* Detail entries */}
                   {selectedItemData.details &&
                   selectedItemData.details.length > 0 ? (
                     <div className="bg-white border rounded-lg">
@@ -772,7 +501,6 @@ export default function JurnalTransaksiPage() {
                           Detail Entri Jurnal
                         </h3>
                       </div>
-
                       <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
@@ -830,12 +558,20 @@ export default function JurnalTransaksiPage() {
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                                   {detail.debit > 0
-                                    ? formatCurrency(detail.debit)
+                                    ? new Intl.NumberFormat("id-ID", {
+                                        style: "currency",
+                                        currency: "IDR",
+                                        minimumFractionDigits: 0,
+                                      }).format(detail.debit)
                                     : "-"}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
                                   {detail.credit > 0
-                                    ? formatCurrency(detail.credit)
+                                    ? new Intl.NumberFormat("id-ID", {
+                                        style: "currency",
+                                        currency: "IDR",
+                                        minimumFractionDigits: 0,
+                                      }).format(detail.credit)
                                     : "-"}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-600 max-w-xs">
