@@ -1,3 +1,4 @@
+// components/form-modal/journal-form.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,8 +29,13 @@ import {
 import { ChevronDown, Loader2, Layers, Plus, Minus } from "lucide-react";
 import { useGetCOAListQuery } from "@/services/admin/kode-transaksi.service";
 import type { CreateJournalRequest } from "@/services/admin/journal.service";
+import {
+  formatRupiah,
+  parseRupiah,
+  formatRupiahWithRp,
+} from "@/lib/format-utils";
 
-/** ====== COA Picker (min 3 huruf, debounce, full width, tampil saat edit) ====== */
+/* ========= COA Picker (min 3 huruf, debounce, full width, tampil saat edit) ========= */
 type CoaLite = {
   id: number;
   code: string;
@@ -227,7 +233,7 @@ function COAPicker({
   );
 }
 
-/** ========== JOURNAL FORM ========== */
+/* ================= JOURNAL FORM ================= */
 export type FormState = CreateJournalRequest;
 
 interface Props {
@@ -247,7 +253,6 @@ export default function JournalForm({
   isLoading = false,
   readonly = false,
 }: Props) {
-  // helpers
   const setField = <K extends keyof FormState>(key: K, val: FormState[K]) =>
     setForm({ ...form, [key]: val });
 
@@ -284,13 +289,6 @@ export default function JournalForm({
     [form.details]
   );
   const balanced = totalDebit === totalCredit;
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
 
   return (
     <form
@@ -357,7 +355,7 @@ export default function JournalForm({
               balanced ? "text-green-700" : "text-red-700"
             }`}
           >
-            {formatCurrency(totalDebit)}
+            {formatRupiahWithRp(totalDebit)}
           </div>
         </div>
         <div
@@ -373,7 +371,7 @@ export default function JournalForm({
               balanced ? "text-green-700" : "text-red-700"
             }`}
           >
-            {formatCurrency(totalCredit)}
+            {formatRupiahWithRp(totalCredit)}
           </div>
         </div>
       </div>
@@ -433,7 +431,6 @@ export default function JournalForm({
                   <Select
                     value={detail.type}
                     onValueChange={(v: "debit" | "credit") => {
-                      // reset sisi lawan agar 0
                       if (v === "debit")
                         patchDetail(index, { type: v, credit: 0 });
                       else patchDetail(index, { type: v, debit: 0 });
@@ -455,12 +452,10 @@ export default function JournalForm({
                     <Label>Debit</Label>
                     <Input
                       inputMode="numeric"
-                      value={detail.debit ? String(detail.debit) : ""}
+                      value={formatRupiah(detail.debit || 0)}
                       onChange={(e) => {
-                        const num = Number(
-                          (e.target.value || "").replace(/[^0-9]/g, "")
-                        );
-                        patchDetail(index, { debit: num || 0 });
+                        const num = parseRupiah(e.target.value);
+                        patchDetail(index, { debit: num, credit: 0 });
                       }}
                       placeholder="0"
                       readOnly={readonly}
@@ -471,12 +466,10 @@ export default function JournalForm({
                     <Label>Credit</Label>
                     <Input
                       inputMode="numeric"
-                      value={detail.credit ? String(detail.credit) : ""}
+                      value={formatRupiah(detail.credit || 0)}
                       onChange={(e) => {
-                        const num = Number(
-                          (e.target.value || "").replace(/[^0-9]/g, "")
-                        );
-                        patchDetail(index, { credit: num || 0 });
+                        const num = parseRupiah(e.target.value);
+                        patchDetail(index, { credit: num, debit: 0 });
                       }}
                       placeholder="0"
                       readOnly={readonly}
