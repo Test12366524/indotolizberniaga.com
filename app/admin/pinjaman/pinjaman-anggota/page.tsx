@@ -446,30 +446,9 @@ export default function PinjamanAnggotaPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Pinjaman Anggota</h1>
-          <p className="text-sm text-gray-500">
-            Kelola data pinjaman anggota koperasi
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            disabled={isExporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? "Exporting..." : "Export Excel"}
-          </Button>
-          <Button onClick={() => openModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Pinjaman
-          </Button>
-        </div>
-      </div>
+      <div className="flex items-center justify-between"></div>
 
       {/* Filters */}
       <div className="rounded-md bg-white p-4 border border-gray-100 shadow-sm">
@@ -521,12 +500,29 @@ export default function PinjamanAnggotaPage() {
               <option value="1">Approved</option>
               <option value="2">Ditolak</option>
             </select>
+
           </div>
 
           {/* Kanan: aksi */}
           <div className="shrink-0 flex flex-wrap items-center gap-2">
+            <div className="flex gap-2">
+              <Button
+                onClick={handleExport}
+                variant="green"
+                disabled={isExporting}
+                className="h-10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting..." : "Export Excel"}
+              </Button>
+              <Button className="h-10" onClick={() => openModal()}>
+                <Plus className="h-4 w-4" />
+                Pinjaman
+              </Button>
+            </div>
             <Button
-              variant="outline"
+              variant="destructive"
+              className="h-10"
               onClick={() =>
                 setFilters({
                   category_id: "",

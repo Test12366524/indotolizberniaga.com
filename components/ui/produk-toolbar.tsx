@@ -70,7 +70,7 @@ export function ProdukToolbar({
   initialCategory,
   extraSelects = [],
   extraNodes,
-  addButtonLabel = "Tambah Data",
+  addButtonLabel = "Data",
 
   onImportExcel,
   onExportExcel,

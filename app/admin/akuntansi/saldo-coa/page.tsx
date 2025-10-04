@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +39,13 @@ import {
   type ChartOptions,
 } from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 ChartJS.register(
   CategoryScale,
@@ -217,9 +224,7 @@ const mockVisualData = {
     { kategori: "Hutang Usaha", jumlah: 80000000, persentase: 34.8 },
     { kategori: "Hutang Bank", jumlah: 150000000, persentase: 65.2 },
   ],
-  detailEkuitas: [
-    { kategori: "Modal", jumlah: 500000000, persentase: 100.0 },
-  ],
+  detailEkuitas: [{ kategori: "Modal", jumlah: 500000000, persentase: 100.0 }],
   detailPendapatan: [
     { kategori: "Pendapatan Usaha", jumlah: 250000000, persentase: 100.0 },
   ],
@@ -229,18 +234,78 @@ const mockVisualData = {
     { kategori: "Beban Lain-lain", jumlah: 25000000, persentase: 11.1 },
   ],
   trendData: [
-    { bulan: "Jan", aktiva: 450000000, kewajiban: 200000000, ekuitas: 250000000 },
-    { bulan: "Feb", aktiva: 460000000, kewajiban: 205000000, ekuitas: 255000000 },
-    { bulan: "Mar", aktiva: 470000000, kewajiban: 210000000, ekuitas: 260000000 },
-    { bulan: "Apr", aktiva: 475000000, kewajiban: 215000000, ekuitas: 260000000 },
-    { bulan: "Mei", aktiva: 480000000, kewajiban: 220000000, ekuitas: 260000000 },
-    { bulan: "Jun", aktiva: 485000000, kewajiban: 225000000, ekuitas: 260000000 },
-    { bulan: "Jul", aktiva: 490000000, kewajiban: 230000000, ekuitas: 260000000 },
-    { bulan: "Agu", aktiva: 495000000, kewajiban: 235000000, ekuitas: 260000000 },
-    { bulan: "Sep", aktiva: 500000000, kewajiban: 240000000, ekuitas: 260000000 },
-    { bulan: "Okt", aktiva: 505000000, kewajiban: 245000000, ekuitas: 260000000 },
-    { bulan: "Nov", aktiva: 510000000, kewajiban: 250000000, ekuitas: 260000000 },
-    { bulan: "Des", aktiva: 515000000, kewajiban: 255000000, ekuitas: 260000000 },
+    {
+      bulan: "Jan",
+      aktiva: 450000000,
+      kewajiban: 200000000,
+      ekuitas: 250000000,
+    },
+    {
+      bulan: "Feb",
+      aktiva: 460000000,
+      kewajiban: 205000000,
+      ekuitas: 255000000,
+    },
+    {
+      bulan: "Mar",
+      aktiva: 470000000,
+      kewajiban: 210000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Apr",
+      aktiva: 475000000,
+      kewajiban: 215000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Mei",
+      aktiva: 480000000,
+      kewajiban: 220000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Jun",
+      aktiva: 485000000,
+      kewajiban: 225000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Jul",
+      aktiva: 490000000,
+      kewajiban: 230000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Agu",
+      aktiva: 495000000,
+      kewajiban: 235000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Sep",
+      aktiva: 500000000,
+      kewajiban: 240000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Okt",
+      aktiva: 505000000,
+      kewajiban: 245000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Nov",
+      aktiva: 510000000,
+      kewajiban: 250000000,
+      ekuitas: 260000000,
+    },
+    {
+      bulan: "Des",
+      aktiva: 515000000,
+      kewajiban: 255000000,
+      ekuitas: 260000000,
+    },
   ],
 };
 
@@ -263,7 +328,9 @@ export default function SaldoCOAPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [templateView, setTemplateView] = useState<"dashboard" | "table">("dashboard");
+  const [templateView, setTemplateView] = useState<"dashboard" | "table">(
+    "dashboard"
+  );
 
   const handleRefresh = () => {
     setIsLoading(true);
@@ -275,10 +342,11 @@ export default function SaldoCOAPage() {
   };
 
   // Filter data berdasarkan search term
-  const filteredTableData = mockSaldoCOAData.filter((item) =>
-    item.nama_akun.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.kode_akun.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.tipe_akun.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTableData = mockSaldoCOAData.filter(
+    (item) =>
+      item.nama_akun.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.kode_akun.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.tipe_akun.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Chart data untuk trend
@@ -339,12 +407,7 @@ export default function SaldoCOAPage() {
     datasets: [
       {
         data: mockVisualData.detailAktiva.map((item) => item.jumlah),
-        backgroundColor: [
-          "#3B82F6",
-          "#10B981",
-          "#F59E0B",
-          "#EF4444",
-        ],
+        backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"],
         borderWidth: 2,
         borderColor: "#ffffff",
       },
@@ -364,7 +427,6 @@ export default function SaldoCOAPage() {
       },
     },
   };
-
 
   const summaryCards = [
     {
@@ -405,89 +467,101 @@ export default function SaldoCOAPage() {
     },
   ];
 
+  // di komponen
+  const years = useMemo(() => {
+    const end = new Date().getFullYear();
+    const start = 2000; // ganti sesuai kebutuhan (atau taruh di env/konstanta)
+    return Array.from({ length: end - start + 1 }, (_, i) => String(end - i)); // urut desc
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Saldo COA
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Laporan saldo Chart of Accounts dan analisis keuangan
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {/* Template Toggle */}
-          <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg">
-            <Button
-              variant={templateView === "dashboard" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setTemplateView("dashboard")}
-            >
-              <Layout className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-            <Button
-              variant={templateView === "table" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setTemplateView("table")}
-            >
-              <Table className="h-4 w-4 mr-2" />
-              Table
-            </Button>
-          </div>
+      <div className="flex items-center space-x-2">
+        {/* Template Toggle */}
+        <div className="flex items-center space-x-1 bg-gray-100 p-1 rounded-lg">
           <Button
-            variant="outline"
+            variant={templateView === "dashboard" ? "default" : "ghost"}
             size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading}
+            onClick={() => setTemplateView("dashboard")}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-            Refresh
+            <Layout className="h-4 w-4 mr-2" />
+            Dashboard
           </Button>
-          <Button size="sm" onClick={handleExport}>
-            <Download className="h-4 w-4" />
-            Export
+          <Button
+            variant={templateView === "table" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setTemplateView("table")}
+          >
+            <Table className="h-4 w-4 mr-2" />
+            Table
           </Button>
         </div>
       </div>
 
       {/* Filter Controls */}
       <Card className={`${templateView === "table" ? "hidden" : ""}`}>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-4 w-4 text-gray-500" />
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-              >
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
-                <option value="2022">2022</option>
-              </select>
+        <CardContent>
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="flex gap-2">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                <Select
+                  value={selectedYear}
+                  onValueChange={(v) => setSelectedYear(v)}
+                >
+                  <SelectTrigger className="w-[120px] h-10">
+                    <SelectValue placeholder="Tahun" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Search className="h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder={
+                    templateView === "dashboard"
+                      ? "Cari akun..."
+                      : "Cari kode atau nama akun..."
+                  }
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-64 h-10"
+                />
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Search className="h-4 w-4 text-gray-500" />
-              <Input
-                placeholder={templateView === "dashboard" ? "Cari akun..." : "Cari kode atau nama akun..."}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-64"
-              />
-            </div>
-            <Button variant="outline" size="sm">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
+
             {templateView === "table" && (
-              <Button size="sm" className="ml-auto">
+              <Button size="sm" className="ml-auto h-10">
                 <FileText className="h-4 w-4 mr-2" />
                 Tambah Akun
               </Button>
             )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="h-10"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
+                Refresh
+              </Button>
+              <Button size="sm" className="h-10" onClick={handleExport}>
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -500,7 +574,10 @@ export default function SaldoCOAPage() {
             {summaryCards.map((card, index) => {
               const Icon = card.icon;
               return (
-                <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
+                <Card
+                  key={index}
+                  className="hover:shadow-lg transition-shadow duration-200"
+                >
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -603,15 +680,25 @@ export default function SaldoCOAPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockVisualData.detailAktiva.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-3 h-3 rounded-full"
                             style={{
-                              backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#EF4444"][index],
+                              backgroundColor: [
+                                "#3B82F6",
+                                "#10B981",
+                                "#F59E0B",
+                                "#EF4444",
+                              ][index],
                             }}
                           />
-                          <span className="text-sm font-medium">{item.kategori}</span>
+                          <span className="text-sm font-medium">
+                            {item.kategori}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-green-600">
@@ -643,7 +730,10 @@ export default function SaldoCOAPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockVisualData.detailKewajiban.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-3 h-3 rounded-full"
@@ -651,7 +741,9 @@ export default function SaldoCOAPage() {
                               backgroundColor: ["#EF4444", "#F59E0B"][index],
                             }}
                           />
-                          <span className="text-sm font-medium">{item.kategori}</span>
+                          <span className="text-sm font-medium">
+                            {item.kategori}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-red-600">
@@ -683,7 +775,10 @@ export default function SaldoCOAPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockVisualData.detailEkuitas.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-3 h-3 rounded-full"
@@ -691,7 +786,9 @@ export default function SaldoCOAPage() {
                               backgroundColor: "#3B82F6",
                             }}
                           />
-                          <span className="text-sm font-medium">{item.kategori}</span>
+                          <span className="text-sm font-medium">
+                            {item.kategori}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-blue-600">
@@ -727,12 +824,15 @@ export default function SaldoCOAPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockVisualData.detailPendapatan.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
-                          <div
-                            className="w-3 h-3 rounded-full bg-green-500"
-                          />
-                          <span className="text-sm font-medium">{item.kategori}</span>
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          <span className="text-sm font-medium">
+                            {item.kategori}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-green-600">
@@ -764,15 +864,24 @@ export default function SaldoCOAPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {mockVisualData.detailBeban.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
                         <div className="flex items-center space-x-3">
                           <div
                             className="w-3 h-3 rounded-full"
                             style={{
-                              backgroundColor: ["#EF4444", "#F59E0B", "#8B5CF6"][index],
+                              backgroundColor: [
+                                "#EF4444",
+                                "#F59E0B",
+                                "#8B5CF6",
+                              ][index],
                             }}
                           />
-                          <span className="text-sm font-medium">{item.kategori}</span>
+                          <span className="text-sm font-medium">
+                            {item.kategori}
+                          </span>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-semibold text-red-600">
@@ -831,26 +940,33 @@ export default function SaldoCOAPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {mockSaldoCOAData.filter(item => item.tipe_akun === "Aktiva").map((item) => (
-                          <tr key={item.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-mono text-sm">{item.kode_akun}</td>
-                            <td className="py-3 px-4">{item.nama_akun}</td>
-                            <td className="py-3 px-4 text-right font-semibold text-green-600">
-                              {formatRupiah(item.saldo_debit)}
-                            </td>
-                            <td className="py-3 px-4 text-right font-semibold text-red-600">
-                              {formatRupiah(item.saldo_kredit)}
-                            </td>
-                            <td className="py-3 px-4 text-right font-bold text-green-600">
-                              {formatRupiah(item.saldo_net)}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {item.tipe_saldo}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {mockSaldoCOAData
+                          .filter((item) => item.tipe_akun === "Aktiva")
+                          .map((item) => (
+                            <tr
+                              key={item.id}
+                              className="border-b hover:bg-gray-50"
+                            >
+                              <td className="py-3 px-4 font-mono text-sm">
+                                {item.kode_akun}
+                              </td>
+                              <td className="py-3 px-4">{item.nama_akun}</td>
+                              <td className="py-3 px-4 text-right font-semibold text-green-600">
+                                {formatRupiah(item.saldo_debit)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-semibold text-red-600">
+                                {formatRupiah(item.saldo_kredit)}
+                              </td>
+                              <td className="py-3 px-4 text-right font-bold text-green-600">
+                                {formatRupiah(item.saldo_net)}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {item.tipe_saldo}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
@@ -873,27 +989,29 @@ export default function SaldoCOAPage() {
                     placeholder="Cari kode atau nama akun..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-64"
+                    className="w-64 h-10"
                   />
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <select
+                  <Select
                     value={selectedYear}
-                    onChange={(e) => setSelectedYear(e.target.value)}
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+                    onValueChange={(v) => setSelectedYear(v)}
                   >
-                    <option value="2024">2024</option>
-                    <option value="2023">2023</option>
-                    <option value="2022">2022</option>
-                  </select>
+                    <SelectTrigger className="w-[120px] h-10">
+                      <SelectValue placeholder="Tahun" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {years.map((y) => (
+                        <SelectItem key={y} value={y}>
+                          {y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
               </div>
-              
+
               {/* Kanan: aksi */}
               <div className="flex items-center gap-2">
                 <Button
@@ -901,15 +1019,20 @@ export default function SaldoCOAPage() {
                   size="sm"
                   onClick={handleRefresh}
                   disabled={isLoading}
+                  className="h-10"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${
+                      isLoading ? "animate-spin" : ""
+                    }`}
+                  />
                   Refresh
                 </Button>
-                <Button size="sm" onClick={handleExport}>
+                <Button size="sm" className="h-10" onClick={handleExport}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
-                <Button size="sm">
+                <Button className="h-10" size="sm">
                   <FileText className="h-4 w-4 mr-2" />
                   Tambah Akun
                 </Button>
@@ -927,7 +1050,9 @@ export default function SaldoCOAPage() {
                     <th className="px-4 py-2 whitespace-nowrap">Nama Akun</th>
                     <th className="px-4 py-2 whitespace-nowrap">Tipe Akun</th>
                     <th className="px-4 py-2 whitespace-nowrap">Saldo Debit</th>
-                    <th className="px-4 py-2 whitespace-nowrap">Saldo Kredit</th>
+                    <th className="px-4 py-2 whitespace-nowrap">
+                      Saldo Kredit
+                    </th>
                     <th className="px-4 py-2 whitespace-nowrap">Saldo Net</th>
                     <th className="px-4 py-2 whitespace-nowrap">Tipe Saldo</th>
                     <th className="px-4 py-2 whitespace-nowrap">Status</th>
@@ -965,10 +1090,7 @@ export default function SaldoCOAPage() {
                             >
                               <Edit className="size-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive"
-                            >
+                            <Button size="sm" variant="destructive">
                               <Trash2 className="size-4" />
                             </Button>
                           </div>

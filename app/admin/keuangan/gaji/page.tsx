@@ -179,17 +179,11 @@ export default function GajiPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Keuangan - Gaji</h1>
-        <p className="text-sm text-gray-500">Kelola data tagihan keuangan</p>
-      </div>
-
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardContent className="px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
             <div>
-              <Label htmlFor="search">Cari</Label>
               <Input
                 id="search"
                 placeholder="Cari nama, referensi..."
@@ -201,7 +195,6 @@ export default function GajiPage() {
             </div>
 
             <div>
-              <Label htmlFor="date">Bulan/Tahun</Label>
               <Input
                 id="date"
                 type="month"
@@ -213,7 +206,6 @@ export default function GajiPage() {
             </div>
 
             <div>
-              <Label htmlFor="status">Status</Label>
               <Select
                 value={filters.status}
                 onValueChange={(value) =>
@@ -231,10 +223,10 @@ export default function GajiPage() {
               </Select>
             </div>
 
-            <div className="flex items-end gap-2">
+            <div className="flex gap-2 w-full justify-end">
               <Button
                 onClick={() => handleExport("excel")}
-                variant="outline"
+                variant="green"
                 className="flex items-center gap-2"
               >
                 <FileSpreadsheet className="h-4 w-4" />
@@ -242,7 +234,7 @@ export default function GajiPage() {
               </Button>
               <Button
                 onClick={() => handleExport("pdf")}
-                variant="outline"
+                variant="destructive"
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />

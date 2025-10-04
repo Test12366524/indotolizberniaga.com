@@ -176,13 +176,6 @@ export default function KodeTransaksiPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Kode Transaksi</h1>
-        <p className="text-sm text-gray-500">
-          Kelola kode transaksi untuk akuntansi
-        </p>
-      </div>
-
       <ProdukToolbar
         addButtonLabel="Tambah Kode Transaksi"
         openModal={handleCreate}
