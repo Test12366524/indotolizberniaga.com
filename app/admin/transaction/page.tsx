@@ -21,14 +21,20 @@ import {
   useGetTransactionListQuery,
   useDeleteTransactionMutation,
   useUpdateTransactionStatusMutation,
-  useGetTransactionByIdQuery,
 } from "@/services/admin/transaction.service";
 import { Transaction } from "@/types/admin/transaction";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { useSession } from "next-auth/react";
+import {
+  useGetSellerListQuery,
+  type Seller,
+} from "@/services/admin/seller.service";
 
-// Status enum mapping
+import { TransactionDetailModal } from "@/components/form-modal/admin/detail-transaction";
+
+// ==== Status enum mapping
 type TransactionStatusKey = 0 | 1 | 2 | -1 | -2 | -3;
 type TransactionStatusInfo = {
   label: string;
@@ -46,6 +52,8 @@ const TRANSACTION_STATUS: Record<TransactionStatusKey, TransactionStatusInfo> =
   };
 
 const CATEGORY_TO_STATUS: Record<string, TransactionStatusKey> = {
+  // "all" tidak memfilter status
+  all: 0 as TransactionStatusKey, // nilai dummy; tidak dipakai saat statusFilter === "all"
   pending: 0,
   captured: 1,
   settlement: 2,
@@ -54,6 +62,58 @@ const CATEGORY_TO_STATUS: Record<string, TransactionStatusKey> = {
   cancel: -3,
 };
 
+// ==== helpers
+type Role = { name?: string };
+function userHasRoles(u: unknown): u is { roles: Role[] } {
+  return (
+    typeof u === "object" &&
+    u !== null &&
+    "roles" in u &&
+    Array.isArray((u as { roles?: unknown }).roles)
+  );
+}
+function safeToLower(s: unknown): string {
+  return typeof s === "string" ? s.toLowerCase() : "";
+}
+function formatRupiah(amount: number | string): string {
+  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (!Number.isFinite(numAmount)) return "Rp 0";
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })
+    .format(numAmount)
+    .replace("IDR", "Rp");
+}
+function formatDateTime(dateString: string): string {
+  try {
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return dateString;
+    return new Intl.DateTimeFormat("id-ID", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  } catch (error) {
+    return String(error);
+  }
+}
+// ambil kemungkinan nama toko dari list
+function getShopNameFromListItem(item: Transaction): string | undefined {
+  const u = item as unknown;
+  if (typeof u !== "object" || u === null) return undefined;
+  const o = u as Record<string, unknown>;
+  if (typeof o["shop_name"] === "string") return o["shop_name"] as string;
+  if (typeof o["store_name"] === "string") return o["store_name"] as string;
+  if (typeof o["seller_name"] === "string") return o["seller_name"] as string;
+  return undefined;
+}
+
 export default function TransactionPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,93 +121,127 @@ export default function TransactionPage() {
     useState<Transaction | null>(null);
   const [newStatus, setNewStatus] = useState<string>("");
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedTransactionId, setSelectedTransactionId] = useState<
     number | null
   >(null);
+
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sellerId, setSellerId] = useState<number | null>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
 
-  // Helper function to format currency in Rupiah
-  const formatRupiah = (amount: number | string) => {
-    const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-    if (isNaN(numAmount)) return "Rp 0";
-
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    })
-      .format(numAmount)
-      .replace("IDR", "Rp");
-  };
-
-  // Helper function to format datetime to Indonesian format
-  const formatDateTime = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString;
-
-      return new Intl.DateTimeFormat("id-ID", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }).format(date);
-    } catch (error) {
-      return String(error);
+  // role superadmin
+  const { data: session } = useSession();
+  const isSuperAdmin = useMemo(() => {
+    const u = session?.user;
+    if (!u) return false;
+    if (userHasRoles(u)) {
+      return u.roles.some((r) => safeToLower(r.name) === "superadmin");
     }
-  };
+    return false;
+  }, [session]);
 
-  // Helper function to handle payment link click
-  const handlePaymentLinkClick = (paymentLink: string | null) => {
-    if (paymentLink && paymentLink.trim()) {
-      window.open(paymentLink, "_blank", "noopener,noreferrer");
-    }
-  };
-
+  // data transaksi
   const { data, isLoading, refetch } = useGetTransactionListQuery({
     page: currentPage,
     paginate: itemsPerPage,
+    // kalau backend sudah support filter, oper ke sini:
+    // seller_id: sellerId ?? undefined,
+    // status: statusFilter !== "all" ? CATEGORY_TO_STATUS[statusFilter] : undefined,
+    // date_from: dateFrom ? dateFrom.toISOString().slice(0, 10) : undefined,
+    // date_to: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
+    // q: query || undefined,
   });
 
-  const {
-    data: transactionDetail,
-    isLoading: isDetailLoading,
-    isError: isDetailError,
-  } = useGetTransactionByIdQuery(
-    selectedTransactionId !== null ? selectedTransactionId.toString() : "",
-    { skip: !selectedTransactionId }
-  );
-  // transactionDetail may be undefined, so add type assertion or optional chaining
-  const transactionData = transactionDetail as Transaction | undefined;
+  // sellers (untuk combobox)
+  const { data: sellerResp, isLoading: isSellerLoading } =
+    useGetSellerListQuery({
+      page: 1,
+      paginate: 100,
+    });
+  const sellers: Seller[] = useMemo(() => sellerResp?.data ?? [], [sellerResp]);
+  const selectedSellerShopName = useMemo(() => {
+    const s = sellers.find((x) => x.id === sellerId);
+    const shopName = s?.shop?.name ?? undefined;
+    return shopName ? shopName.toLowerCase() : undefined;
+  }, [sellers, sellerId]);
 
-  const categoryList = useMemo(() => data?.data || [], [data]);
-  // 🔽 filter berdasar search & kategori (status)
+  // filter client-side
+  const list = useMemo(() => data?.data ?? [], [data]);
   const filteredList = useMemo(() => {
-    let list = categoryList;
+    let arr = list;
 
-    if (category && category !== "all") {
-      const statusValue = CATEGORY_TO_STATUS[category];
-      list = list.filter((item) => item.status === statusValue);
+    if (statusFilter !== "all") {
+      const statusValue = CATEGORY_TO_STATUS[statusFilter];
+      arr = arr.filter((item) => item.status === statusValue);
     }
 
     if (query.trim()) {
       const q = query.toLowerCase();
-      list = list.filter((item) => {
-        const ref = item.reference?.toLowerCase() ?? "";
-        const user = item.user_name?.toLowerCase() ?? "";
-        const pay = item.payment_method?.toLowerCase?.() ?? "";
+      arr = arr.filter((item) => {
+        const ref = safeToLower(item.reference);
+        const user = safeToLower(item.user_name);
+        const pay = safeToLower(item.payment_method);
         return ref.includes(q) || user.includes(q) || pay.includes(q);
       });
     }
 
-    return list;
-  }, [categoryList, category, query]);
+    if (sellerId && selectedSellerShopName) {
+      arr = arr.filter((item) => {
+        const nm = getShopNameFromListItem(item);
+        return safeToLower(nm).trim() === selectedSellerShopName;
+      });
+    }
+
+    if (dateFrom || dateTo) {
+      const fromTs =
+        dateFrom !== undefined
+          ? new Date(
+              dateFrom.getFullYear(),
+              dateFrom.getMonth(),
+              dateFrom.getDate(),
+              0,
+              0,
+              0,
+              0
+            ).getTime()
+          : undefined;
+
+      const toTs =
+        dateTo !== undefined
+          ? new Date(
+              dateTo.getFullYear(),
+              dateTo.getMonth(),
+              dateTo.getDate(),
+              23,
+              59,
+              59,
+              999
+            ).getTime()
+          : undefined;
+
+      arr = arr.filter((item) => {
+        const t = new Date(item.created_at).getTime();
+        if (Number.isNaN(t)) return false;
+        if (fromTs !== undefined && t < fromTs) return false;
+        if (toTs !== undefined && t > toTs) return false;
+        return true;
+      });
+    }
+
+    return arr;
+  }, [
+    list,
+    statusFilter,
+    query,
+    sellerId,
+    selectedSellerShopName,
+    dateFrom,
+    dateTo,
+  ]);
 
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
@@ -189,11 +283,10 @@ export default function TransactionPage() {
   const handleStatusUpdate = async () => {
     if (!selectedTransaction) return;
 
-    setIsUpdatingStatus(true);
     try {
       await updateTransactionStatus({
         id: selectedTransaction.id.toString(),
-        status: parseInt(newStatus),
+        status: parseInt(newStatus, 10),
       }).unwrap();
 
       await refetch();
@@ -203,12 +296,10 @@ export default function TransactionPage() {
     } catch (error) {
       Swal.fire("Gagal", "Gagal mengubah status transaction", "error");
       console.error(error);
-    } finally {
-      setIsUpdatingStatus(false);
     }
   };
 
-  const getStatusInfo = (status: number) => {
+  const getStatusInfo = (status: number): TransactionStatusInfo => {
     return (
       TRANSACTION_STATUS[status as TransactionStatusKey] || {
         label: "UNKNOWN",
@@ -217,18 +308,43 @@ export default function TransactionPage() {
     );
   };
 
-  const formatProductDetail = (detailString: string) => {
-    try {
-      const detail = JSON.parse(detailString);
-      return detail.name || "Nama Produk Tidak Diketahui";
-    } catch (e) {
-      return "Data Produk Rusak";
+  const handlePaymentLinkClick = (paymentLink: string | null) => {
+    if (typeof paymentLink === "string" && paymentLink.trim()) {
+      window.open(paymentLink, "_blank", "noopener,noreferrer");
     }
   };
 
   return (
     <div className="p-6 space-y-6">
-      <ProdukToolbar onSearchChange={setQuery} onCategoryChange={setCategory} />
+      <ProdukToolbar
+        onSearchChange={setQuery}
+        // STATUS
+        enableStatusFilter
+        onStatusChange={setStatusFilter}
+        // SELLER (opsional + hanya superadmin)
+        enableSellerFilter
+        isSuperAdmin={isSuperAdmin}
+        sellers={sellers}
+        selectedSellerId={sellerId}
+        onSellerChange={setSellerId}
+        isSellerLoading={isSellerLoading}
+        // TANGGAL
+        enableDateFilter
+        onDateRangeChange={(from, to) => {
+          setDateFrom(from);
+          setDateTo(to);
+        }}
+        // RESET
+        onResetAllFilters={() => {
+          setQuery("");
+          setStatusFilter("all");
+          setSellerId(null);
+          setDateFrom(undefined);
+          setDateTo(undefined);
+          setCurrentPage(1);
+          refetch();
+        }}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -390,178 +506,21 @@ export default function TransactionPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsStatusModalOpen(false)}
-                disabled={isUpdatingStatus}
               >
                 Batal
               </Button>
-              <Button onClick={handleStatusUpdate} disabled={isUpdatingStatus}>
-                {isUpdatingStatus ? "Memperbarui..." : "Simpan"}
-              </Button>
+              <Button onClick={handleStatusUpdate}>Simpan</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Detail Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-5xl">
-          <DialogHeader>
-            <DialogTitle>Detail Transaksi</DialogTitle>
-          </DialogHeader>
-          {isDetailLoading ? (
-            <div className="text-center p-8">Memuat detail...</div>
-          ) : isDetailError || !transactionDetail ? (
-            <div className="text-center p-8 text-red-500">
-              Gagal memuat detail transaksi.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Left Column: Summary */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Ringkasan Transaksi</h3>
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <strong>ID Transaksi:</strong> {transactionDetail.reference}
-                  </p>
-                  <p>
-                    <strong>Nama Pelanggan:</strong>{" "}
-                    {transactionDetail.user_name}
-                  </p>
-                  <p>
-                    <strong>Tanggal:</strong>{" "}
-                    {formatDateTime(transactionDetail.created_at)}
-                  </p>
-                  <p>
-                    <strong>Status:</strong>{" "}
-                    <Badge
-                      variant={getStatusInfo(transactionDetail.status).variant}
-                    >
-                      {getStatusInfo(transactionDetail.status).label}
-                    </Badge>
-                  </p>
-                  <p>
-                    <strong>Metode Pembayaran:</strong>{" "}
-                    {transactionDetail.payment_method}
-                  </p>
-                  {transactionDetail.expires_at && (
-                    <p>
-                      <strong>Kedaluwarsa:</strong>{" "}
-                      {formatDateTime(transactionDetail.expires_at)}
-                    </p>
-                  )}
-                </div>
-
-                {/* Payment Proof */}
-                {transactionDetail.payment_proof && (
-                  <div className="mt-4">
-                    <h4 className="text-base font-semibold">
-                      Bukti Pembayaran
-                    </h4>
-                    <a
-                      href={transactionDetail.payment_proof}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <img
-                        src={transactionDetail.payment_proof}
-                        alt="Bukti Pembayaran"
-                        className="w-full h-auto mt-2 rounded-lg object-contain border"
-                      />
-                    </a>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column: Items and Shipping */}
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Produk</h3>
-                  <div className="space-y-2">
-                    {transactionDetail.stores
-                      .flatMap((store) => store.details)
-                      .map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center text-sm border-b pb-2"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {formatProductDetail(item.product_detail)}
-                            </p>
-                            <p className="text-muted-foreground">
-                              Jumlah: {item.quantity}
-                            </p>
-                          </div>
-                          <p className="font-semibold">
-                            {formatRupiah(item.total)}
-                          </p>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-
-                {/* Shipping Details */}
-                {transactionDetail.stores.length > 0 && (
-                  <div>
-                    <p>
-                      <strong>Alamat:</strong> {transactionData?.address_line_1}{" "}
-                      {transactionData?.postal_code}
-                    </p>
-                    <div className="space-y-2 text-sm">
-                      <p>
-                        <strong>Alamat:</strong>{" "}
-                        {transactionDetail.address_line_1}{" "}
-                        {transactionDetail.postal_code}
-                      </p>
-                      <p>
-                        <strong>Kurir:</strong>{" "}
-                        {
-                          JSON.parse(
-                            transactionDetail.stores[0].shipment_detail
-                          ).name
-                        }{" "}
-                        (
-                        {
-                          JSON.parse(
-                            transactionDetail.stores[0].shipment_detail
-                          ).service
-                        }
-                        )
-                      </p>
-                      <p>
-                        <strong>Biaya:</strong>{" "}
-                        {formatRupiah(transactionDetail.shipment_cost)}
-                      </p>
-                      <p>
-                        <strong>Status Pengiriman:</strong>{" "}
-                        {transactionDetail.stores[0].shipment_status}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Totals */}
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-base font-medium">
-                    <span>Total Harga:</span>
-                    <span>{formatRupiah(transactionDetail.total)}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-medium text-orange-600">
-                    <span>Diskon:</span>
-                    <span>
-                      {formatRupiah(transactionDetail.discount_total)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold mt-2">
-                    <span>Total Akhir:</span>
-                    <span>{formatRupiah(transactionDetail.grand_total)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Detail Modal (komponen terpisah) */}
+      <TransactionDetailModal
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        transactionId={selectedTransactionId}
+      />
     </div>
   );
 }

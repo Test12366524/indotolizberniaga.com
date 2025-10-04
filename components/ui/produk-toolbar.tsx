@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { Combobox} from "@/components/ui/combo-box";
 
 type Option = { value: string; label: string };
 
@@ -30,23 +31,46 @@ type ExtraSelect = {
   value?: string;
 };
 
+type SellerLite = {
+  id: number;
+  name: string;
+  email?: string;
+  shop?: { name?: string } | null;
+  shop_name?: string; // fallback kalau mau langsung isi nama tokonya
+};
+
 type Props = {
   openModal?: () => void;
   onSearchChange?: (q: string) => void;
-  onCategoryChange?: (category: string) => void;
-  categories?: Option[];
-  initialSearch?: string;
-  initialCategory?: string;
+
+  /** ====== Status filter (opsional) ====== */
+  enableStatusFilter?: boolean;
+  statusOptions?: Option[]; // default disediakan di bawah
+  initialStatus?: string;
+  onStatusChange?: (status: string) => void;
+
+  /** ====== Seller filter (opsional & hanya superadmin) ====== */
+  enableSellerFilter?: boolean;
+  isSuperAdmin?: boolean; // kalau true dan enableSellerFilter, baru tampil
+  sellers?: SellerLite[];
+  selectedSellerId?: number | null;
+  onSellerChange?: (sellerId: number | null) => void;
+  isSellerLoading?: boolean;
+  onSellerSearchChange?: (q: string) => void; // untuk remote search (opsional)
+
+  /** ====== Tambahan select (opsional) ====== */
   extraSelects?: ExtraSelect[];
   extraNodes?: ReactNode;
-  addButtonLabel?: string; // Custom label for add button
+
+  /** ====== Button tambah (opsional) ====== */
+  addButtonLabel?: string;
 
   /** ===== Excel actions (opsional) ===== */
   onImportExcel?: (file: File) => void;
   onExportExcel?: () => void;
-  importAccept?: string; // default: ".xlsx,.xls,.csv"
-  importLabel?: string; // default: "Import Excel"
-  exportLabel?: string; // default: "Export Excel"
+  importAccept?: string;
+  importLabel?: string;
+  exportLabel?: string;
   exportDisabled?: boolean;
 
   /** ===== Date filter (opsional) ===== */
@@ -54,24 +78,46 @@ type Props = {
   initialDateFrom?: Date;
   initialDateTo?: Date;
   onDateRangeChange?: (from?: Date, to?: Date) => void;
+
+  /** ===== Reset (opsional) ===== */
+  onResetAllFilters?: () => void; // jika diset, muncul tombol "Reset Filter"
 };
+
+const DEFAULT_STATUS_OPTIONS: Option[] = [
+  { value: "all", label: "Semua Status" },
+  { value: "pending", label: "PENDING" },
+  { value: "captured", label: "CAPTURED" },
+  { value: "settlement", label: "SETTLEMENT" },
+  { value: "deny", label: "DENY" },
+  { value: "expired", label: "EXPIRED" },
+  { value: "cancel", label: "CANCEL" },
+];
 
 export function ProdukToolbar({
   openModal,
   onSearchChange,
-  onCategoryChange,
-  categories = [
-    { value: "all", label: "Semua Kategori" },
-    { value: "elektronik", label: "Elektronik" },
-    { value: "fashion", label: "Fashion" },
-    { value: "rumah-tangga", label: "Rumah Tangga" },
-  ],
-  initialSearch = "",
-  initialCategory,
+
+  // status
+  enableStatusFilter = false,
+  statusOptions = DEFAULT_STATUS_OPTIONS,
+  initialStatus,
+  onStatusChange,
+
+  // seller
+  enableSellerFilter = false,
+  isSuperAdmin = false,
+  sellers = [],
+  selectedSellerId = null,
+  onSellerChange,
+  isSellerLoading,
+  onSellerSearchChange,
+
+  // extras
   extraSelects = [],
   extraNodes,
   addButtonLabel = "Data",
 
+  // excel
   onImportExcel,
   onExportExcel,
   importAccept = ".xlsx,.xls,.csv",
@@ -79,15 +125,20 @@ export function ProdukToolbar({
   exportLabel = "Export Excel",
   exportDisabled,
 
-  // date filter props
+  // date
   enableDateFilter = false,
   initialDateFrom,
   initialDateTo,
   onDateRangeChange,
+
+  // reset
+  onResetAllFilters,
 }: Props) {
-  const defaultCategory = initialCategory ?? categories[0]?.value ?? "all";
-  const [search, setSearch] = useState<string>(initialSearch);
-  const [category, setCategory] = useState<string>(defaultCategory);
+  const [search, setSearch] = useState<string>("");
+  const [status, setStatus] = useState<string>(
+    initialStatus ?? statusOptions[0]?.value ?? "all"
+  );
+
   const [uncontrolledExtraValues, setUncontrolledExtraValues] = useState<
     Record<string, string>
   >(() =>
@@ -97,31 +148,35 @@ export function ProdukToolbar({
     }, {})
   );
 
-  // state untuk date filter (opsional)
+  // date states
   const [dateFrom, setDateFrom] = useState<Date | undefined>(initialDateFrom);
   const [dateTo, setDateTo] = useState<Date | undefined>(initialDateTo);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    onSearchChange?.(initialSearch);
-    onCategoryChange?.(defaultCategory);
+    if (onSearchChange) onSearchChange("");
+    if (enableStatusFilter && onStatusChange) onStatusChange(status);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // panggil callback saat date berubah
   useEffect(() => {
-    if (enableDateFilter) {
-      onDateRangeChange?.(dateFrom, dateTo);
-    }
+    if (enableDateFilter) onDateRangeChange?.(dateFrom, dateTo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateFrom, dateTo, enableDateFilter]);
+
+  const getSellerLabel = (s: SellerLite) => {
+    const shopName = s.shop?.name ?? s.shop_name;
+    if (shopName) return `${shopName} (${s.email ?? s.name})`;
+    return `${s.name}${s.email ? ` (${s.email})` : ""}`;
+  };
 
   return (
     <div className="rounded-md bg-white p-4 border border-gray-100 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Kiri: filter */}
         <div className="w-full flex flex-col gap-3 sm:flex-row sm:items-center">
+          {/* Search */}
           <Input
             placeholder="Cari data..."
             value={search}
@@ -130,28 +185,48 @@ export function ProdukToolbar({
               setSearch(q);
               onSearchChange?.(q);
             }}
-            className="w-full sm:max-w-xs"
+            className="w-full sm:max-w-xs h-10"
           />
 
-          <Select
-            value={category}
-            onValueChange={(val) => {
-              setCategory(val);
-              onCategoryChange?.(val);
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-56">
-              <SelectValue placeholder="Pilih kategori" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c.value} value={c.value}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* ====== Status (opsional) ====== */}
+          {enableStatusFilter && (
+            <Select
+              value={status}
+              onValueChange={(val) => {
+                setStatus(val);
+                onStatusChange?.(val);
+              }}
+            >
+              <SelectTrigger className="h-12 py-3 w-full sm:w-56" >
+                <SelectValue placeholder="Pilih status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
+          {/* ====== Seller (opsional & hanya superadmin) ====== */}
+          {enableSellerFilter && isSuperAdmin && (
+            <div className="w-full sm:w-72">
+              <Combobox<SellerLite>
+                value={selectedSellerId}
+                onChange={(id) => onSellerChange?.(id)}
+                onSearchChange={onSellerSearchChange}
+                data={sellers}
+                isLoading={isSellerLoading}
+                placeholder="Pilih Seller"
+                getOptionLabel={getSellerLabel}
+                buttonClassName="h-10"
+              />
+            </div>
+          )}
+
+          {/* ====== Extra selects (opsional) ====== */}
           {extraSelects.map((s) => {
             const currentVal =
               s.value ?? uncontrolledExtraValues[s.id] ?? s.defaultValue ?? "";
@@ -229,6 +304,13 @@ export function ProdukToolbar({
 
         {/* Kanan: aksi */}
         <div className="shrink-0 flex flex-wrap items-center gap-2">
+          {/* Reset (opsional) */}
+          {onResetAllFilters && (
+            <Button className="h-10" variant="destructive" onClick={onResetAllFilters}>
+              Reset Filter
+            </Button>
+          )}
+
           {/* Import Excel (opsional) */}
           {onImportExcel && (
             <>
