@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Swal from "sweetalert2";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -12,46 +11,51 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Label } from "@/components/ui/label";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
-import { Eye, Edit, Trash2, Plus, Minus } from "lucide-react";
-import Swal from "sweetalert2";
+import ActionsGroup from "@/components/admin-components/actions-group";
+
 import {
   useGetKodeTransaksiListQuery,
   useGetKodeTransaksiByIdQuery,
   useCreateKodeTransaksiMutation,
   useUpdateKodeTransaksiMutation,
   useDeleteKodeTransaksiMutation,
-  useGetCOAListQuery,
   type KodeTransaksi,
-  type CreateKodeTransaksiRequest,
 } from "@/services/admin/kode-transaksi.service";
-import ActionsGroup from "@/components/admin-components/actions-group";
+
+import FormKodeTransaksi, {
+  FormKodeTransaksiState,
+} from "@/components/form-modal/kode-transaksi-form";
+import { displayDate } from "@/lib/format-utils";
 
 export default function KodeTransaksiPage() {
-  const [filters, setFilters] = useState({
-    search: "",
-    status: "all",
-  });
+  const [filters, setFilters] = useState({ search: "", status: "all" });
   const [currentPage] = useState(1);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<KodeTransaksi | null>(null);
-  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<CreateKodeTransaksiRequest>({
+
+  const { data, isLoading, refetch } = useGetKodeTransaksiListQuery({
+    page: currentPage,
+    paginate: 10,
+  });
+
+  const [createKodeTransaksi, { isLoading: isCreating }] =
+    useCreateKodeTransaksiMutation();
+  const [updateKodeTransaksi, { isLoading: isUpdating }] =
+    useUpdateKodeTransaksiMutation();
+  const [deleteKodeTransaksi] = useDeleteKodeTransaksiMutation();
+
+  // modal state
+  const [openForm, setOpenForm] = useState(false);
+  const [openDetail, setOpenDetail] = useState(false);
+  const [selected, setSelected] = useState<KodeTransaksi | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  // fetch detail hanya ketika edit agar dapat lines debits/credits terbaru
+  const { data: selectedData, isLoading: isLoadingSelected } =
+    useGetKodeTransaksiByIdQuery(selectedId!, { skip: !selectedId });
+
+  // state form yang dikirim ke FormKodeTransaksi
+  const [form, setForm] = useState<FormKodeTransaksiState>({
     code: "",
     module: "",
     description: "",
@@ -60,60 +64,40 @@ export default function KodeTransaksiPage() {
     credits: [{ coa_id: 0, order: 1 }],
   });
 
-  const { data: kodeTransaksiData, isLoading } = useGetKodeTransaksiListQuery({
-    page: currentPage,
-    paginate: 10,
-  });
-
-  const { data: coaData } = useGetCOAListQuery({
-    page: 1,
-    paginate: 100, // Get more COAs for dropdown
-  });
-
-  const { data: selectedItemData, isLoading: isLoadingSelectedItem } =
-    useGetKodeTransaksiByIdQuery(selectedItemId!, {
-      skip: !selectedItemId,
-    });
-
-  const [createKodeTransaksi] = useCreateKodeTransaksiMutation();
-  const [updateKodeTransaksi] = useUpdateKodeTransaksiMutation();
-  const [deleteKodeTransaksi] = useDeleteKodeTransaksiMutation();
-
-  // Populate form data when detailed item data is loaded
+  // sinkronkan form saat data detail loaded (mode edit)
   useEffect(() => {
-    if (selectedItemData && isEditModalOpen) {
-      setFormData({
-        code: selectedItemData.code,
-        module: selectedItemData.module,
-        description: selectedItemData.description,
-        status: selectedItemData.status,
-        debits: selectedItemData.debits?.map((debit) => ({
-          coa_id: debit.coa_id,
-          order: debit.order,
-        })) || [{ coa_id: 0, order: 1 }],
-        credits: selectedItemData.credits?.map((credit) => ({
-          coa_id: credit.coa_id,
-          order: credit.order,
-        })) || [{ coa_id: 0, order: 1 }],
+    if (selectedData && openForm && selected) {
+      setForm({
+        code: selectedData.code,
+        module: selectedData.module,
+        description: selectedData.description,
+        status: selectedData.status,
+        debits: selectedData.debits?.map((d, i) => ({
+          coa_id: d.coa_id,
+          order: d.order ?? i + 1,
+        })) ?? [{ coa_id: 0, order: 1 }],
+        credits: selectedData.credits?.map((c, i) => ({
+          coa_id: c.coa_id,
+          order: c.order ?? i + 1,
+        })) ?? [{ coa_id: 0, order: 1 }],
       });
     }
-  }, [selectedItemData, isEditModalOpen]);
+  }, [selectedData, openForm, selected]);
 
-  const filteredData = useMemo(() => {
-    if (!kodeTransaksiData?.data) return [];
-
-    return kodeTransaksiData.data.filter((item) => {
-      const matchesSearch =
-        item.code.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.module.toLowerCase().includes(filters.search.toLowerCase()) ||
-        item.description.toLowerCase().includes(filters.search.toLowerCase());
-
-      const matchesStatus =
+  const filtered = useMemo(() => {
+    const list = data?.data ?? [];
+    const q = filters.search.trim().toLowerCase();
+    return list.filter((item) => {
+      const matchSearch =
+        !q ||
+        item.code.toLowerCase().includes(q) ||
+        item.module.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q);
+      const matchStatus =
         filters.status === "all" || String(item.status) === filters.status;
-
-      return matchesSearch && matchesStatus;
+      return matchSearch && matchStatus;
     });
-  }, [kodeTransaksiData?.data, filters]);
+  }, [data?.data, filters]);
 
   const getStatusBadge = (status: number) => {
     switch (status) {
@@ -127,7 +111,9 @@ export default function KodeTransaksiPage() {
   };
 
   const handleCreate = () => {
-    setFormData({
+    setSelected(null);
+    setSelectedId(null);
+    setForm({
       code: "",
       module: "",
       description: "",
@@ -135,121 +121,58 @@ export default function KodeTransaksiPage() {
       debits: [{ coa_id: 0, order: 1 }],
       credits: [{ coa_id: 0, order: 1 }],
     });
-    setIsCreateModalOpen(true);
+    setOpenForm(true);
   };
 
   const handleEdit = (item: KodeTransaksi) => {
-    setSelectedItem(item);
-    setSelectedItemId(item.id);
-    setIsEditModalOpen(true);
+    setSelected(item);
+    setSelectedId(item.id);
+    setOpenForm(true);
   };
 
   const handleDetail = (item: KodeTransaksi) => {
-    setSelectedItem(item);
-    setIsDetailModalOpen(true);
+    setSelected(item);
+    setOpenDetail(true);
   };
 
   const handleDelete = async (id: number) => {
-    const result = await Swal.fire({
+    const res = await Swal.fire({
       title: "Apakah Anda yakin?",
       text: "Data yang dihapus tidak dapat dikembalikan!",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
       confirmButtonText: "Ya, hapus!",
       cancelButtonText: "Batal",
     });
-
-    if (result.isConfirmed) {
-      try {
-        await deleteKodeTransaksi(id).unwrap();
-        Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
-      } catch {
-        Swal.fire("Error!", "Gagal menghapus data.", "error");
-      }
+    if (!res.isConfirmed) return;
+    try {
+      await deleteKodeTransaksi(id).unwrap();
+      await refetch();
+      Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
+    } catch {
+      Swal.fire("Error!", "Gagal menghapus data.", "error");
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const submit = async () => {
     try {
-      if (selectedItem) {
-        await updateKodeTransaksi({
-          id: selectedItem.id,
-          data: formData,
-        }).unwrap();
+      if (selected) {
+        await updateKodeTransaksi({ id: selected.id, data: form }).unwrap();
         Swal.fire("Berhasil!", "Data berhasil diperbarui.", "success");
-        setIsEditModalOpen(false);
       } else {
-        await createKodeTransaksi(formData).unwrap();
+        await createKodeTransaksi(form).unwrap();
         Swal.fire("Berhasil!", "Data berhasil ditambahkan.", "success");
-        setIsCreateModalOpen(false);
       }
-      setSelectedItem(null);
+      setOpenForm(false);
+      setSelected(null);
+      setSelectedId(null);
+      await refetch();
     } catch {
       Swal.fire("Error!", "Gagal menyimpan data.", "error");
     }
   };
 
-  const addDebitEntry = () => {
-    setFormData({
-      ...formData,
-      debits: [
-        ...formData.debits,
-        { coa_id: 0, order: formData.debits.length + 1 },
-      ],
-    });
-  };
-
-  const removeDebitEntry = (index: number) => {
-    if (formData.debits.length > 1) {
-      setFormData({
-        ...formData,
-        debits: formData.debits.filter((_, i) => i !== index),
-      });
-    }
-  };
-
-  const addCreditEntry = () => {
-    setFormData({
-      ...formData,
-      credits: [
-        ...formData.credits,
-        { coa_id: 0, order: formData.credits.length + 1 },
-      ],
-    });
-  };
-
-  const removeCreditEntry = (index: number) => {
-    if (formData.credits.length > 1) {
-      setFormData({
-        ...formData,
-        credits: formData.credits.filter((_, i) => i !== index),
-      });
-    }
-  };
-
-  const updateDebitEntry = (
-    index: number,
-    field: string,
-    value: string | number
-  ) => {
-    const updatedDebits = [...formData.debits];
-    updatedDebits[index] = { ...updatedDebits[index], [field]: value };
-    setFormData({ ...formData, debits: updatedDebits });
-  };
-
-  const updateCreditEntry = (
-    index: number,
-    field: string,
-    value: string | number
-  ) => {
-    const updatedCredits = [...formData.credits];
-    updatedCredits[index] = { ...updatedCredits[index], [field]: value };
-    setFormData({ ...formData, credits: updatedCredits });
-  };
+  const lastPage = data?.last_page ?? 1;
 
   return (
     <div className="p-6 space-y-6">
@@ -260,12 +183,11 @@ export default function KodeTransaksiPage() {
         </p>
       </div>
 
-      {/* Toolbar */}
       <ProdukToolbar
         addButtonLabel="Tambah Kode Transaksi"
         openModal={handleCreate}
-        onSearchChange={(search) => setFilters({ ...filters, search })}
-        onCategoryChange={(status) => setFilters({ ...filters, status })}
+        onSearchChange={(search) => setFilters((s) => ({ ...s, search }))}
+        onCategoryChange={(status) => setFilters((s) => ({ ...s, status }))}
         categories={[
           { value: "all", label: "Semua Status" },
           { value: "1", label: "Active" },
@@ -275,7 +197,6 @@ export default function KodeTransaksiPage() {
         initialCategory={filters.status}
       />
 
-      {/* Data Table */}
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -309,7 +230,7 @@ export default function KodeTransaksiPage() {
                       <div className="animate-pulse">Loading...</div>
                     </td>
                   </tr>
-                ) : filteredData.length === 0 ? (
+                ) : filtered.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -319,7 +240,7 @@ export default function KodeTransaksiPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredData.map((item) => (
+                  filtered.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <ActionsGroup
@@ -352,269 +273,88 @@ export default function KodeTransaksiPage() {
         </CardContent>
       </Card>
 
-      {/* Create/Edit Modal */}
+      {/* Pagination simple (opsional; currentPage masih fixed 1) */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm">
+          Halaman <b>{currentPage}</b> dari <b>{lastPage}</b>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" disabled>
+            Sebelumnya
+          </Button>
+          <Button variant="outline" disabled>
+            Berikutnya
+          </Button>
+        </div>
+      </div>
+
+      {/* Create/Edit Modal -> pakai Form terpisah */}
       <Dialog
-        open={isCreateModalOpen || isEditModalOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsCreateModalOpen(false);
-            setIsEditModalOpen(false);
-            setSelectedItem(null);
-            setSelectedItemId(null);
+        open={openForm}
+        onOpenChange={(o) => {
+          if (!o) {
+            setOpenForm(false);
+            setSelected(null);
+            setSelectedId(null);
           }
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedItem ? "Edit Kode Transaksi" : "Tambah Kode Transaksi"}
+              {selected ? "Edit Kode Transaksi" : "Tambah Kode Transaksi"}
             </DialogTitle>
           </DialogHeader>
-          {isEditModalOpen && isLoadingSelectedItem ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-pulse">Loading...</div>
-            </div>
+
+          {selected && isLoadingSelected ? (
+            <div className="py-10 text-center">Loading…</div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="code">Kode</Label>
-                  <Input
-                    id="code"
-                    value={formData.code}
-                    onChange={(e) =>
-                      setFormData({ ...formData, code: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="module">Module</Label>
-                  <Input
-                    id="module"
-                    value={formData.module}
-                    onChange={(e) =>
-                      setFormData({ ...formData, module: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label htmlFor="description">Deskripsi</Label>
-                  <Input
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={String(formData.status)}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, status: Number(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Active</SelectItem>
-                      <SelectItem value="0">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Debits Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Debits</h3>
-                  <Button type="button" onClick={addDebitEntry} size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Tambah Debit
-                  </Button>
-                </div>
-                {formData.debits.map((debit, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-3 border rounded"
-                  >
-                    <div className="flex-1">
-                      <Label>COA</Label>
-                      <Select
-                        value={String(debit.coa_id)}
-                        onValueChange={(value) =>
-                          updateDebitEntry(index, "coa_id", Number(value))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih COA" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {coaData?.data.map((coa) => (
-                            <SelectItem key={coa.id} value={String(coa.id)}>
-                              {coa.code} - {coa.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="w-20">
-                      <Label>Order</Label>
-                      <Input
-                        type="number"
-                        value={debit.order}
-                        onChange={(e) =>
-                          updateDebitEntry(
-                            index,
-                            "order",
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                    </div>
-                    {formData.debits.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeDebitEntry(index)}
-                        className="text-red-600"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Credits Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Credits</h3>
-                  <Button type="button" onClick={addCreditEntry} size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
-                    Tambah Credit
-                  </Button>
-                </div>
-                {formData.credits.map((credit, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 p-3 border rounded"
-                  >
-                    <div className="flex-1">
-                      <Label>COA</Label>
-                      <Select
-                        value={String(credit.coa_id)}
-                        onValueChange={(value) =>
-                          updateCreditEntry(index, "coa_id", Number(value))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih COA" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {coaData?.data.map((coa) => (
-                            <SelectItem key={coa.id} value={String(coa.id)}>
-                              {coa.code} - {coa.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="w-20">
-                      <Label>Order</Label>
-                      <Input
-                        type="number"
-                        value={credit.order}
-                        onChange={(e) =>
-                          updateCreditEntry(
-                            index,
-                            "order",
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                    </div>
-                    {formData.credits.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeCreditEntry(index)}
-                        className="text-red-600"
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsCreateModalOpen(false);
-                    setIsEditModalOpen(false);
-                    setSelectedItem(null);
-                    setSelectedItemId(null);
-                  }}
-                >
-                  Batal
-                </Button>
-                <Button type="submit">
-                  {selectedItem ? "Update" : "Simpan"}
-                </Button>
-              </div>
-            </form>
+            <FormKodeTransaksi
+              form={form}
+              setForm={setForm}
+              onCancel={() => {
+                setOpenForm(false);
+                setSelected(null);
+                setSelectedId(null);
+              }}
+              onSubmit={submit}
+              isLoading={isCreating || isUpdating}
+            />
           )}
         </DialogContent>
       </Dialog>
 
       {/* Detail Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+      <Dialog open={openDetail} onOpenChange={setOpenDetail}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Detail Kode Transaksi</DialogTitle>
           </DialogHeader>
-          {selectedItem && (
+          {selected && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="font-medium">Kode</Label>
-                  <p className="text-sm text-gray-600">{selectedItem.code}</p>
+                  <p className="text-sm text-gray-600">{selected.code}</p>
                 </div>
                 <div>
                   <Label className="font-medium">Module</Label>
-                  <p className="text-sm text-gray-600">{selectedItem.module}</p>
+                  <p className="text-sm text-gray-600">{selected.module}</p>
                 </div>
                 <div className="col-span-2">
                   <Label className="font-medium">Deskripsi</Label>
                   <p className="text-sm text-gray-600">
-                    {selectedItem.description}
+                    {selected.description}
                   </p>
                 </div>
                 <div>
                   <Label className="font-medium">Status</Label>
-                  <div className="mt-1">
-                    {getStatusBadge(selectedItem.status)}
-                  </div>
+                  <div className="mt-1">{getStatusBadge(selected.status)}</div>
                 </div>
                 <div>
                   <Label className="font-medium">Tanggal Dibuat</Label>
                   <p className="text-sm text-gray-600">
-                    {new Date(selectedItem.created_at).toLocaleDateString(
-                      "id-ID"
-                    )}
+                    {displayDate(selected.created_at)}
                   </p>
                 </div>
               </div>
