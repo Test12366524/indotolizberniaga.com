@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-// optional: import { cn } from "@/lib/utils";
 
 interface ComboboxProps<T extends { id: number }> {
   value: number | null;
@@ -24,7 +23,6 @@ interface ComboboxProps<T extends { id: number }> {
   placeholder?: string;
   getOptionLabel?: (item: T) => string;
   disabled?: boolean;
-  /** >>> baru: kontrol kelas untuk tinggi/padding/border tombol */
   buttonClassName?: string;
 }
 
@@ -37,7 +35,7 @@ export function Combobox<T extends { id: number }>({
   placeholder = "Pilih Data",
   getOptionLabel,
   disabled,
-  buttonClassName, // <<< baru
+  buttonClassName,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const selected = data.find((item) => item.id === value);
@@ -51,6 +49,10 @@ export function Combobox<T extends { id: number }>({
     return `ID: ${item.id}`;
   };
 
+  const label = selected
+    ? (getOptionLabel ?? defaultOptionLabel)(selected)
+    : placeholder;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -58,25 +60,44 @@ export function Combobox<T extends { id: number }>({
           variant="outline"
           role="combobox"
           disabled={disabled}
-          // sesuaikan agar tinggi default = h-10, penuh lebar, dan terima override
-          className={
-            `justify-between w-full h-10 ${buttonClassName ?? ""}`
-            // atau gunakan cn("justify-between w-full h-10", buttonClassName)
-          }
+          // penting: min-w-0 agar truncate bisa bekerja
+          className={`justify-between w-full h-10 min-w-0 ${
+            buttonClassName ?? ""
+          }`}
+          title={typeof label === "string" ? label : undefined} // hint full text
         >
-          {selected
-            ? (getOptionLabel ?? defaultOptionLabel)(selected)
-            : placeholder}
+          {/* Kontainer label yang bisa di-truncate */}
+          <span className="flex-1 min-w-0 text-left">
+            <span className="block truncate">{label}</span>
+          </span>
+          {/* optional: caret/ikon di kanan, biarkan Button justify-between */}
+          <svg
+            className="ms-2 h-4 w-4 shrink-0 opacity-60"
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+          >
+            <path
+              d="M5.25 7.5L10 12.25L14.75 7.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+
+      {/* Samakan lebar popover dengan trigger */}
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
         <Command>
           <CommandInput
             placeholder="Cari..."
             onValueChange={(value) => {
-              if (value.length >= 2 && onSearchChange) {
-                onSearchChange(value);
-              }
+              if (value.length >= 2 && onSearchChange) onSearchChange(value);
             }}
           />
           <CommandList>
@@ -86,18 +107,25 @@ export function Combobox<T extends { id: number }>({
               </CommandItem>
             )}
             <CommandEmpty>Tidak ditemukan</CommandEmpty>
-            {data.map((item) => (
-              <CommandItem
-                key={item.id}
-                value={(getOptionLabel ?? defaultOptionLabel)(item)}
-                onSelect={() => {
-                  onChange(item.id);
-                  setOpen(false);
-                }}
-              >
-                {(getOptionLabel ?? defaultOptionLabel)(item)}
-              </CommandItem>
-            ))}
+
+            {data.map((item) => {
+              const text = (getOptionLabel ?? defaultOptionLabel)(item);
+              return (
+                <CommandItem
+                  key={item.id}
+                  value={text}
+                  onSelect={() => {
+                    onChange(item.id);
+                    setOpen(false);
+                  }}
+                  // supaya item juga rapi kalau kepanjangan
+                  className="truncate"
+                  title={typeof text === "string" ? text : undefined}
+                >
+                  <span className="truncate">{text}</span>
+                </CommandItem>
+              );
+            })}
           </CommandList>
         </Command>
       </PopoverContent>

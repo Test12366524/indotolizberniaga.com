@@ -15,7 +15,6 @@ import {
 import Image from "next/image";
 import { Product } from "@/types/admin/product";
 import {
-  useGetProductListQuery,
   useGetProductListPublicQuery,
   useGetProductBySlugQuery,
 } from "@/services/product.service";
@@ -23,6 +22,11 @@ import DotdLoader from "@/components/loader/3dot";
 
 // ==== Cart (tanpa sidebar)
 import useCart from "@/hooks/use-cart";
+import { useGetPublicProductCategoryListQuery } from "@/services/public/public-category.service";
+import { useGetSellerListQuery } from "@/services/admin/seller.service";
+import { Combobox } from "@/components/ui/combo-box";
+import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 type ViewMode = "grid" | "list";
 
@@ -35,10 +39,54 @@ export default function ProductsPage() {
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [filter, setFilter] = useState({
     category: "all",
-    ageGroup: "all", // tidak ada di data API; dibiarkan agar UI tidak berubah
+    ageGroup: "all",
     priceRange: "all",
     sort: "featured",
+    sellerId: null as number | null,
   });
+
+  const { data: session } = useSession();
+  const userRole = session?.user?.roles[0]?.name ?? "";
+
+  // Ambil kategori publik (top-level). Sesuaikan paginate jika perlu.
+  const {
+    data: categoryResp,
+    isLoading: isCategoryLoading,
+    isError: isCategoryError,
+  } = useGetPublicProductCategoryListQuery({
+    page: 1,
+    paginate: 100,
+  });
+
+  const { data: sellerResp, isLoading: isSellerLoading } =
+    useGetSellerListQuery({ page: 1, paginate: 100 });
+
+  // state untuk query pada Combobox (opsional; karena service belum ada search)
+  const [sellerQuery, setSellerQuery] = useState("");
+
+  const sellers = useMemo(() => sellerResp?.data ?? [], [sellerResp]);
+
+  const filteredSellers = useMemo(() => {
+    const q = sellerQuery.trim().toLowerCase();
+    if (!q) return sellers;
+    return sellers.filter((s) => {
+      const shopName = s.shop?.name?.toLowerCase() ?? "";
+      const name = s.name?.toLowerCase() ?? "";
+      const email = s.email?.toLowerCase() ?? "";
+      return shopName.includes(q) || name.includes(q) || email.includes(q);
+    });
+  }, [sellers, sellerQuery]);
+
+  // helper: seller terpilih
+  const selectedSeller = useMemo(
+    () => sellers.find((s) => s.id === filter.sellerId) ?? null,
+    [sellers, filter.sellerId]
+  );
+
+  const categoryOptions = useMemo(
+    () => categoryResp?.data ?? [],
+    [categoryResp]
+  );
 
   // Cart actions
   const { addItem } = useCart();
@@ -54,7 +102,7 @@ export default function ProductsPage() {
   } = useGetProductListPublicQuery({
     page: currentPage,
     paginate: ITEMS_PER_PAGE,
-    merk_id: 1
+    merk_id: 1,
   });
 
   const totalPages = useMemo(() => listResp?.last_page ?? 1, [listResp]);
@@ -117,10 +165,15 @@ export default function ProductsPage() {
   // === Client-side filter & sort (hanya pada page aktif dari API) ===
   const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
+
+    // nama toko seller terpilih (kalau ada)
+    const selectedShopName = selectedSeller?.shop?.name ?? "";
+
     return products.filter((p) => {
       const matchSearch =
         p.name.toLowerCase().includes(term) ||
         p.category_name.toLowerCase().includes(term);
+
       const matchCategory =
         filter.category === "all" || p.category_name === filter.category;
 
@@ -133,13 +186,23 @@ export default function ProductsPage() {
           price <= 200_000) ||
         (filter.priceRange === "above-200k" && price > 200_000);
 
-      // Filter out "Jasa" products - only show "Produk" type
-      // const isNotJasa = !p.merk_name || p.merk_name.toLowerCase() !== "jasa";
+      // NEW: filter seller berbasis nama shop (merk_name)
+      const matchSeller =
+        !filter.sellerId ||
+        (selectedShopName &&
+          p.merk_name &&
+          p.merk_name.toLowerCase() === selectedShopName.toLowerCase());
 
-      // ageGroup tidak ada di data; diabaikan
-      return matchSearch && matchCategory && matchPrice;
+      return matchSearch && matchCategory && matchPrice && matchSeller;
     });
-  }, [products, searchTerm, filter.category, filter.priceRange]);
+  }, [
+    products,
+    searchTerm,
+    filter.category,
+    filter.priceRange,
+    filter.sellerId,
+    selectedSeller,
+  ]);
 
   const sortedProducts = useMemo(() => {
     const arr = [...filteredProducts];
@@ -200,8 +263,8 @@ export default function ProductsPage() {
           </h1>
 
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Temukan produk unggulan dari UMKM anggota kami dan solusi
-            keuangan dari layanan simpan pinjam koperasi.
+            Temukan produk unggulan dari UMKM anggota kami dan solusi keuangan
+            dari layanan simpan pinjam koperasi.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-700">
@@ -239,7 +302,7 @@ export default function ProductsPage() {
               </div>
 
               {/* Filters */}
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Category */}
                 <select
                   value={filter.category}
@@ -247,13 +310,33 @@ export default function ProductsPage() {
                     setFilter({ ...filter, category: e.target.value })
                   }
                   className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E53935] bg-white text-[#6B6B6B]"
+                  disabled={isCategoryLoading}
                 >
                   <option value="all">Semua Kategori</option>
-                  <option value="makanan">Makanan & Minuman</option>
-                  <option value="kerajinan">Kerajinan Tangan</option>
-                  <option value="pakaian">Pakaian</option>
-                  <option value="jasa">Jasa</option>
-                  <option value="lainnya">Lainnya</option>
+
+                  {isCategoryLoading && (
+                    <option value="" disabled>
+                      Memuat kategori...
+                    </option>
+                  )}
+
+                  {!isCategoryLoading &&
+                    !isCategoryError &&
+                    categoryOptions.map((cat) => (
+                      <option key={cat.slug} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+
+                  {isCategoryError && (
+                    <>
+                      <option value="" disabled>
+                        Gagal memuat kategori
+                      </option>
+                      {/* fallback (opsional) */}
+                      <option value="lainnya">Lainnya</option>
+                    </>
+                  )}
                 </select>
 
                 {/* Price */}
@@ -285,6 +368,46 @@ export default function ProductsPage() {
                   <option value="price-high">Harga: Tinggi - Rendah</option>
                   <option value="rating">Rating Tertinggi</option>
                 </select>
+
+                {/* Seller (Combobox) */}
+                {userRole === "superadmin" && (
+                  <div className="w-72 lg:w-40">
+                    <Combobox
+                      value={filter.sellerId}
+                      onChange={(id) => setFilter({ ...filter, sellerId: id })}
+                      onSearchChange={(q) => setSellerQuery(q)}
+                      data={filteredSellers}
+                      isLoading={isSellerLoading}
+                      placeholder="Pilih Seller"
+                      getOptionLabel={(s) =>
+                        s.shop?.name
+                          ? `${s.shop.name} (${s.email})`
+                          : `${s.name} (${s.email})`
+                      }
+                      buttonClassName="h-12 rounded-xl" // biar tinggi sama dengan select lain
+                    />
+                  </div>
+                )}
+
+                {/* Reset semua filter */}
+                <Button
+                  variant="destructive"
+                  className="h-12"
+                  size="lg"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                    setFilter({
+                      category: "all",
+                      ageGroup: "all",
+                      priceRange: "all",
+                      sort: "featured",
+                      sellerId: null,
+                    });
+                  }}
+                >
+                  Reset Filter
+                </Button>
               </div>
 
               {/* View Mode */}
@@ -553,6 +676,7 @@ export default function ProductsPage() {
                     ageGroup: "all",
                     priceRange: "all",
                     sort: "featured",
+                    sellerId: null,
                   });
                 }}
                 className="bg-[#E53935] text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition-colors"
@@ -718,7 +842,6 @@ export default function ProductsPage() {
                         Rp {detailProduct.price.toLocaleString("id-ID")}
                       </span>
                     </div>
-                    
 
                     {/* Action Button */}
                     <div className="flex gap-3">
