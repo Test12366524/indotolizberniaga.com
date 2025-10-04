@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Trash2,
   MoreVertical,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -242,7 +243,7 @@ const Page = () => {
           {/* Kanan: aksi */}
           <div className="shrink-0 flex flex-wrap items-center gap-2">
             {/* Tambah data (opsional) */}
-            {openModal && <Button onClick={openModal}>Buat Penarikan</Button>}
+            {openModal && <Button onClick={openModal}><Plus/> Penarikan</Button>}
           </div>
         </div>
       </div>

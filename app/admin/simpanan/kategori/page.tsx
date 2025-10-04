@@ -16,6 +16,7 @@ import FormSimpananCategory from "@/components/form-modal/simpanan-category-form
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { Plus } from "lucide-react";
 
 export default function PinjamanKategoriPage() {
   const [form, setForm] = useState<Partial<SimpananCategory>>({
@@ -137,7 +138,7 @@ export default function PinjamanKategoriPage() {
           {/* Kanan: aksi */}
           <div className="shrink-0 flex flex-wrap items-center gap-2">
             {/* Tambah data (opsional) */}
-            {openModal && <Button onClick={openModal}>Tambah Kategori</Button>}
+            {openModal && <Button onClick={openModal}><Plus /> Kategori</Button>}
           </div>
         </div>
       </div>

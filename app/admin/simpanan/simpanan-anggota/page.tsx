@@ -123,14 +123,11 @@ export default function SimpananAnggotaPage() {
   const simpananList = useMemo(() => data?.data || [], [data]);
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
-    const usersById = useMemo(() => {
-      const m = new Map<
-        number,
-        { id: number; name?: string; email?: string }
-      >();
-      users.forEach((u) => m.set(u.id, u));
-      return m;
-    }, [users]);
+  const usersById = useMemo(() => {
+    const m = new Map<number, { id: number; name?: string; email?: string }>();
+    users.forEach((u) => m.set(u.id, u));
+    return m;
+  }, [users]);
 
   // Helper functions to get names by ID
   const getUserName = (userId: number) => {
@@ -225,14 +222,40 @@ export default function SimpananAnggotaPage() {
     }
   };
 
+  const STATUS_LABEL: Record<string, string> = {
+    "0": "MENUNGGU",
+    "1": "DITERIMA",
+    "2": "DITOLAK",
+  };
+
   const handleStatusUpdate = async (item: Simpanan, newStatus: string) => {
-    try {
-      await updateStatus({ id: item.id, status: newStatus }).unwrap();
+    const fromLabel = STATUS_LABEL[String(item.status)] ?? String(item.status);
+    const toLabel = STATUS_LABEL[String(newStatus)] ?? String(newStatus);
+
+    const result = await Swal.fire({
+      title: "Ubah status simpanan?",
+      html: `Status akan diubah dari <b>${fromLabel}</b> ke <b>${toLabel}</b>.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, ubah",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      focusCancel: true,
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      preConfirm: async () => {
+        try {
+          await updateStatus({ id: item.id, status: newStatus }).unwrap();
+        } catch (e) {
+          Swal.showValidationMessage("Gagal memperbarui status. Coba lagi.");
+          throw e;
+        }
+      },
+    });
+
+    if (result.isConfirmed) {
       await refetch();
-      Swal.fire("Berhasil", "Status simpanan diperbarui", "success");
-    } catch (error) {
-      Swal.fire("Gagal", "Gagal memperbarui status", "error");
-      console.error(error);
+      Swal.fire("Berhasil", "Status simpanan diperbarui.", "success");
     }
   };
 
@@ -387,43 +410,12 @@ export default function SimpananAnggotaPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Simpanan Anggota</h1>
-          <p className="text-sm text-gray-500">
-            Kelola data simpanan anggota koperasi
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            disabled={isExporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? "Exporting..." : "Export Excel"}
-          </Button>
-          <Button onClick={() => openModal()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Simpanan
-          </Button>
-        </div>
-      </div>
-
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filter Data
-          </CardTitle>
-        </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
             {/* Anggota */}
             <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Cari Anggota</label>
               <div className="relative">
                 <input
                   type="text"
@@ -450,47 +442,46 @@ export default function SimpananAnggotaPage() {
               </div>
             </div>
 
-            {/* Kategori */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Kategori</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.category_id}
-                onChange={(e) =>
-                  setFilters({ ...filters, category_id: e.target.value })
-                }
-                aria-label="Filter kategori simpanan"
-              >
-                <option value="">Semua Kategori</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Kategori */}
+              <div className="flex flex-col gap-y-1">
+                <select
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.category_id}
+                  onChange={(e) =>
+                    setFilters({ ...filters, category_id: e.target.value })
+                  }
+                  aria-label="Filter kategori simpanan"
+                >
+                  <option value="">Semua Kategori</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* Status */}
-            <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Status</label>
-              <select
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={filters.status}
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
-                aria-label="Filter status simpanan"
-              >
-                <option value="">Semua Status</option>
-                <option value="0">Pending</option>
-                <option value="1">Approved</option>
-                <option value="2">Ditolak</option>
-              </select>
+              {/* Status */}
+              <div className="flex flex-col gap-y-1">
+                <select
+                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.status}
+                  onChange={(e) =>
+                    setFilters({ ...filters, status: e.target.value })
+                  }
+                  aria-label="Filter status simpanan"
+                >
+                  <option value="">Semua Status</option>
+                  <option value="0">Pending</option>
+                  <option value="1">Approved</option>
+                  <option value="2">Ditolak</option>
+                </select>
+              </div>
             </div>
 
             {/* Tanggal */}
             <div className="flex flex-col gap-y-1">
-              <label className="text-sm font-medium">Tanggal</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -508,7 +499,7 @@ export default function SimpananAnggotaPage() {
                         format(filters.date_from, "LLL dd, y")
                       )
                     ) : (
-                      <span>Pilih rentang tanggal</span>
+                      <span>Pilih Rentang Tanggal</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -530,24 +521,21 @@ export default function SimpananAnggotaPage() {
                 </PopoverContent>
               </Popover>
             </div>
-          </div>
-
-          {/* Reset Filters */}
-          <div className="mt-4 flex justify-end">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setFilters({
-                  category_id: "",
-                  status: "",
-                  date_from: undefined,
-                  date_to: undefined,
-                  member_query: "",
-                });
-              }}
-            >
-              Reset Filter
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleExport}
+                variant="green"
+                disabled={isExporting}
+                className="h-10"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExporting ? "Exporting..." : "Export Excel"}
+              </Button>
+              <Button className="h-10" onClick={() => openModal()}>
+                <Plus className="h-4 w-4" />
+                Simpanan
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
