@@ -19,17 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import {
-  Eye,
-  Edit,
-  Trash2,
   Plus,
   Minus,
   Calendar,

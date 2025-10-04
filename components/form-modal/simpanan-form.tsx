@@ -344,7 +344,7 @@ export default function FormSimpanan({
 
         {/* ========== NOMINAL DEPOSIT (MIRIP DESAIN) ========== */}
         <div className="md:col-span-2">
-          <Label className="mb-2 block">Pilih Nominal Deposit</Label>
+          <Label className="mb-2 block">Pilih Nominal Simpanan</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             {nominalPresets.map((n) => {
               const active = form.nominal === n;
@@ -411,6 +411,7 @@ export default function FormSimpanan({
           <Label>Tanggal Simpanan *</Label>
           <Input
             type="datetime-local"
+            className="h-12 rounded-2xl" // ⬅️ tambah ini
             value={
               form.date ? new Date(form.date).toISOString().slice(0, 16) : ""
             }
@@ -420,10 +421,10 @@ export default function FormSimpanan({
         </div>
 
         {/* Metode Pembayaran */}
-        <div className="md:col-span-2">
+        <div>
           <Label className="mb-2 block">Metode Pembayaran</Label>
           <RadioGroup
-            className="flex gap-3"
+            className="grid grid-cols-2 gap-3 w-full"
             value={selectedMethod ?? ""}
             onValueChange={(val: "automatic" | "manual") =>
               setForm({ ...form, type: val })
@@ -433,13 +434,25 @@ export default function FormSimpanan({
             {SimpananTypes.map((t) => (
               <label
                 key={t.id}
-                className="flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm"
+                className="w-full flex items-center gap-2 rounded-2xl border border-neutral-200
+                   bg-white px-4 py-3 shadow-sm"
               >
                 <RadioGroupItem value={t.value} id={t.id} />
                 <span className="text-sm font-medium">{t.label}</span>
               </label>
             ))}
           </RadioGroup>
+        </div>
+
+        {/* Deskripsi */}
+        <div>
+          <Label className="mb-2">Deskripsi (Opsional)</Label>
+          <Textarea
+            value={form.description ?? ""}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            readOnly={readonly}
+            rows={3}
+          />
         </div>
 
         {/* Upload Bukti Transfer - Drag & Drop (hidden jika automatic) */}
@@ -544,17 +557,6 @@ export default function FormSimpanan({
             )}
           </div>
         )}
-
-        {/* Deskripsi */}
-        <div className="md:col-span-2">
-          <Label>Catatan / Deskripsi (Opsional)</Label>
-          <Textarea
-            value={form.description ?? ""}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            readOnly={readonly}
-            rows={3}
-          />
-        </div>
 
         {/* readonly info */}
         {form.status !== undefined && (
