@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+// optional: import { cn } from "@/lib/utils";
 
 interface ComboboxProps<T extends { id: number }> {
   value: number | null;
@@ -23,6 +24,8 @@ interface ComboboxProps<T extends { id: number }> {
   placeholder?: string;
   getOptionLabel?: (item: T) => string;
   disabled?: boolean;
+  /** >>> baru: kontrol kelas untuk tinggi/padding/border tombol */
+  buttonClassName?: string;
 }
 
 export function Combobox<T extends { id: number }>({
@@ -33,9 +36,10 @@ export function Combobox<T extends { id: number }>({
   isLoading,
   placeholder = "Pilih Data",
   getOptionLabel,
+  disabled,
+  buttonClassName, // <<< baru
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
-
   const selected = data.find((item) => item.id === value);
 
   const defaultOptionLabel = (item: T) => {
@@ -53,7 +57,12 @@ export function Combobox<T extends { id: number }>({
         <Button
           variant="outline"
           role="combobox"
-          className="justify-between w-full"
+          disabled={disabled}
+          // sesuaikan agar tinggi default = h-10, penuh lebar, dan terima override
+          className={
+            `justify-between w-full h-10 ${buttonClassName ?? ""}`
+            // atau gunakan cn("justify-between w-full h-10", buttonClassName)
+          }
         >
           {selected
             ? (getOptionLabel ?? defaultOptionLabel)(selected)

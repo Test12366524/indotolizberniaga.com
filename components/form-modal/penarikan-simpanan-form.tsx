@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PenarikanSimpanan } from "@/types/admin/penarikan-simpanan";
 import { useGetWalletListQuery } from "@/services/admin/penarikan-simpanan.service";
 import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
+import { formatRupiah, parseRupiah } from "@/lib/format-utils";
 
 interface FormPinjamanCategoryProps {
   form: Partial<PenarikanSimpanan>;
@@ -158,15 +159,21 @@ export default function FormPenarikanSimpanan({
         </div>
 
         <div className="flex flex-col gap-y-1">
-          <Label>Nominal Penarikan *</Label>
+          <Label>Nominal</Label>
           <Input
-            type="number"
-            value={form.amount || ""}
-            onChange={(e) =>
-              setForm({ ...form, amount: Number(e.target.value) })
-            }
+            type="text"
+            inputMode="numeric"
+            value={formatRupiah(form.amount ?? "")}
+            onChange={(e) => {
+              const raw = e.target.value;
+              const parsed = parseRupiah(raw);
+              setForm({
+                ...form,
+                amount: raw === "" ? undefined : parsed,
+              });
+            }}
             readOnly={readonly}
-            placeholder="Masukkan nominal penarikan"
+            placeholder="Masukkan nominal simpanan"
           />
         </div>
 

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { SimpananCategory } from "@/types/master/simpanan-category";
+import { formatRupiah, parseRupiah } from "@/lib/format-utils";
 
 interface FormPinjamanCategoryProps {
   form: Partial<SimpananCategory>;
@@ -73,12 +74,18 @@ export default function FormSimpananCategory({
         <div className="flex flex-col gap-y-1">
           <Label>Nominal</Label>
           <Input
-            type="number"
-            value={form.nominal || ""}
-            onChange={(e) => setForm({ ...form, nominal: Number(e.target.value) })}
-            readOnly={readonly}
-            placeholder="Masukkan nominal"
-            min="0"
+            type="text"
+            inputMode="numeric"
+            value={formatRupiah(form.nominal ?? "")}
+            onChange={(e) => {
+              const raw = e.target.value;
+              const parsed = parseRupiah(raw);
+              setForm({
+                ...form,
+                nominal: raw === "" ? undefined : parsed,
+              });
+            }}
+            placeholder="Masukkan nominal simpanan"
           />
         </div>
 

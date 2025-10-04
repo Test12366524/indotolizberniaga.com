@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "@/components/ui/tooltip";
+import { formatRupiahWithRp } from "@/lib/format-utils";
 
 export default function SimpananAnggotaPage() {
   const [form, setForm] = useState<Partial<Simpanan>>({});
@@ -79,11 +80,13 @@ export default function SimpananAnggotaPage() {
     status: string;
     date_from: Date | undefined;
     date_to: Date | undefined;
+    member_query: string;
   }>({
     category_id: "",
     status: "",
     date_from: undefined,
     date_to: undefined,
+    member_query: "",
   });
 
   const { data, isLoading, isFetching, refetch } = useGetSimpananListQuery({
@@ -111,10 +114,23 @@ export default function SimpananAnggotaPage() {
     status: 1,
   });
 
+  type Anggota = { id: number; name?: string; email?: string };
+
+  const rawUsers: Anggota[] | undefined = usersData?.data;
+  const users: Anggota[] = useMemo(() => rawUsers ?? [], [rawUsers]);
+
   const categories = categoriesData?.data || [];
-  const users = usersData?.data || [];
   const simpananList = useMemo(() => data?.data || [], [data]);
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
+
+    const usersById = useMemo(() => {
+      const m = new Map<
+        number,
+        { id: number; name?: string; email?: string }
+      >();
+      users.forEach((u) => m.set(u.id, u));
+      return m;
+    }, [users]);
 
   // Helper functions to get names by ID
   const getUserName = (userId: number) => {
@@ -327,9 +343,20 @@ export default function SimpananAnggotaPage() {
 
   // Filter data based on search query
   const filteredData = useMemo(() => {
-    return simpananList;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [simpananList, filters]);
+    let out = simpananList;
+
+    const q = filters.member_query.trim().toLowerCase();
+    if (q.length >= 2) {
+      out = out.filter((item) => {
+        const u = usersById.get(item.user_id);
+        const name = u?.name?.toLowerCase() ?? "";
+        const email = u?.email?.toLowerCase() ?? "";
+        return name.includes(q) || email.includes(q);
+      });
+    }
+
+    return out;
+  }, [simpananList, filters.member_query, usersById]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -393,7 +420,36 @@ export default function SimpananAnggotaPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Anggota */}
+            <div className="flex flex-col gap-y-1">
+              <label className="text-sm font-medium">Cari Anggota</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Ketik nama/email (min. 2 huruf)"
+                  className="h-10 w-full rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={filters.member_query}
+                  onChange={(e) =>
+                    setFilters((s) => ({ ...s, member_query: e.target.value }))
+                  }
+                  aria-label="Cari anggota berdasarkan nama/email"
+                />
+                {filters.member_query && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters((s) => ({ ...s, member_query: "" }))
+                    }
+                    className="absolute inset-y-0 right-2 my-auto text-xs text-gray-500 hover:text-gray-700"
+                    title="Bersihkan"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+            
             {/* Kategori */}
             <div className="flex flex-col gap-y-1">
               <label className="text-sm font-medium">Kategori</label>
@@ -486,6 +542,7 @@ export default function SimpananAnggotaPage() {
                   status: "",
                   date_from: undefined,
                   date_to: undefined,
+                  member_query: "",
                 });
               }}
             >
@@ -576,6 +633,7 @@ export default function SimpananAnggotaPage() {
                         }
                       />
                     </td>
+                    <td className="px-4 py-2">{item.reference}</td>
                     <td className="px-4 py-2">
                       <div>
                         <div className="font-medium">
@@ -586,7 +644,6 @@ export default function SimpananAnggotaPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-2">{item.reference}</td>
                     <td className="px-4 py-2">
                       <div>
                         <div className="font-medium">
@@ -598,7 +655,7 @@ export default function SimpananAnggotaPage() {
                       </div>
                     </td>
                     <td className="px-4 py-2 font-medium">
-                      {formatCurrency(item.nominal)}
+                      {formatRupiahWithRp(item.nominal)}
                     </td>
                     <td className="px-4 py-2">
                       {item.type.toLocaleLowerCase()}
