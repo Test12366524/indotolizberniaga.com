@@ -13,13 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -36,9 +29,10 @@ import {
   type CreateAnggotaMeninggalRequest,
 } from "@/services/admin/anggota-meninggal.service";
 import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
-import { Eye, Edit, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle } from "lucide-react";
 import Swal from "sweetalert2";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import AnggotaMeninggalForm from "@/components/form-modal/admin/anggota-meninggal-form";
 
 export default function AnggotaMeninggalPage() {
   // State management
@@ -48,7 +42,6 @@ export default function AnggotaMeninggalPage() {
     search: "",
     status: "all",
   });
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -62,16 +55,21 @@ export default function AnggotaMeninggalPage() {
     status: 0,
   });
 
+  // ====== Tambahkan state untuk pencarian anggota (min 2 char) ======
+  const [anggotaSearch, setAnggotaSearch] = useState<string>("");
+
   // API calls
   const { data: anggotaMeninggalData, isLoading } =
     useGetAnggotaMeninggalListQuery({
       page: 1,
       paginate: 100,
     });
-  const { data: anggotaData } = useGetAnggotaListQuery({
-    page: 1,
-    paginate: 100,
-  });
+
+  const { data: anggotaData, isLoading: isLoadingAnggota } =
+    useGetAnggotaListQuery({
+      page: 1,
+      paginate: 100,
+    });
 
   // Mutations
   const [createAnggotaMeninggal] = useCreateAnggotaMeninggalMutation();
@@ -84,36 +82,48 @@ export default function AnggotaMeninggalPage() {
     () => anggotaMeninggalData?.data || [],
     [anggotaMeninggalData?.data]
   );
+
+  // Normalisasi list anggota (hanya field yang dibutuhkan combobox)
   const anggotaList = useMemo(
-    () => anggotaData?.data || [],
+    () =>
+      (anggotaData?.data || []).map((a) => ({
+        id: a.id,
+        name: a.name,
+        email: a.email,
+      })),
     [anggotaData?.data]
   );
 
-  // Filter data
+  // Filter lokal untuk combobox (aktif saat query >= 2 huruf)
+  const anggotaFiltered = useMemo(() => {
+    const q = anggotaSearch.trim().toLowerCase();
+    if (q.length < 2) return anggotaList;
+    return anggotaList.filter(
+      (a) =>
+        a.name?.toLowerCase().includes(q) ||
+        a.email?.toLowerCase().includes(q) ||
+        String(a.id).includes(q)
+    );
+  }, [anggotaSearch, anggotaList]);
+
+  // Filter data table
   const filteredData = useMemo(() => {
     let filtered = anggotaMeninggalList;
 
-    // Apply status filter
     if (filters.status && filters.status !== "all") {
       filtered = filtered.filter(
         (item) => String(item.status) === filters.status
       );
     }
 
-    // Apply search filter
     if (filters.search) {
+      const q = filters.search.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          item.anggota_name
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          item.anggota_email
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          item.anggota_phone
-            ?.toLowerCase()
-            .includes(filters.search.toLowerCase()) ||
-          item.anggota_nik?.toLowerCase().includes(filters.search.toLowerCase())
+          item.anggota_name?.toLowerCase().includes(q) ||
+          item.anggota_email?.toLowerCase().includes(q) ||
+          item.anggota_phone?.toLowerCase().includes(q) ||
+          item.anggota_nik?.toLowerCase().includes(q)
       );
     }
 
@@ -156,12 +166,7 @@ export default function AnggotaMeninggalPage() {
 
   // Event handlers
   const handleCreate = () => {
-    setFormData({
-      anggota_id: 0,
-      deceased_at: "",
-      description: "",
-      status: 0,
-    });
+    setFormData({ anggota_id: 0, deceased_at: "", description: "", status: 0 });
     setIsCreateModalOpen(true);
   };
 
@@ -169,7 +174,7 @@ export default function AnggotaMeninggalPage() {
     setSelectedItem(item);
     setFormData({
       anggota_id: item.anggota_id,
-      deceased_at: item.deceased_at.split("T")[0], // Convert to YYYY-MM-DD format
+      deceased_at: item.deceased_at.split("T")[0],
       description: item.description || "",
       status: item.status,
     });
@@ -216,40 +221,28 @@ export default function AnggotaMeninggalPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ====== Submit logic DI-PISAH untuk create/edit agar clear ======
+  const submitCreate = async (payload: CreateAnggotaMeninggalRequest) => {
+    await createAnggotaMeninggal(payload).unwrap();
+    Swal.fire(
+      "Berhasil!",
+      "Data anggota meninggal telah ditambahkan.",
+      "success"
+    );
+    setIsCreateModalOpen(false);
+    setFormData({ anggota_id: 0, deceased_at: "", description: "", status: 0 });
+  };
 
-    try {
-      if (isCreateModalOpen) {
-        await createAnggotaMeninggal(formData).unwrap();
-        Swal.fire(
-          "Berhasil!",
-          "Data anggota meninggal telah ditambahkan.",
-          "success"
-        );
-      } else {
-        await updateAnggotaMeninggal({
-          id: selectedItem!.id,
-          payload: formData,
-        }).unwrap();
-        Swal.fire(
-          "Berhasil!",
-          "Data anggota meninggal telah diperbarui.",
-          "success"
-        );
-      }
-
-      setIsCreateModalOpen(false);
-      setIsEditModalOpen(false);
-      setFormData({
-        anggota_id: 0,
-        deceased_at: "",
-        description: "",
-        status: 0,
-      });
-    } catch {
-      Swal.fire("Error!", "Gagal menyimpan data.", "error");
-    }
+  const submitEdit = async (payload: CreateAnggotaMeninggalRequest) => {
+    if (!selectedItem) return;
+    await updateAnggotaMeninggal({ id: selectedItem.id, payload }).unwrap();
+    Swal.fire(
+      "Berhasil!",
+      "Data anggota meninggal telah diperbarui.",
+      "success"
+    );
+    setIsEditModalOpen(false);
+    setSelectedItem(null);
   };
 
   return (
@@ -272,7 +265,6 @@ export default function AnggotaMeninggalPage() {
         onStatusChange={(status: string) =>
           setFilters((s) => ({
             ...s,
-            // normalize ke union kita
             status:
               status === "0" || status === "1" || status === "2"
                 ? (status as Filters["status"])
@@ -359,7 +351,6 @@ export default function AnggotaMeninggalPage() {
                         {getStatusBadge(item.status)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        {/* Validasi Column - Approve, Reject (only for pending status) */}
                         {item.status === 0 ? (
                           <div className="flex items-center gap-2">
                             <TooltipProvider>
@@ -414,109 +405,74 @@ export default function AnggotaMeninggalPage() {
           </div>
         </CardContent>
       </Card>
-      {/* Create/Edit Modal */}
+
+      {/* Create Modal */}
       <Dialog
-        open={isCreateModalOpen || isEditModalOpen}
+        open={isCreateModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsCreateModalOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Anggota Meninggal</DialogTitle>
+          </DialogHeader>
+
+          <AnggotaMeninggalForm
+            mode="create"
+            initial={formData}
+            anggotaOptions={anggotaFiltered}
+            isAnggotaLoading={isLoadingAnggota}
+            onAnggotaSearch={(q) => setAnggotaSearch(q)}
+            onSubmit={async (payload) => {
+              try {
+                await submitCreate(payload);
+              } catch {
+                Swal.fire("Error!", "Gagal menyimpan data.", "error");
+              }
+            }}
+            onCancel={() => setIsCreateModalOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog
+        open={isEditModalOpen}
         onOpenChange={(open) => {
           if (!open) {
-            setIsCreateModalOpen(false);
             setIsEditModalOpen(false);
+            setSelectedItem(null);
           }
         }}
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {isCreateModalOpen
-                ? "Tambah Anggota Meninggal"
-                : "Edit Anggota Meninggal"}
-            </DialogTitle>
+            <DialogTitle>Edit Anggota Meninggal</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="anggota_id">Anggota</Label>
-              <Select
-                value={formData.anggota_id.toString()}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, anggota_id: Number(value) })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih anggota" />
-                </SelectTrigger>
-                <SelectContent>
-                  {anggotaList.map((anggota) => (
-                    <SelectItem key={anggota.id} value={anggota.id.toString()}>
-                      {anggota.name} - {anggota.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div>
-              <Label htmlFor="deceased_at">Tanggal Meninggal</Label>
-              <Input
-                id="deceased_at"
-                type="date"
-                value={formData.deceased_at}
-                onChange={(e) =>
-                  setFormData({ ...formData, deceased_at: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Deskripsi</Label>
-              <Input
-                id="description"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Deskripsi (opsional)"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={formData.status.toString()}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, status: Number(value) })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Pending</SelectItem>
-                  <SelectItem value="1">Approved</SelectItem>
-                  <SelectItem value="2">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsCreateModalOpen(false);
-                  setIsEditModalOpen(false);
-                }}
-              >
-                Batal
-              </Button>
-              <Button type="submit">
-                {isCreateModalOpen ? "Tambah" : "Update"}
-              </Button>
-            </div>
-          </form>
+          <AnggotaMeninggalForm
+            mode="edit"
+            initial={formData}
+            anggotaOptions={anggotaFiltered}
+            isAnggotaLoading={isLoadingAnggota}
+            onAnggotaSearch={(q) => setAnggotaSearch(q)}
+            onSubmit={async (payload) => {
+              try {
+                await submitEdit(payload);
+              } catch {
+                Swal.fire("Error!", "Gagal menyimpan data.", "error");
+              }
+            }}
+            onCancel={() => {
+              setIsEditModalOpen(false);
+              setSelectedItem(null);
+            }}
+          />
         </DialogContent>
       </Dialog>
-      {/* Detail Modal */}
+
+      {/* Detail Modal (unchanged) */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>

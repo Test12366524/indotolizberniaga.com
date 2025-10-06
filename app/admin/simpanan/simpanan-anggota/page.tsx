@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import useModal from "@/hooks/use-modal";
 import {
@@ -47,6 +47,13 @@ export default function SimpananAnggotaPage() {
   const { isOpen, openModal, closeModal } = useModal();
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+  const initialFilters = {
+    category_id: "",
+    status: "",
+    date_from: undefined as Date | undefined,
+    date_to: undefined as Date | undefined,
+    member_query: "",
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -75,19 +82,23 @@ export default function SimpananAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filters
-  const [filters, setFilters] = useState<{
-    category_id: string;
-    status: string;
-    date_from: Date | undefined;
-    date_to: Date | undefined;
-    member_query: string;
-  }>({
-    category_id: "",
-    status: "",
-    date_from: undefined,
-    date_to: undefined,
-    member_query: "",
-  });
+  const [filters, setFilters] = useState(initialFilters);
+
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(
+      filters.category_id ||
+        filters.status ||
+        filters.member_query.trim() ||
+        filters.date_from ||
+        filters.date_to
+    );
+  }, [filters]);
+
+  const handleResetFilters = () => {
+    setCurrentPage(1);
+    setFilters(initialFilters);
+    setTimeout(() => refetch(), 0);
+  };
 
   const { data, isLoading, isFetching, refetch } = useGetSimpananListQuery({
     page: currentPage,
@@ -413,114 +424,128 @@ export default function SimpananAnggotaPage() {
       {/* Filters */}
       <Card>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
-            {/* Anggota */}
-            <div className="flex flex-col gap-y-1">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Ketik nama/email (min. 2 huruf)"
-                  className="h-10 w-full rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={filters.member_query}
-                  onChange={(e) =>
-                    setFilters((s) => ({ ...s, member_query: e.target.value }))
-                  }
-                  aria-label="Cari anggota berdasarkan nama/email"
-                />
-                {filters.member_query && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFilters((s) => ({ ...s, member_query: "" }))
+          <div className="flex justify-between items-center">
+            {/* Anggota + Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+              {/* Anggota */}
+              <div className="flex flex-col gap-y-1 min-w-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ketik nama/email (min. 2 huruf)"
+                    className="h-10 w-full rounded-md border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.member_query}
+                    onChange={(e) =>
+                      setFilters((s) => ({
+                        ...s,
+                        member_query: e.target.value,
+                      }))
                     }
-                    className="absolute inset-y-0 right-2 my-auto text-xs text-gray-500 hover:text-gray-700"
-                    title="Bersihkan"
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Kategori */}
-              <div className="flex flex-col gap-y-1">
-                <select
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={filters.category_id}
-                  onChange={(e) =>
-                    setFilters({ ...filters, category_id: e.target.value })
-                  }
-                  aria-label="Filter kategori simpanan"
-                >
-                  <option value="">Semua Kategori</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Status */}
-              <div className="flex flex-col gap-y-1">
-                <select
-                  className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={filters.status}
-                  onChange={(e) =>
-                    setFilters({ ...filters, status: e.target.value })
-                  }
-                  aria-label="Filter status simpanan"
-                >
-                  <option value="">Semua Status</option>
-                  <option value="0">Pending</option>
-                  <option value="1">Approved</option>
-                  <option value="2">Ditolak</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Tanggal */}
-            <div className="flex flex-col gap-y-1">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={`h-10 border border-gray-300 justify-start text-left font-normal`}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {filters.date_from ? (
-                      filters.date_to ? (
-                        <>
-                          {format(filters.date_from, "LLL dd, y")} -{" "}
-                          {format(filters.date_to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(filters.date_from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pilih Rentang Tanggal</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="range"
-                    defaultMonth={filters.date_from}
-                    selected={{ from: filters.date_from, to: filters.date_to }}
-                    onSelect={(val) => {
-                      setFilters((state) => ({
-                        ...state,
-                        date_from: val.from,
-                        date_to: val.to,
-                      }));
-                    }}
-                    numberOfMonths={2}
-                    required
+                    aria-label="Cari anggota berdasarkan nama/email"
                   />
-                </PopoverContent>
-              </Popover>
+                  {filters.member_query && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilters((s) => ({ ...s, member_query: "" }))
+                      }
+                      className="absolute inset-y-0 right-2 my-auto text-xs text-gray-500 hover:text-gray-700"
+                      title="Bersihkan"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Kategori + Status (dibuat lebih lebar) */}
+              <div className="grid grid-cols-2 gap-4 lg:col-span-2 min-w-0">
+                {/* Kategori */}
+                <div className="flex flex-col gap-y-1 min-w-0">
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.category_id}
+                    onChange={(e) =>
+                      setFilters({ ...filters, category_id: e.target.value })
+                    }
+                    aria-label="Filter kategori simpanan"
+                  >
+                    <option value="">Semua Kategori</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status */}
+                <div className="flex flex-col gap-y-1 min-w-0">
+                  <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={filters.status}
+                    onChange={(e) =>
+                      setFilters({ ...filters, status: e.target.value })
+                    }
+                    aria-label="Filter status simpanan"
+                  >
+                    <option value="">Semua Status</option>
+                    <option value="0">Pending</option>
+                    <option value="1">Approved</option>
+                    <option value="2">Ditolak</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Tanggal */}
+              <div className="flex flex-col gap-y-1 min-w-0">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-10 w-40 border border-gray-300 justify-start text-left font-normal whitespace-nowrap overflow-hidden text-ellipsis"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                      <span className="truncate">
+                        {filters.date_from ? (
+                          filters.date_to ? (
+                            <>
+                              {format(filters.date_from, "LLL dd, y")} -{" "}
+                              {format(filters.date_to, "LLL dd, y")}
+                            </>
+                          ) : (
+                            format(filters.date_from, "LLL dd, y")
+                          )
+                        ) : (
+                          <span>Filter Tanggal</span>
+                        )}
+                      </span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="range"
+                      defaultMonth={filters.date_from}
+                      selected={{
+                        from: filters.date_from,
+                        to: filters.date_to,
+                      }}
+                      onSelect={(val) =>
+                        setFilters((s) => ({
+                          ...s,
+                          date_from: val.from,
+                          date_to: val.to,
+                        }))
+                      }
+                      numberOfMonths={2}
+                      required
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
+
+            {/* Actions */}
             <div className="flex gap-2">
               <Button
                 onClick={handleExport}
@@ -531,9 +556,19 @@ export default function SimpananAnggotaPage() {
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? "Exporting..." : "Export Excel"}
               </Button>
-              <Button className="h-10" onClick={() => openModal()}>
+              <Button size="sm" className="h-10" onClick={() => openModal()}>
                 <Plus className="h-4 w-4" />
                 Simpanan
+              </Button>
+              <Button
+                variant="destructive"
+                className="h-10"
+                onClick={handleResetFilters}
+                disabled={!hasActiveFilters}
+                title="Reset semua filter"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Reset Filter
               </Button>
             </div>
           </div>
