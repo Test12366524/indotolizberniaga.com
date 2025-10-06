@@ -3,18 +3,15 @@
 import React, { useState, useEffect } from "react";
 import {
   Database,
-  Store,
   ShoppingCart,
   Users,
   Package,
   Tag,
   BookDashed,
-  Wallet,
   Landmark,
   FileText,
   LineChart,
   ClipboardList,
-  Wrench,
   Settings,
   UserCheck,
   GalleryVertical,
@@ -118,7 +115,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         {
           id: "data-keuangan/angsuran-pinjaman",
           label: "Update Angsuran Pinjaman",
-          href: "/admin/data-keuangan/angsuran-pinjaman",
+          href: "/admin/keuangan/angsuran-pinjaman",
         },
       ],
     },
