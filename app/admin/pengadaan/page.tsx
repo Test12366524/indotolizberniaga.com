@@ -363,10 +363,17 @@ export default function PengadaanPage() {
     <div className="p-6 space-y-6">
       <ProdukToolbar
         openModal={openModal}
-        onSearchChange={setQuery}
-        onCategoryChange={setSelectedSupplier}
-        categories={supplierCategories}
-        initialCategory="all"
+        onSearchChange={(q: string) => setQuery(q)}
+        extraSelects={[
+          {
+            id: "supplier",
+            label: "Supplier",
+            options: supplierCategories,
+            defaultValue: "all",
+            value: selectedSupplier,
+            onChange: (val: string) => setSelectedSupplier(val),
+          },
+        ]}
         addButtonLabel="Tambah Pengadaan"
       />
 

@@ -42,10 +42,13 @@ import ActionsGroup from "@/components/admin-components/actions-group";
 
 export default function AnggotaMeninggalPage() {
   // State management
-  const [filters, setFilters] = useState({
+  type Filters = { search: string; status: "all" | "0" | "1" | "2" };
+
+  const [filters, setFilters] = useState<Filters>({
     search: "",
     status: "all",
   });
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -255,16 +258,27 @@ export default function AnggotaMeninggalPage() {
       <ProdukToolbar
         addButtonLabel="Anggota Meninggal"
         openModal={handleCreate}
-        onSearchChange={(search) => setFilters({ ...filters, search })}
-        onCategoryChange={(status) => setFilters({ ...filters, status })}
-        categories={[
+        onSearchChange={(search: string) =>
+          setFilters((s) => ({ ...s, search }))
+        }
+        enableStatusFilter
+        statusOptions={[
           { value: "all", label: "Semua Status" },
           { value: "0", label: "Pending" },
           { value: "1", label: "Approved" },
           { value: "2", label: "Rejected" },
         ]}
-        initialSearch={filters.search}
-        initialCategory={filters.status}
+        initialStatus={filters.status}
+        onStatusChange={(status: string) =>
+          setFilters((s) => ({
+            ...s,
+            // normalize ke union kita
+            status:
+              status === "0" || status === "1" || status === "2"
+                ? (status as Filters["status"])
+                : "all",
+          }))
+        }
       />
 
       {/* Data Table */}
@@ -400,7 +414,6 @@ export default function AnggotaMeninggalPage() {
           </div>
         </CardContent>
       </Card>
-
       {/* Create/Edit Modal */}
       <Dialog
         open={isCreateModalOpen || isEditModalOpen}
@@ -503,7 +516,6 @@ export default function AnggotaMeninggalPage() {
           </form>
         </DialogContent>
       </Dialog>
-
       {/* Detail Modal */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
         <DialogContent className="max-w-2xl">

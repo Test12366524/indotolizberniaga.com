@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import ActionsGroup from "@/components/admin-components/actions-group";
 
+type CategoryFilter = "all" | string;
+
 export default function ProductPage() {
   const [form, setForm] = useState<Partial<Product>>({
     status: 1,
@@ -28,7 +30,7 @@ export default function ProductPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState<CategoryFilter>("all");
 
   const { data, isLoading, refetch } = useGetProductListQuery({
     page: currentPage,
@@ -248,12 +250,41 @@ export default function ProductPage() {
     }
   };
 
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>();
+    (data?.data ?? []).forEach((p) => {
+      if (p.product_category_id) set.add(String(p.product_category_id));
+      else if (p.category_name) set.add(p.category_name.toLowerCase());
+    });
+
+    // tampilkan label yang enak dibaca
+    const labelMap = new Map<string, string>();
+    (data?.data ?? []).forEach((p) => {
+      const key = p.product_category_id
+        ? String(p.product_category_id)
+        : (p.category_name ?? "").toLowerCase();
+      if (key) labelMap.set(key, p.category_name ?? key);
+    });
+
+    return [
+      { value: "all", label: "Semua Kategori" },
+      ...Array.from(set).map((v) => ({
+        value: v,
+        label: labelMap.get(v) ?? v,
+      })),
+    ];
+  }, [data]);
+
+
   return (
     <div className="p-6 space-y-6">
       <ProdukToolbar
         openModal={openModal}
-        onSearchChange={setQuery}
-        onCategoryChange={setCategory}
+        onSearchChange={(q) => setQuery(q)}
+        enableStatusFilter
+        statusOptions={categoryOptions}
+        initialStatus={category}
+        onStatusChange={(val) => setCategory(val as CategoryFilter)}
       />
 
       <Card>

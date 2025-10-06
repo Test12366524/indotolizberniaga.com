@@ -20,7 +20,7 @@ import {
 } from "@/services/admin/customer.service";
 import { Customer } from "@/types/admin/customer";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Tag } from "lucide-react";
+import { Tag } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -54,7 +54,6 @@ export default function CustomerPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -220,7 +219,6 @@ export default function CustomerPage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        onCategoryChange={setCategory}
       />
 
       <Card>

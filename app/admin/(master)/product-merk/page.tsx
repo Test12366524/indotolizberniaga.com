@@ -112,8 +112,15 @@ export default function ProductMerkPage() {
     <div className="p-6 space-y-6">
       <ProdukToolbar
         openModal={openModal}
-        onSearchChange={setQuery}
-        onCategoryChange={setCategory}
+        onSearchChange={(q: string) => setQuery(q)}
+        enableStatusFilter
+        statusOptions={[
+          { value: "all", label: "Semua Status" },
+          { value: "1", label: "Aktif" },
+          { value: "0", label: "Nonaktif" },
+        ]}
+        initialStatus={category}
+        onStatusChange={(status: string) => setCategory(status)}
       />
 
       <Card>

@@ -60,6 +60,15 @@ const CATEGORY_TO_STATUS: Record<string, TransactionStatusKey> = {
   cancel: -3,
 };
 
+type CategoryFilter =
+  | "all"
+  | "pending"
+  | "captured"
+  | "settlement"
+  | "deny"
+  | "expired"
+  | "cancel";
+
 export default function PosKasirPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,7 +83,7 @@ export default function PosKasirPage() {
     number | null
   >(null);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState<CategoryFilter>("all");
 
   // Form state for update transaction
   const [formData, setFormData] = useState({
@@ -328,7 +337,21 @@ export default function PosKasirPage() {
         <h1 className="text-2xl font-bold">POS Kasir History</h1>
       </div>
 
-      <ProdukToolbar onSearchChange={setQuery} onCategoryChange={setCategory} />
+      <ProdukToolbar
+        onSearchChange={(q) => setQuery(q)}
+        enableStatusFilter
+        statusOptions={[
+          { value: "all", label: "Semua Status" },
+          { value: "pending", label: "PENDING" },
+          { value: "captured", label: "CAPTURED" },
+          { value: "settlement", label: "SETTLEMENT" },
+          { value: "deny", label: "DENY" },
+          { value: "expired", label: "EXPIRED" },
+          { value: "cancel", label: "CANCEL" },
+        ]}
+        initialStatus={category}
+        onStatusChange={(val) => setCategory(val as CategoryFilter)}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">

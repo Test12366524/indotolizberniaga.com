@@ -179,15 +179,19 @@ export default function KodeTransaksiPage() {
       <ProdukToolbar
         addButtonLabel="Tambah Kode Transaksi"
         openModal={handleCreate}
-        onSearchChange={(search) => setFilters((s) => ({ ...s, search }))}
-        onCategoryChange={(status) => setFilters((s) => ({ ...s, status }))}
-        categories={[
+        onSearchChange={(search: string) =>
+          setFilters((s) => ({ ...s, search }))
+        }
+        enableStatusFilter
+        statusOptions={[
           { value: "all", label: "Semua Status" },
           { value: "1", label: "Active" },
           { value: "0", label: "Inactive" },
         ]}
-        initialSearch={filters.search}
-        initialCategory={filters.status}
+        initialStatus={filters.status}
+        onStatusChange={(status: string) =>
+          setFilters((s) => ({ ...s, status }))
+        }
       />
 
       <Card>

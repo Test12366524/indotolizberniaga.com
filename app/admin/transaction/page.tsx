@@ -318,17 +318,14 @@ export default function TransactionPage() {
     <div className="p-6 space-y-6">
       <ProdukToolbar
         onSearchChange={setQuery}
-        // STATUS
         enableStatusFilter
         onStatusChange={setStatusFilter}
-        // SELLER (opsional + hanya superadmin)
         enableSellerFilter
         isSuperAdmin={isSuperAdmin}
         sellers={sellers}
         selectedSellerId={sellerId}
         onSellerChange={setSellerId}
         isSellerLoading={isSellerLoading}
-        // TANGGAL
         enableDateFilter
         onDateRangeChange={(from, to) => {
           setDateFrom(from);

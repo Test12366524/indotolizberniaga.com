@@ -214,19 +214,23 @@ export default function JurnalTransaksiPage() {
       <ProdukToolbar
         addButtonLabel="Jurnal"
         openModal={handleCreate}
-        onSearchChange={(search) => setFilters((s) => ({ ...s, search }))}
-        onCategoryChange={(status) => setFilters((s) => ({ ...s, status }))}
-        categories={[
+        onSearchChange={(search: string) =>
+          setFilters((s) => ({ ...s, search }))
+        }
+        enableStatusFilter
+        statusOptions={[
           { value: "all", label: "Semua Status" },
           { value: "1", label: "Posted" },
           { value: "0", label: "Draft" },
         ]}
-        initialSearch={filters.search}
-        initialCategory={filters.status}
+        initialStatus={filters.status}
+        onStatusChange={(status: string) =>
+          setFilters((s) => ({ ...s, status }))
+        }
         enableDateFilter
         initialDateFrom={filters.date_from}
         initialDateTo={filters.date_to}
-        onDateRangeChange={(from, to) =>
+        onDateRangeChange={(from?: Date, to?: Date) =>
           setFilters((s) => ({ ...s, date_from: from, date_to: to }))
         }
       />

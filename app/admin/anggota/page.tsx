@@ -75,7 +75,7 @@ export default function AnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<string>("all");
+  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
 
   const { data, isLoading, refetch } = useGetAnggotaListQuery({
     page: currentPage,
@@ -233,23 +233,21 @@ export default function AnggotaPage() {
           setReadonly(false);
           openModal();
         }}
-        onSearchChange={setQuery}
-        onCategoryChange={(val) => {
-          // opsional: mapping ke format API (mis. "active"|"inactive" -> 1|0)
-          // const mapped = val === "active" ? "1" : val === "inactive" ? "0" : "all";
-          setStatus(val);
-        }}
-        categories={[
+        onSearchChange={(q: string) => setQuery(q)} // bungkus agar tipe = (string)=>void
+        enableStatusFilter
+        statusOptions={[
           { value: "all", label: "Semua Status" },
           { value: "active", label: "Aktif" },
           { value: "inactive", label: "Tidak Aktif" },
         ]}
+        initialStatus={status}
+        onStatusChange={(s: string) =>
+          setStatus(s as "all" | "active" | "inactive")
+        }
         onImportExcel={(file) => {
-          // kirim ke service import
           // uploadImportExcel(file)
         }}
         onExportExcel={() => {
-          // panggil service export (download file)
           // exportProdukExcel({ q: query, status })
         }}
         importLabel="Import Excel"
@@ -300,7 +298,7 @@ export default function AnggotaPage() {
                                   size="sm"
                                   variant="outline"
                                   onClick={() => {
-                                    router.push("/admin/history")
+                                    router.push("/admin/history");
                                   }}
                                 >
                                   <HistoryIcon className="size-4" />

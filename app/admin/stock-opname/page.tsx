@@ -38,6 +38,8 @@ import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { Package } from "lucide-react";
 import ActionsGroup from "@/components/admin-components/actions-group";
 
+type ShopFilter = "all" | string;
+
 export default function StockOpnamePage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,7 +64,7 @@ export default function StockOpnamePage() {
   const [selectedItem, setSelectedItem] = useState<StockOpname | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedShop, setSelectedShop] = useState("all");
+  const [selectedShop, setSelectedShop] = useState<ShopFilter>("all");
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -311,9 +313,10 @@ export default function StockOpnamePage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        onCategoryChange={setSelectedShop}
-        categories={shopCategories}
-        initialCategory="all"
+        enableStatusFilter
+        statusOptions={shopCategories}
+        initialStatus={selectedShop}
+        onStatusChange={(val) => setSelectedShop(val as ShopFilter)}
       />
 
       <Card>

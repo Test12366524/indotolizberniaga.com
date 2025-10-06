@@ -1,4 +1,3 @@
-// app/admin/news/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -130,8 +129,17 @@ export default function NewsPage() {
     <div className="p-6 space-y-6">
       <ProdukToolbar
         openModal={openModal}
-        onSearchChange={setQuery}
-        onCategoryChange={setCategory}
+        onSearchChange={(q: string) => setQuery(q)}
+        enableStatusFilter
+        statusOptions={[
+          { value: "all", label: "Semua Status" },
+          { value: "1", label: "Published" },
+          { value: "0", label: "Draft" },
+        ]}
+        initialStatus={category}
+        onStatusChange={(s: string) =>
+          setCategory(s === "1" || s === "0" ? s : "all")
+        }
       />
 
       <Card>

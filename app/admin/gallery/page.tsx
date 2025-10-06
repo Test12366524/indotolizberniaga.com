@@ -25,7 +25,6 @@ export default function GalleryPage() {
   const [readonly, setReadonly] = useState(false);
   const { isOpen, openModal, closeModal } = useModal();
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
@@ -124,7 +123,6 @@ export default function GalleryPage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        onCategoryChange={setCategory}
       />
 
       <Card>
