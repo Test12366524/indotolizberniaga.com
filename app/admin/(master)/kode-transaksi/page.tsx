@@ -225,6 +225,30 @@ export default function KodeTransaksiPage() {
         initialCategory={filters.status}
       />
 
+      <ProdukToolbar
+        addButtonLabel="Tambah Kode Transaksi"
+        openModal={handleCreate}
+        onSearchChange={(search) => setFilters({ ...filters, search })}
+
+        // --- PERBAIKAN DI SINI ---
+
+        // 1. Aktifkan filter status
+        enableStatusFilter={true}
+
+        // 2. Ganti `categories` menjadi `statusOptions`
+        statusOptions={[
+          { value: "all", label: "Semua Status" },
+          { value: "1", label: "Active" },
+          { value: "0", label: "Inactive" },
+        ]}
+
+        // 3. Ganti `initialCategory` menjadi `initialStatus`
+        initialStatus={filters.status}
+
+        // 4. Ganti `onCategoryChange` menjadi `onStatusChange`
+        onStatusChange={(status) => setFilters({ ...filters, status })}
+      />
+
       {/* Data Table */}
       <Card>
         <CardContent className="p-0">
