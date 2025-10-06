@@ -7,12 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -25,11 +19,19 @@ import {
   type Seller,
 } from "@/services/admin/seller.service";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import SellerDetailModal from "@/components/form-modal/admin/seller-detail-modal";
+
+type RatingFilter = "all" | "4" | "3" | "2" | "1" | "0";
 
 export default function SellerPage() {
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    search: string;
+    status: string;
+    rating: RatingFilter;
+  }>({
     search: "",
     status: "all",
+    rating: "all",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -44,61 +46,55 @@ export default function SellerPage() {
     if (!sellerData?.data) return [];
 
     return sellerData.data.filter((seller) => {
+      const s = filters.search.toLowerCase();
+
       const matchesSearch =
-        seller.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        seller.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-        seller.phone.toLowerCase().includes(filters.search.toLowerCase()) ||
-        seller.anggota_reference
-          .toLowerCase()
-          .includes(filters.search.toLowerCase()) ||
-        seller.shop.name.toLowerCase().includes(filters.search.toLowerCase());
+        seller.name.toLowerCase().includes(s) ||
+        seller.email.toLowerCase().includes(s) ||
+        seller.phone.toLowerCase().includes(s) ||
+        seller.anggota_reference.toLowerCase().includes(s) ||
+        seller.shop.name.toLowerCase().includes(s);
 
       const matchesStatus =
         filters.status === "all" ||
         String(seller.shop.status) === filters.status;
 
-      return matchesSearch && matchesStatus;
+      const ratingMin =
+        filters.rating === "all" ? -Infinity : Number(filters.rating);
+
+      // ✅ pastikan numeric
+      const sellerRating = Number(seller.shop.rating ?? 0);
+      const matchesRating = sellerRating >= ratingMin;
+
+      return matchesSearch && matchesStatus && matchesRating;
     });
   }, [sellerData?.data, filters]);
 
-  const getStatusBadge = (status: number) => {
-    return status === 1 ? (
+  const getStatusBadge = (status: number) =>
+    status === 1 ? (
       <Badge className="bg-green-100 text-green-800">Aktif</Badge>
     ) : (
       <Badge className="bg-red-100 text-red-800">Nonaktif</Badge>
     );
-  };
 
-  const getAnggotaStatusBadge = (status: number) => {
-    return status === 1 ? (
+  const getAnggotaStatusBadge = (status: number) =>
+    status === 1 ? (
       <Badge className="bg-blue-100 text-blue-800">Anggota</Badge>
     ) : (
       <Badge className="bg-gray-100 text-gray-800">Non-Anggota</Badge>
     );
-  };
 
   const handleDetail = (seller: Seller) => {
     setSelectedSeller(seller);
     setIsDetailModalOpen(true);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("id-ID", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
 
   return (
     <div className="p-6 space-y-6">
@@ -107,31 +103,42 @@ export default function SellerPage() {
         <p className="text-sm text-gray-500">Kelola data seller marketplace</p>
       </div>
 
-      {/* Filters */}
+      {/* Filters - compact horizontal */}
       <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-3">
+          <div
+            className="
+      grid gap-x-3 gap-y-2 items-end
+      grid-cols-1
+      sm:[grid-template-columns:minmax(220px,1fr)_180px_180px_auto]
+    "
+          >
+            {/* Search */}
             <div>
-              <Label htmlFor="search">Cari</Label>
+              <Label htmlFor="search" className="text-xs">
+                Cari
+              </Label>
               <Input
                 id="search"
+                className="h-9 text-sm"
                 placeholder="Cari nama, email, phone, toko..."
                 value={filters.search}
                 onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
+                  setFilters((f) => ({ ...f, search: e.target.value }))
                 }
               />
             </div>
 
+            {/* Status */}
             <div>
-              <Label htmlFor="status">Status Toko</Label>
+              <Label className="text-xs">Status Toko</Label>
               <Select
                 value={filters.status}
                 onValueChange={(value) =>
-                  setFilters({ ...filters, status: value })
+                  setFilters((f) => ({ ...f, status: value }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-9 w-full text-sm">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -140,6 +147,55 @@ export default function SellerPage() {
                   <SelectItem value="0">Nonaktif</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Rating */}
+            <div>
+              <Label className="text-xs">Rating</Label>
+              <Select
+                value={filters.rating}
+                onValueChange={(value: RatingFilter) =>
+                  setFilters((f) => ({ ...f, rating: value }))
+                }
+              >
+                <SelectTrigger className="h-9 w-full text-sm">
+                  <SelectValue placeholder="Pilih Rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Rating</SelectItem>
+
+                  {[5, 4, 3, 2, 1, 0].map((val) => (
+                    <SelectItem key={val} value={val.toString()}>
+                      <div className="flex items-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${
+                              i < val
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                        <span className="ml-2 text-sm"> {val}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reset */}
+            <div className="justify-self-start sm:justify-self-end">
+              <Button
+                variant="destructive"
+                className="h-9 text-sm w-[92px]"
+                onClick={() =>
+                  setFilters({ search: "", status: "all", rating: "all" })
+                }
+              >
+                Reset
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -271,7 +327,7 @@ export default function SellerPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={!sellerData.prev_page_url}
             >
               Sebelumnya
@@ -282,7 +338,7 @@ export default function SellerPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
+              onClick={() => setCurrentPage((p) => p + 1)}
               disabled={!sellerData.next_page_url}
             >
               Selanjutnya
@@ -291,207 +347,12 @@ export default function SellerPage() {
         </div>
       )}
 
-      {/* Detail Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Detail Seller</DialogTitle>
-          </DialogHeader>
-          {selectedSeller && (
-            <div className="space-y-6">
-              {/* Seller Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Informasi Seller</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="font-medium">Nama</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.name}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Referensi Anggota</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.anggota_reference}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Status Anggota</Label>
-                      <div className="mt-1">
-                        {getAnggotaStatusBadge(selectedSeller.anggota_status)}
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Email</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.email}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Phone</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.phone}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Email Verified</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.email_verified_at
-                          ? formatDateTime(selectedSeller.email_verified_at)
-                          : "Belum diverifikasi"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Informasi Toko</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="font-medium">Nama Toko</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.name}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Slug</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.slug}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Alamat</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.address}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Deskripsi</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.description}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Status Toko</Label>
-                      <div className="mt-1">
-                        {getStatusBadge(selectedSeller.shop.status)}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shop Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Kontak Toko</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="font-medium">Email Toko</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.email}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Phone Toko</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.phone}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Koordinat</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.latitude},{" "}
-                        {selectedSeller.shop.longitude}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Rating & Review</h3>
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="font-medium">Rating</Label>
-                      <div className="flex items-center">
-                        <Star className="h-4 w-4 text-yellow-400 mr-1" />
-                        <span className="text-sm font-medium">
-                          {selectedSeller.shop.rating}
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Total Review</Label>
-                      <p className="text-sm text-gray-600">
-                        {selectedSeller.shop.total_reviews} review
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Tanggal Dibuat</Label>
-                      <p className="text-sm text-gray-600">
-                        {formatDateTime(selectedSeller.shop.created_at)}
-                      </p>
-                    </div>
-                    <div>
-                      <Label className="font-medium">Terakhir Diupdate</Label>
-                      <p className="text-sm text-gray-600">
-                        {formatDateTime(selectedSeller.shop.updated_at)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Media */}
-              {selectedSeller.shop.media &&
-                selectedSeller.shop.media.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">Media Toko</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {selectedSeller.shop.media.map((media) => (
-                        <div key={media.id} className="border rounded-lg p-4">
-                          <div className="space-y-2">
-                            <div>
-                              <Label className="font-medium">Tipe</Label>
-                              <p className="text-sm text-gray-600 capitalize">
-                                {media.collection_name}
-                              </p>
-                            </div>
-                            <div>
-                              <Label className="font-medium">File</Label>
-                              <p className="text-sm text-gray-600">
-                                {media.file_name}
-                              </p>
-                            </div>
-                            <div>
-                              <Label className="font-medium">Size</Label>
-                              <p className="text-sm text-gray-600">
-                                {(media.size / 1024).toFixed(2)} KB
-                              </p>
-                            </div>
-                            {media.original_url && (
-                              <div>
-                                <Label className="font-medium">Preview</Label>
-                                <div className="mt-2">
-                                  <img
-                                    src={media.original_url}
-                                    alt={media.name}
-                                    className="w-full h-32 object-cover rounded"
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Detail Modal (file terpisah) */}
+      <SellerDetailModal
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        seller={selectedSeller}
+      />
     </div>
   );
 }

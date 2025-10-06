@@ -17,6 +17,9 @@ import FormProduct from "@/components/form-modal/admin/product-form";
 import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { Seller, useGetSellerListQuery } from "@/services/admin/seller.service";
+import { useGetProductCategoryListQuery } from "@/services/master/product-category.service";
+import { formatRupiahWithRp } from "@/lib/format-utils";
 
 type CategoryFilter = "all" | string;
 
@@ -31,11 +34,26 @@ export default function ProductPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<CategoryFilter>("all");
+  const [sellerId, setSellerId] = useState<number | null>(null);
 
   const { data, isLoading, refetch } = useGetProductListQuery({
     page: currentPage,
     paginate: itemsPerPage,
   });
+
+  const { data: catData, isLoading: isCatLoading } =
+    useGetProductCategoryListQuery({
+      page: 1,
+      paginate: 200,
+    });
+
+  // sellers (untuk filter seller)
+  const { data: sellerResp, isLoading: isSellerLoading } =
+    useGetSellerListQuery({
+      page: 1,
+      paginate: 200,
+    });
+  const sellers: Seller[] = useMemo(() => sellerResp?.data ?? [], [sellerResp]);
 
   const { data: merkData } = useGetProductMerkListQuery({
     page: 1,
@@ -43,10 +61,30 @@ export default function ProductPage() {
   });
 
   const categoryList = useMemo(() => data?.data || [], [data]);
-  // 🔽 list terfilter oleh search & kategori
+
+  // helper type-guard
+  const hasSellerId = (o: unknown): o is { seller_id: number } =>
+    typeof o === "object" &&
+    o !== null &&
+    "seller_id" in o &&
+    typeof (o as Record<"seller_id", unknown>).seller_id === "number";
+
+  const hasShopId = (o: unknown): o is { shop_id: number } =>
+    typeof o === "object" &&
+    o !== null &&
+    "shop_id" in o &&
+    typeof (o as Record<"shop_id", unknown>).shop_id === "number";
+
+  // ambil shop id dari seller yang dipilih (kalau ada)
+  const selectedSellerShopId = useMemo(() => {
+    const s = sellers.find((x) => x.id === sellerId);
+    return s?.shop?.id ?? null;
+  }, [sellers, sellerId]);
+
   const filteredList = useMemo(() => {
     let list = categoryList;
 
+    // by category
     if (category && category !== "all") {
       list = list.filter(
         (item) =>
@@ -56,6 +94,19 @@ export default function ProductPage() {
       );
     }
 
+    // ✅ by seller
+    if (sellerId !== null) {
+      list = list.filter((item) => {
+        const matchSellerId = hasSellerId(item) && item.seller_id === sellerId;
+        const matchShopId =
+          selectedSellerShopId !== null &&
+          hasShopId(item) &&
+          item.shop_id === selectedSellerShopId;
+        return matchSellerId || matchShopId;
+      });
+    }
+
+    // by search
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -67,7 +118,8 @@ export default function ProductPage() {
     }
 
     return list;
-  }, [categoryList, category, query]);
+  }, [categoryList, category, sellerId, selectedSellerShopId, query]);
+
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
   const merkList = useMemo(() => merkData?.data || [], [merkData]);
 
@@ -251,13 +303,23 @@ export default function ProductPage() {
   };
 
   const categoryOptions = useMemo(() => {
+    const arr = catData?.data ?? [];
+    if (arr.length > 0) {
+      return [
+        { value: "all", label: "Semua Kategori" },
+        ...arr.map((c: { id: number; name: string }) => ({
+          value: String(c.id),
+          label: c.name,
+        })),
+      ];
+    }
+
+    // ✅ fallback: kalau master belum ada/masih loading, pakai derivasi dari list produk (versi lamamu)
     const set = new Set<string>();
     (data?.data ?? []).forEach((p) => {
       if (p.product_category_id) set.add(String(p.product_category_id));
       else if (p.category_name) set.add(p.category_name.toLowerCase());
     });
-
-    // tampilkan label yang enak dibaca
     const labelMap = new Map<string, string>();
     (data?.data ?? []).forEach((p) => {
       const key = p.product_category_id
@@ -273,8 +335,7 @@ export default function ProductPage() {
         label: labelMap.get(v) ?? v,
       })),
     ];
-  }, [data]);
-
+  }, [catData, data]);
 
   return (
     <div className="p-6 space-y-6">
@@ -285,6 +346,19 @@ export default function ProductPage() {
         statusOptions={categoryOptions}
         initialStatus={category}
         onStatusChange={(val) => setCategory(val as CategoryFilter)}
+        enableSellerFilter
+        isSuperAdmin={true}
+        sellers={sellers}
+        selectedSellerId={sellerId}
+        onSellerChange={setSellerId}
+        isSellerLoading={isSellerLoading}
+        onResetAllFilters={() => {
+          setQuery("");
+          setCategory("all");
+          setSellerId(null);
+          setCurrentPage(1);
+          refetch();
+        }}
       />
 
       <Card>
@@ -334,7 +408,7 @@ export default function ProductPage() {
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {item.price}
+                      {formatRupiahWithRp(item.price)}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.stock}

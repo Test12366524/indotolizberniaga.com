@@ -10,16 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   useGetStockOpnameListQuery,
   useCreateStockOpnameMutation,
@@ -37,6 +28,9 @@ import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { Package } from "lucide-react";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { Seller, useGetSellerListQuery } from "@/services/admin/seller.service";
+import StockOpnameFormModal from "@/components/form-modal/admin/stock-opname-form";
+import { displayDate } from "@/lib/format-utils";
 
 type ShopFilter = "all" | string;
 
@@ -65,6 +59,19 @@ export default function StockOpnamePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedShop, setSelectedShop] = useState<ShopFilter>("all");
+  const [sellerId, setSellerId] = useState<number | null>(null);
+
+  const { data: sellerResp, isLoading: isSellerLoading } =
+    useGetSellerListQuery({
+      page: 1,
+      paginate: 200,
+    });
+  const sellers: Seller[] = useMemo(() => sellerResp?.data ?? [], [sellerResp]);
+
+  const selectedSellerShopId = useMemo(() => {
+    const s = sellers.find((x) => x.id === sellerId);
+    return s?.shop?.id ?? null;
+  }, [sellers, sellerId]);
 
   // Helper function to format datetime to Indonesian format
   const formatDateTime = (dateString: string) => {
@@ -82,22 +89,6 @@ export default function StockOpnamePage() {
       }).format(date);
     } catch (error) {
       return String(error);
-    }
-  };
-
-  // Helper function to convert date to YYYY-MM-DD format for input
-  const formatDateForInput = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "";
-
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
-    } catch {
-      return "";
     }
   };
 
@@ -134,17 +125,42 @@ export default function StockOpnamePage() {
     return categories;
   }, [shopsList]);
 
+  // helper untuk memastikan properti ada & bertipe number
+  const hasUserId = (o: unknown): o is { user_id: number } =>
+    typeof o === "object" &&
+    o !== null &&
+    "user_id" in o &&
+    typeof (o as Record<"user_id", unknown>).user_id === "number";
+
+  const hasShopId = (o: unknown): o is { shop_id: number } =>
+    typeof o === "object" &&
+    o !== null &&
+    "shop_id" in o &&
+    typeof (o as Record<"shop_id", unknown>).shop_id === "number";
+
   // Filter list by search query and shop
   const filteredList = useMemo(() => {
     let filtered = stockOpnameList;
 
-    // Filter by shop if not "all"
+    // Filter by shop (yang sudah ada)
     if (selectedShop !== "all") {
       const shopId = Number(selectedShop);
       filtered = filtered.filter((item) => item.shop_id === shopId);
     }
 
-    // Filter by search query
+    // ✅ Filter by seller (cocokkan user_id atau shop_id milik seller tsb)
+    if (sellerId !== null) {
+      filtered = filtered.filter((item) => {
+        const matchByUser = hasUserId(item) && item.user_id === sellerId;
+        const matchByShop =
+          selectedSellerShopId !== null &&
+          hasShopId(item) &&
+          item.shop_id === selectedSellerShopId;
+        return matchByUser || matchByShop;
+      });
+    }
+
+    // Filter by search (yang sudah ada)
     if (query.trim()) {
       const q = query.toLowerCase();
       filtered = filtered.filter((item) => {
@@ -162,13 +178,21 @@ export default function StockOpnamePage() {
           userName.toLowerCase().includes(q) ||
           shopName.toLowerCase().includes(q) ||
           productName.toLowerCase().includes(q) ||
-          item.notes?.toLowerCase().includes(q)
+          (item.notes ?? "").toLowerCase().includes(q)
         );
       });
     }
 
     return filtered;
-  }, [stockOpnameList, query, selectedShop, meData, productsList]);
+  }, [
+    stockOpnameList,
+    selectedShop,
+    sellerId,
+    selectedSellerShopId,
+    query,
+    meData,
+    productsList,
+  ]);
 
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
@@ -206,24 +230,28 @@ export default function StockOpnamePage() {
     setIsDetailModalOpen(true);
   };
 
-  const handleOpenEditModal = (item: StockOpname) => {
-    setForm({
-      id: item.id,
-      user_id: item.user_id,
-      shop_id: item.shop_id,
-      product_id: item.product_id,
-      initial_stock: item.initial_stock,
-      counted_stock: item.counted_stock,
-      difference: item.difference,
-      date: item.date,
-      notes: item.notes || "",
-      created_at: item.created_at || "",
-      updated_at: item.updated_at || "",
-    });
-    setIsEditMode(true);
-    setEditingId(item.id);
-    setIsModalOpen(true);
-  };
+ const handleOpenEditModal = (item: StockOpname) => {
+   const fixedDifference =
+     (item.initial_stock || 0) - (item.counted_stock || 0);
+   setForm({
+     id: item.id,
+     user_id: item.user_id,
+     shop_id: item.shop_id,
+     product_id: item.product_id,
+     initial_stock: item.initial_stock,
+     counted_stock: item.counted_stock,
+     difference: fixedDifference, // pastikan konsisten
+     date: item.date,
+     notes: item.notes || "",
+     created_at: item.created_at || "",
+     updated_at: item.updated_at || "",
+   });
+   setIsEditMode(true);
+   setEditingId(item.id);
+   setIsModalOpen(true);
+
+   setSellerId(item.user_id ?? null);
+ };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -317,6 +345,19 @@ export default function StockOpnamePage() {
         statusOptions={shopCategories}
         initialStatus={selectedShop}
         onStatusChange={(val) => setSelectedShop(val as ShopFilter)}
+        enableSellerFilter
+        isSuperAdmin={true}
+        sellers={sellers}
+        selectedSellerId={sellerId}
+        onSellerChange={setSellerId}
+        isSellerLoading={isSellerLoading}
+        onResetAllFilters={() => {
+          setQuery("");
+          setSelectedShop("all");
+          setSellerId(null);
+          setCurrentPage(1);
+          refetch();
+        }}
       />
 
       <Card>
@@ -397,7 +438,7 @@ export default function StockOpnamePage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {formatDateTime(item.date)}
+                      {displayDate(item.date)}
                     </td>
                     <td className="px-4 py-2 max-w-xs truncate">
                       {item.notes || "-"}
@@ -434,298 +475,24 @@ export default function StockOpnamePage() {
       </Card>
 
       {/* Create/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-md md:min-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Package className="h-5 w-5 text-blue-600" />
-              </div>
-              {isEditMode ? "Edit Stock Opname" : "Tambah Stock Opname"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="user_id"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  User
-                </Label>
-                <Select
-                  value={form.user_id ? form.user_id.toString() : undefined}
-                  onValueChange={(value) =>
-                    setForm({ ...form, user_id: Number(value) })
-                  }
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="👤 Pilih User..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {!meData?.shop ? (
-                      <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">
-                          User harus memiliki shop untuk membuat stock opname
-                        </span>
-                      </SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="placeholder-user" disabled>
-                          <span className="text-gray-400 italic">
-                            👤 Pilih User...
-                          </span>
-                        </SelectItem>
-                        <SelectItem value={meData.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{meData.name}</span>
-                            <span className="text-sm text-gray-500">
-                              ({meData.email})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="shop_id"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Shop
-                </Label>
-                <Select
-                  value={form.shop_id ? form.shop_id.toString() : undefined}
-                  onValueChange={(value) =>
-                    setForm({ ...form, shop_id: Number(value) })
-                  }
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="🏪 Pilih Shop..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {!meData?.shop ? (
-                      <SelectItem value="no-shop" disabled>
-                        <span className="text-gray-500">
-                          Tidak ada shop tersedia
-                        </span>
-                      </SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="placeholder-shop" disabled>
-                          <span className="text-gray-400 italic">
-                            🏪 Pilih Shop...
-                          </span>
-                        </SelectItem>
-                        <SelectItem value={meData.shop.id.toString()}>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
-                              {meData.shop.name}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              ({meData.shop.email})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="product_id"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Product
-                </Label>
-                <Select
-                  value={
-                    form.product_id ? form.product_id.toString() : undefined
-                  }
-                  onValueChange={(value) =>
-                    setForm({ ...form, product_id: Number(value) })
-                  }
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="📦 Pilih Product..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {productsList.length === 0 ? (
-                      <SelectItem value="no-products" disabled>
-                        <span className="text-gray-500">
-                          Tidak ada product tersedia
-                        </span>
-                      </SelectItem>
-                    ) : (
-                      <>
-                        <SelectItem value="placeholder-product" disabled>
-                          <span className="text-gray-400 italic">
-                            📦 Pilih Product...
-                          </span>
-                        </SelectItem>
-                        {productsList.map((product) => (
-                          <SelectItem
-                            key={product.id}
-                            value={product.id.toString()}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {product.name}
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                - {product.category_name}
-                              </span>
-                              <span className="text-xs text-blue-500">
-                                ({product.merk_name})
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="date"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Tanggal
-                </Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={form.date ? formatDateForInput(form.date) : ""}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="initial_stock"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Stok Awal
-                </Label>
-                <Input
-                  id="initial_stock"
-                  type="number"
-                  placeholder="🔢 Masukkan stok awal..."
-                  value={form.initial_stock || ""}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setForm({
-                      ...form,
-                      initial_stock: value,
-                      difference: (form.counted_stock || 0) - value,
-                    });
-                  }}
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="counted_stock"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Stok Terhitung
-                </Label>
-                <Input
-                  id="counted_stock"
-                  type="number"
-                  placeholder="📊 Masukkan stok terhitung..."
-                  value={form.counted_stock || ""}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    setForm({
-                      ...form,
-                      counted_stock: value,
-                      difference: value - (form.initial_stock || 0),
-                    });
-                  }}
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="difference"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Selisih
-                </Label>
-                <Input
-                  id="difference"
-                  type="number"
-                  value={form.difference || ""}
-                  disabled={true}
-                  placeholder="⚡ Selisih akan dihitung otomatis..."
-                  className="h-11 bg-gray-100"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="notes"
-                className="text-sm font-medium text-gray-700"
-              >
-                Catatan
-              </Label>
-              <Textarea
-                id="notes"
-                placeholder="📝 Masukkan catatan (opsional)..."
-                value={form.notes || ""}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
-            <Button
-              variant="outline"
-              onClick={handleCloseModal}
-              disabled={isSubmitting}
-              className="h-10 px-6"
-            >
-              Batal
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={
-                isSubmitting ||
-                !form.user_id ||
-                !form.shop_id ||
-                !form.product_id ||
-                !form.date
-              }
-              className="h-10 px-6"
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {isEditMode ? "Memperbarui..." : "Menyimpan..."}
-                </div>
-              ) : isEditMode ? (
-                "Perbarui"
-              ) : (
-                "Simpan"
-              )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StockOpnameFormModal
+        open={isModalOpen}
+        onOpenChange={(v) => {
+          setIsModalOpen(v);
+          if (!v) resetForm();
+        }}
+        isEditMode={isEditMode}
+        isSubmitting={isSubmitting}
+        form={form}
+        setForm={setForm}
+        meData={meData}
+        sellers={sellers}
+        productsList={productsList}
+        selectedSellerId={sellerId}
+        setSelectedSellerId={setSellerId}
+        selectedSellerShopId={selectedSellerShopId}
+        onSubmit={handleSubmit}
+      />
 
       {/* Detail Modal */}
       <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
