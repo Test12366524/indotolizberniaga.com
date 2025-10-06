@@ -90,7 +90,7 @@ export default function FormPinjamanCategory({
             onValueChange={(value: 'admin' | 'admin+margin') => setForm({ ...form, type: value })}
             disabled={readonly}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Pilih tipe" />
             </SelectTrigger>
             <SelectContent>
@@ -138,7 +138,7 @@ export default function FormPinjamanCategory({
           />
         </div>
 
-        <div className="flex flex-col gap-y-1">
+        <div className="flex flex-col gap-y-1 col-span-2">
           <Label>Status</Label>
           <select
             className="border rounded-md px-3 py-2 text-sm bg-white dark:bg-zinc-800"
@@ -154,39 +154,6 @@ export default function FormPinjamanCategory({
             <option value={0}>Nonaktif</option>
           </select>
         </div>
-
-        {form.id && (
-          <div className="flex flex-col gap-y-1">
-            <Label>ID</Label>
-            <Input
-              value={form.id}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-
-        {form.created_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Dibuat</Label>
-            <Input
-              value={new Date(form.created_at).toLocaleString("id-ID")}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-
-        {form.updated_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Diperbarui</Label>
-            <Input
-              value={new Date(form.updated_at).toLocaleString("id-ID")}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
       </div>
 
       {!readonly && (

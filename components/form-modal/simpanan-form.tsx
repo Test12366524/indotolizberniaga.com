@@ -1,234 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandEmpty,
-} from "@/components/ui/command";
-import { Loader2, ChevronDown, Users2, UploadCloud, X } from "lucide-react";
+import {  UploadCloud, X } from "lucide-react";
 
 import { Simpanan } from "@/types/admin/simpanan";
 import { useGetSimpananCategoryListQuery } from "@/services/master/simpanan-category.service";
-import { useGetAnggotaListQuery } from "@/services/koperasi-service/anggota.service";
 import { formatRupiah, parseRupiah } from "@/lib/format-utils";
-
-/* ===================== Anggota Picker (min 3 char) ===================== */
-
-type Anggota = {
-  id: number;
-  name?: string | null;
-  email?: string | null;
-  status?: number | null;
-};
-
-const MIN_CHARS = 3;
-const DEBOUNCE_MS = 350;
-
-function AnggotaPicker({
-  selectedId,
-  onChange,
-  disabled,
-}: {
-  selectedId: number | null;
-  onChange: (u: Anggota | null) => void;
-  disabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState<string>("");
-  const [debouncedQuery, setDebouncedQuery] = useState<string>("");
-
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedQuery(query.trim()), DEBOUNCE_MS);
-    return () => clearTimeout(t);
-  }, [query]);
-
-  const shouldFetch = debouncedQuery.length >= MIN_CHARS;
-  const { data, isLoading, isError, refetch } = useGetAnggotaListQuery(
-    { page: 1, paginate: 200, status: 1 } as {
-      page: number;
-      paginate: number;
-      status?: number;
-      _q?: string;
-    },
-    { skip: !shouldFetch, refetchOnMountOrArgChange: true }
-  );
-
-  const list: Anggota[] = useMemo(
-    () => ((data?.data ?? []) as Anggota[]) || [],
-    [data]
-  );
-
-  const filtered: Anggota[] = useMemo(() => {
-    if (debouncedQuery.length < MIN_CHARS) return [];
-    const q = debouncedQuery.toLowerCase();
-    return list.filter(
-      (u) =>
-        (u.name ?? "").toLowerCase().includes(q) ||
-        (u.email ?? "").toLowerCase().includes(q) ||
-        String(u.id).includes(q)
-    );
-  }, [list, debouncedQuery]);
-
-  const selected = useMemo(
-    () => list.find((u) => u.id === selectedId) || null,
-    [list, selectedId]
-  );
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (open) {
-      const t = setTimeout(() => inputRef.current?.focus(), 10);
-      return () => clearTimeout(t);
-    }
-  }, [open]);
-
-  const placeholder =
-    debouncedQuery.length < MIN_CHARS
-      ? `Ketik minimal ${MIN_CHARS} karakter…`
-      : isLoading
-      ? "Memuat…"
-      : "Ketik untuk cari anggota…";
-
-  const pick = (u: Anggota | null) => {
-    onChange(u);
-    setOpen(false);
-    setQuery(u ? u.name ?? u.email ?? String(u.id) : "");
-  };
-
-  return (
-    <div className="w-full">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={disabled}
-            className="w-full h-12 justify-between rounded-2xl border-neutral-200 bg-white px-3 shadow-sm hover:bg-neutral-50"
-            onClick={() => setOpen((o) => !o)}
-          >
-            <span className="flex items-center gap-2 truncate text-left">
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin text-neutral-400" />
-                  <span className="text-neutral-500">{placeholder}</span>
-                </>
-              ) : selected ? (
-                <span className="truncate">
-                  {(selected.name ?? "Tanpa Nama") +
-                    (selected.email ? ` (${selected.email})` : "")}
-                </span>
-              ) : (
-                <>
-                  <Users2 className="h-4 w-4 text-neutral-400" />
-                  <span className="text-neutral-500">{placeholder}</span>
-                </>
-              )}
-            </span>
-            <ChevronDown className="h-4 w-4 text-neutral-400" />
-          </Button>
-        </PopoverTrigger>
-
-        <PopoverContent
-          className="w-[var(--radix-popover-trigger-width)] p-0 rounded-xl shadow-xl"
-          align="start"
-          side="bottom"
-        >
-          {isError ? (
-            <div className="p-3 text-sm">
-              <div className="mb-2 text-red-600">Gagal memuat anggota.</div>
-              <Button size="sm" variant="outline" onClick={() => refetch()}>
-                Coba lagi
-              </Button>
-            </div>
-          ) : (
-            <Command shouldFilter={false}>
-              <div className="p-2">
-                <CommandInput
-                  ref={inputRef}
-                  value={query}
-                  onValueChange={setQuery}
-                  placeholder={`Cari nama/email (min ${MIN_CHARS} karakter)…`}
-                />
-              </div>
-
-              <CommandList className="max-h-72">
-                <div className="px-3 py-2 text-xs text-neutral-500">
-                  {debouncedQuery.length < MIN_CHARS
-                    ? `Ketik minimal ${MIN_CHARS} karakter untuk mulai mencari`
-                    : isLoading
-                    ? "Memuat…"
-                    : `${filtered.length} hasil`}
-                </div>
-
-                {debouncedQuery.length < MIN_CHARS ? (
-                  <div className="px-3 pb-3 text-sm text-neutral-600">
-                    Contoh: <span className="font-medium">Akmal</span>,{" "}
-                    <span className="font-medium">fitri@contoh.com</span>, dst.
-                  </div>
-                ) : (
-                  <>
-                    <CommandEmpty>
-                      Tidak ada hasil untuk “{debouncedQuery}”.
-                    </CommandEmpty>
-
-                    {!isLoading && (
-                      <>
-                        <CommandGroup heading="Anggota Aktif">
-                          {filtered.map((u) => (
-                            <CommandItem
-                              key={u.id}
-                              value={u.name ?? String(u.id)}
-                              onSelect={() => pick(u)}
-                              className="cursor-pointer"
-                            >
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium">
-                                  {u.name ?? "Tanpa Nama"}
-                                </span>
-                                <span className="text-xs text-neutral-500">
-                                  {u.email ?? "-"} • ID: {u.id}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-
-                        <CommandSeparator />
-                        <CommandGroup>
-                          <CommandItem value="none" onSelect={() => pick(null)}>
-                            Kosongkan pilihan
-                          </CommandItem>
-                        </CommandGroup>
-                      </>
-                    )}
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          )}
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
-/* ===================== Form Utama ===================== */
+import { AnggotaPicker } from "../ui/anggota-picker";
 
 type CategoryItem = { id: number; name: string; code?: string | null };
 
@@ -323,7 +107,7 @@ export default function FormSimpanan({
                 <button
                   key={c.id}
                   type="button"
-                  disabled={readonly || !!form.id}
+                  disabled={readonly}
                   onClick={() =>
                     setForm({ ...form, simpanan_category_id: c.id })
                   }
@@ -352,7 +136,7 @@ export default function FormSimpanan({
                 <button
                   key={n}
                   type="button"
-                  disabled={readonly || !!form.id}
+                  disabled={readonly}
                   onClick={() => setForm({ ...form, nominal: n })}
                   className={[
                     "h-12 rounded-2xl border text-sm font-semibold shadow-sm transition-all",
@@ -387,7 +171,7 @@ export default function FormSimpanan({
                     nominal: raw === "" ? undefined : parsed,
                   });
                 }}
-                readOnly={readonly || !!form.id}
+                readOnly={readonly}
                 placeholder="Contoh: 60000"
               />
             </div>
@@ -402,7 +186,7 @@ export default function FormSimpanan({
             onChange={(u) =>
               setForm({ ...form, user_id: u ? Number(u.id) : undefined })
             }
-            disabled={readonly || !!form.id}
+            disabled={readonly}
           />
         </div>
 
@@ -416,7 +200,7 @@ export default function FormSimpanan({
               form.date ? new Date(form.date).toISOString().slice(0, 16) : ""
             }
             onChange={(e) => setForm({ ...form, date: e.target.value })}
-            readOnly={readonly || !!form.id}
+            readOnly={readonly}
           />
         </div>
 
@@ -429,7 +213,7 @@ export default function FormSimpanan({
             onValueChange={(val: "automatic" | "manual") =>
               setForm({ ...form, type: val })
             }
-            disabled={readonly || !!form.id}
+            disabled={readonly}
           >
             {SimpananTypes.map((t) => (
               <label
@@ -560,7 +344,7 @@ export default function FormSimpanan({
 
         {/* readonly info */}
         {form.status !== undefined && (
-          <div className="flex flex-col gap-y-1">
+          <div className="flex flex-col gap-y-1 col-span-2">
             <Label>Status</Label>
             <Input
               value={
@@ -568,36 +352,6 @@ export default function FormSimpanan({
                   String(form.status) as keyof typeof SimpananStatus
                 ]
               }
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-        {form.id && (
-          <div className="flex flex-col gap-y-1">
-            <Label>ID</Label>
-            <Input
-              value={form.id}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-        {form.created_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Dibuat</Label>
-            <Input
-              value={new Date(form.created_at).toLocaleString("id-ID")}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-        {form.updated_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Diperbarui</Label>
-            <Input
-              value={new Date(form.updated_at).toLocaleString("id-ID")}
               readOnly
               className="bg-gray-100 dark:bg-zinc-700"
             />

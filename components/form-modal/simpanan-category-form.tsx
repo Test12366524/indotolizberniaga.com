@@ -89,17 +89,6 @@ export default function FormSimpananCategory({
           />
         </div>
 
-        <div className="flex flex-col gap-y-1 col-span-2">
-          <Label>Deskripsi</Label>
-          <Textarea
-            value={form.description || ""}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            readOnly={readonly}
-            placeholder="Masukkan deskripsi kategori"
-            rows={3}
-          />
-        </div>
-
         <div className="flex flex-col gap-y-1">
           <Label>Status</Label>
           <select
@@ -117,38 +106,16 @@ export default function FormSimpananCategory({
           </select>
         </div>
 
-        {form.id && (
-          <div className="flex flex-col gap-y-1">
-            <Label>ID</Label>
-            <Input
-              value={form.id}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-
-        {form.created_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Dibuat</Label>
-            <Input
-              value={new Date(form.created_at).toLocaleString("id-ID")}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
-
-        {form.updated_at && (
-          <div className="flex flex-col gap-y-1">
-            <Label>Diperbarui</Label>
-            <Input
-              value={new Date(form.updated_at).toLocaleString("id-ID")}
-              readOnly
-              className="bg-gray-100 dark:bg-zinc-700"
-            />
-          </div>
-        )}
+        <div className="flex flex-col gap-y-1 col-span-2">
+          <Label>Deskripsi</Label>
+          <Textarea
+            value={form.description || ""}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            readOnly={readonly}
+            placeholder="Masukkan deskripsi kategori"
+            rows={3}
+          />
+        </div>
       </div>
 
       {!readonly && (
