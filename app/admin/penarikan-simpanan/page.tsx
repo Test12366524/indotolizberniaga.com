@@ -1,15 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  Edit,
-  Eye,
-  XCircle,
-  CheckCircle,
-  Trash2,
-  MoreVertical,
-  Plus,
-} from "lucide-react";
+import { XCircle, CheckCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,12 +25,13 @@ import FormPenarikanSimpanan from "@/components/form-modal/penarikan-simpanan-fo
 import { PenarikanSimpanan } from "@/types/admin/penarikan-simpanan";
 import Swal from "sweetalert2";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import { displayDate } from "@/lib/format-utils";
+import { extractErrorMessage } from "@/components/error-message";
 
 const Page = () => {
   const [form, setForm] = useState<Partial<PenarikanSimpanan>>({});
   const [readonly, setReadonly] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const { isOpen, openModal, closeModal } = useModal();
 
   const statusList: { label: string; value: string }[] = [
@@ -150,12 +143,17 @@ const Page = () => {
       await refetch();
       closeModal();
     } catch (error) {
+      const msg = extractErrorMessage(error);
       console.error(error);
-      Swal.fire("Gagal", "Gagal menyimpan data", "error");
+      Swal.fire("Gagal", msg, "error");
     }
   };
 
   const handleEdit = (item: PenarikanSimpanan) => {
+    if (String(item.status) === "1") {
+      Swal.fire("Tidak bisa diedit", "Data sudah berstatus Approved.", "info");
+      return;
+    }
     setForm({ ...item });
     setEditingId(item.id);
     setReadonly(false);
@@ -185,8 +183,9 @@ const Page = () => {
         await refetch();
         Swal.fire("Berhasil", "Penarikan dihapus", "success");
       } catch (error) {
-        Swal.fire("Gagal", "Gagal menghapus penarikan", "error");
+        const msg = extractErrorMessage(error);
         console.error(error);
+        Swal.fire("Gagal", msg, "error");
       }
     }
   };
@@ -200,8 +199,9 @@ const Page = () => {
       await refetch();
       Swal.fire("Berhasil", "Status penarikan diperbarui", "success");
     } catch (error) {
-      Swal.fire("Gagal", "Gagal memperbarui status", "error");
+      const msg = extractErrorMessage(error);
       console.error(error);
+      Swal.fire("Gagal", msg, "error");
     }
   };
 
@@ -243,7 +243,11 @@ const Page = () => {
           {/* Kanan: aksi */}
           <div className="shrink-0 flex flex-wrap items-center gap-2">
             {/* Tambah data (opsional) */}
-            {openModal && <Button onClick={openModal}><Plus/> Penarikan</Button>}
+            {openModal && (
+              <Button onClick={openModal}>
+                <Plus /> Penarikan
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -284,9 +288,13 @@ const Page = () => {
                         handleDetail={() => {
                           handleDetail(item);
                         }}
-                        handleEdit={() => {
-                          handleEdit(item);
-                        }}
+                        handleEdit={
+                          String(item.status) === "1"
+                            ? undefined
+                            : () => {
+                                handleEdit(item);
+                              }
+                        }
                         handleDelete={() => {
                           handleDelete(item);
                         }}
@@ -306,8 +314,9 @@ const Page = () => {
                                   size="sm"
                                   onClick={() => handleStatusUpdate(item, "2")}
                                   title="Reject"
+                                  className="bg-red-600 hover:bg-red-700"
                                 >
-                                  <XCircle className="size-4 bg-red-600 hover:bg-red-700" />
+                                  <XCircle className="size-4" />
                                 </Button>
                               </>
                             )}
@@ -324,7 +333,7 @@ const Page = () => {
                     </td>
                     <td className="px-4 py-2">{getStatusBadge(item.status)}</td>
                     <td className="px-4 py-2 text-sm text-gray-500">
-                      {new Date(item.created_at).toLocaleDateString("id-ID")}
+                      {displayDate(item.created_at)}
                     </td>
                   </tr>
                 ))

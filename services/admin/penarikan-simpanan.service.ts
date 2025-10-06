@@ -100,6 +100,7 @@ const penarikanSimpananApi = apiSlice.injectEndpoints({
         data: PenarikanSimpanan;
       }) => response.data,
     }),
+
     getWalletList: builder.query<
       {
         data: Wallet[];
@@ -108,14 +109,15 @@ const penarikanSimpananApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number; user_id?: number }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, user_id }) => ({
         url: `/wallet`,
         method: "GET",
         params: {
           page,
           paginate,
+          user_id, // 🟡 kirim user_id ke params jika ada
         },
       }),
       transformResponse: (response: WalletResponse) => ({
