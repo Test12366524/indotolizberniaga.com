@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { displayDate } from "@/lib/format-utils";
 
 type TypeFilter = "all" | "manual" | "automatic";
 
@@ -281,7 +282,7 @@ export default function AngsuranPinjamanPage() {
                         : "-"}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
-                      {new Date(item.created_at).toLocaleString()}
+                      {displayDate(item.created_at)}
                     </td>
                   </tr>
                 ))
