@@ -21,6 +21,8 @@ import {
   Building,
   Webhook,
   FileStack,
+  Smartphone,
+  SmartphoneNfc,
 } from "lucide-react";
 import Header from "@/components/admin-components/header";
 import Sidebar from "@/components/admin-components/sidebar";
@@ -305,6 +307,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Transaksi",
       icon: <ShoppingCart className="h-5 w-5" />,
       href: "/admin/transaction",
+    },
+    {
+      id: "ppob",
+      label: "PPOB",
+      icon: <SmartphoneNfc className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "ppob/transaksi",
+          label: "Transaksi",
+          href: "/admin/ppob/transaksi",
+        },
+        {
+          id: "ppob/produk",
+          label: "Produk PPOB",
+          href: "/admin/ppob/produk",
+        },
+      ],
     },
     {
       id: "stock-opname",

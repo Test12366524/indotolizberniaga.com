@@ -150,7 +150,6 @@ export default function NewsPage() {
                 <th className="px-4 py-2">Aksi</th>
                 <th className="px-4 py-2">Gambar</th>
                 <th className="px-4 py-2">Judul</th>
-                <th className="px-4 py-2">Slug</th>
                 <th className="px-4 py-2">Published</th>
                 <th className="px-4 py-2">Ringkas Konten</th>
               </tr>
@@ -193,10 +192,14 @@ export default function NewsPage() {
                       )}
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap max-w-[260px]">
-                      <div className="font-medium">{item.title}</div>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {item.slug ?? "—"}
+                      <div
+                        className="font-medium truncate"
+                        title={item.title}
+                      >
+                        {item.title.split(" ").length > 15
+                          ? item.title.split(" ").slice(0, 15).join(" ") + "..."
+                          : item.title}
+                      </div>
                     </td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.published_at
