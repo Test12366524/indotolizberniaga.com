@@ -100,7 +100,7 @@ export default function FormSimpanan({
         {/* ========== KATEGORI (TERPISAH) ========== */}
         <div className="md:col-span-2">
           <Label className="mb-2 block">Kategori Simpanan *</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {categories.map((c) => {
               const active = form.simpanan_category_id === c.id;
               return (

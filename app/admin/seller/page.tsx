@@ -98,26 +98,18 @@ export default function SellerPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Seller</h1>
-        <p className="text-sm text-gray-500">Kelola data seller marketplace</p>
-      </div>
-
       {/* Filters - compact horizontal */}
       <Card>
-        <CardContent className="p-3">
+        <CardContent>
           <div
             className="
-      grid gap-x-3 gap-y-2 items-end
-      grid-cols-1
-      sm:[grid-template-columns:minmax(220px,1fr)_180px_180px_auto]
-    "
+              grid gap-x-3 gap-y-2 items-end
+              grid-cols-1
+              sm:[grid-template-columns:minmax(220px,1fr)_180px_180px_auto]
+            "
           >
             {/* Search */}
             <div>
-              <Label htmlFor="search" className="text-xs">
-                Cari
-              </Label>
               <Input
                 id="search"
                 className="h-9 text-sm"
@@ -131,7 +123,6 @@ export default function SellerPage() {
 
             {/* Status */}
             <div>
-              <Label className="text-xs">Status Toko</Label>
               <Select
                 value={filters.status}
                 onValueChange={(value) =>
@@ -151,7 +142,6 @@ export default function SellerPage() {
 
             {/* Rating */}
             <div>
-              <Label className="text-xs">Rating</Label>
               <Select
                 value={filters.rating}
                 onValueChange={(value: RatingFilter) =>

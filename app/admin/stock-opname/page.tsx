@@ -341,8 +341,6 @@ export default function StockOpnamePage() {
       <ProdukToolbar
         openModal={openModal}
         onSearchChange={setQuery}
-        enableStatusFilter
-        statusOptions={shopCategories}
         initialStatus={selectedShop}
         onStatusChange={(val) => setSelectedShop(val as ShopFilter)}
         enableSellerFilter
