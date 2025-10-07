@@ -20,6 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { PaymentMethodSelect } from "@/components/ui/payment-method-select";
+import { PaymentChannelSelect } from "@/components/ui/payment-channel-select";
+
 interface Props {
   form: Partial<AngsuranPinjaman>;
   setForm: (data: Partial<AngsuranPinjaman>) => void;
@@ -43,14 +46,12 @@ export default function AngsuranPinjamanForm({
   const selectedPinjamanId = form.pinjaman_id ?? 0;
   const { data: detailResp, isLoading: isDetailLoading } =
     useGetPinjamanDetailsQuery(selectedPinjamanId || 0, {
-      skip: !selectedPinjamanId, // ini aman, hook tetap dipanggil tiap render
+      skip: !selectedPinjamanId,
     });
 
-  // opsional: status "mounted" hanya untuk UI (TIDAK return sebelum hooks)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // --- helper: label aman tanpa any ---
   const pinjamanOptions = useMemo(() => {
     const arr = pinjamanResp?.data ?? [];
     return arr.map((p) => {
@@ -82,6 +83,8 @@ export default function AngsuranPinjamanForm({
 
   const monthlyInstallment = detailResp?.monthly_installment ?? 0;
 
+  const isAuto = form.type === "automatic";
+
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
       {/* Header */}
@@ -100,7 +103,6 @@ export default function AngsuranPinjamanForm({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
-        {/* hint skeleton ringan jika belum mounted */}
         {!mounted ? (
           <div className="animate-pulse space-y-3">
             <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-1/2" />
@@ -128,7 +130,7 @@ export default function AngsuranPinjamanForm({
                     setForm({
                       ...form,
                       pinjaman_id: val ?? undefined,
-                      pinjaman_detail_id: undefined, // reset detail saat ganti pinjaman
+                      pinjaman_detail_id: undefined,
                     })
                   }
                   data={pinjamanOptions}
@@ -139,7 +141,7 @@ export default function AngsuranPinjamanForm({
               )}
             </div>
 
-            {/* DETAIL (details.id) */}
+            {/* DETAIL */}
             <div className="flex flex-col gap-y-1 sm:col-span-2">
               <Label>Detail Cicilan (details.id)</Label>
               {readonly ? (
@@ -209,7 +211,13 @@ export default function AngsuranPinjamanForm({
                 <Select
                   value={form.type ?? ""}
                   onValueChange={(v) =>
-                    setForm({ ...form, type: v as "manual" | "automatic" })
+                    setForm({
+                      ...form,
+                      type: v as "manual" | "automatic",
+                      // reset payment fields saat ganti tipe
+                      payment_method: undefined,
+                      payment_channel: undefined,
+                    })
                   }
                 >
                   <SelectTrigger className="w-full">
@@ -222,6 +230,102 @@ export default function AngsuranPinjamanForm({
                 </Select>
               )}
             </div>
+
+            {/* ===== Payment Method / Channel ===== */}
+            {/* Automatic: pakai dropdown searchable (opsi bank_transfer/qris & bank) */}
+            {isAuto && (
+              <>
+                <div className="flex flex-col gap-y-1">
+                  <Label>Payment Method *</Label>
+                  {readonly ? (
+                    <Input readOnly value={form.payment_method ?? "-"} />
+                  ) : (
+                    <PaymentMethodSelect
+                      mode="automatic"
+                      value={form.payment_method}
+                      onChange={(v) => {
+                        if (v === "qris") {
+                          setForm({
+                            ...form,
+                            payment_method: "qris",
+                            payment_channel: "qris",
+                          });
+                        } else if (v === "bank_transfer") {
+                          setForm({
+                            ...form,
+                            payment_method: "bank_transfer",
+                            payment_channel: undefined,
+                          });
+                        } else {
+                          // nilai custom tetap diperbolehkan
+                          setForm({
+                            ...form,
+                            payment_method: v,
+                            payment_channel: undefined,
+                          });
+                        }
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-y-1">
+                  <Label>Payment Channel *</Label>
+                  {readonly ? (
+                    <Input readOnly value={form.payment_channel ?? "-"} />
+                  ) : (
+                    <PaymentChannelSelect
+                      mode="automatic"
+                      method={form.payment_method}
+                      value={form.payment_channel}
+                      onChange={(v) => setForm({ ...form, payment_channel: v })}
+                    />
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Manual: dropdown searchable tapi boleh custom value */}
+            {form.type === "manual" && (
+              <>
+                <div className="flex flex-col gap-y-1">
+                  <Label>Payment Method (Manual)</Label>
+                  {readonly ? (
+                    <Input readOnly value={form.payment_method ?? "-"} />
+                  ) : (
+                    <PaymentMethodSelect
+                      mode="manual"
+                      value={form.payment_method}
+                      onChange={(v) => {
+                        if (v === "qris") {
+                          setForm({
+                            ...form,
+                            payment_method: "qris",
+                            payment_channel: "qris",
+                          });
+                        } else {
+                          setForm({ ...form, payment_method: v });
+                        }
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-y-1">
+                  <Label>Payment Channel (Manual)</Label>
+                  {readonly ? (
+                    <Input readOnly value={form.payment_channel ?? "-"} />
+                  ) : (
+                    <PaymentChannelSelect
+                      mode="manual"
+                      method={form.payment_method}
+                      value={form.payment_channel}
+                      onChange={(v) => setForm({ ...form, payment_channel: v })}
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
             {/* IMAGE */}
             <div className="flex flex-col gap-y-1 sm:col-span-2">

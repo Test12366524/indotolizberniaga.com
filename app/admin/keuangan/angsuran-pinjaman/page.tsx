@@ -24,8 +24,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { displayDate } from "@/lib/format-utils";
+import { showPaymentInstruction} from "@/lib/show-payment-instructions";
 
 type TypeFilter = "all" | "manual" | "automatic";
+
+type WrappedCreateResp = {
+  code: number;
+  message: string;
+  data: AngsuranPinjaman;
+};
+const isWrappedResp = (x: unknown): x is WrappedCreateResp =>
+  typeof x === "object" && x !== null && "data" in x;
 
 export default function AngsuranPinjamanPage() {
   const [form, setForm] = useState<Partial<AngsuranPinjaman>>({});
@@ -36,7 +45,6 @@ export default function AngsuranPinjamanPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // simple filters
   const [type, setType] = useState<TypeFilter>("all");
   const [pinjamanId, setPinjamanId] = useState<number | undefined>(undefined);
   const [detailId, setDetailId] = useState<number | undefined>(undefined);
@@ -81,9 +89,7 @@ export default function AngsuranPinjamanPage() {
 
   const handleSubmit = async () => {
     try {
-      const fd = new FormData();
-
-      // ===== VALIDATION MINIMAL SESUAI KETENTUAN =====
+      // ===== VALIDATION =====
       if (!form.pinjaman_id) throw new Error("Pinjaman wajib dipilih");
       if (!form.pinjaman_detail_id)
         throw new Error("Detail cicilan wajib dipilih");
@@ -91,25 +97,38 @@ export default function AngsuranPinjamanPage() {
         throw new Error("Nominal pembayaran tidak valid");
       if (!form.type) throw new Error("Tipe pembayaran wajib dipilih");
 
+      const fd = new FormData();
       fd.append("pinjaman_id", String(form.pinjaman_id));
       fd.append("pinjaman_detail_id", String(form.pinjaman_detail_id));
       fd.append("amount", String(form.amount));
       fd.append("type", String(form.type));
 
+      if (form.payment_method) fd.append("payment_method", form.payment_method);
+      if (form.payment_channel)
+        fd.append("payment_channel", form.payment_channel);
+
       if (form.image instanceof File) {
         fd.append("image", form.image);
       } else if (typeof form.image === "string" && form.image) {
-        // jika backend menerima string url utk mempertahankan media lama
         fd.append("image", form.image);
       }
 
       if (editingId) {
         fd.append("_method", "PUT");
         await updateMutation({ id: editingId, payload: fd }).unwrap();
-        Swal.fire("Sukses", "Angsuran diperbarui", "success");
+        await Swal.fire("Sukses", "Angsuran diperbarui", "success");
       } else {
-        await createMutation(fd).unwrap();
-        Swal.fire("Sukses", "Angsuran ditambahkan", "success");
+        const resp = await createMutation(fd).unwrap();
+        const created: AngsuranPinjaman = isWrappedResp(resp)
+          ? resp.data
+          : (resp as AngsuranPinjaman);
+
+        await Swal.fire("Sukses", "Angsuran ditambahkan", "success");
+
+        // Jika ada instruksi pembayaran (automatic) tampilkan modal
+        if (created.payment) {
+          await showPaymentInstruction(created.payment);
+        }
       }
 
       setForm({});
@@ -118,7 +137,7 @@ export default function AngsuranPinjamanPage() {
       closeModal();
     } catch (err) {
       console.error(err);
-      Swal.fire(
+      await Swal.fire(
         "Gagal",
         err instanceof Error ? err.message : "Terjadi kesalahan",
         "error"
@@ -153,20 +172,19 @@ export default function AngsuranPinjamanPage() {
       try {
         await deleteMutation(item.id).unwrap();
         await refetch();
-        Swal.fire("Berhasil", "Angsuran dihapus", "success");
+        await Swal.fire("Berhasil", "Angsuran dihapus", "success");
       } catch (e) {
         console.error(e);
-        Swal.fire("Gagal", "Gagal menghapus angsuran", "error");
+        await Swal.fire("Gagal", "Gagal menghapus angsuran", "error");
       }
     }
   };
 
   return (
     <div className="p-6 space-y-6">
-      {/* Simple toolbar filter */}
+      {/* Toolbar filter */}
       <Card>
         <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-          {/* 🔎 Search */}
           <div className="w-full sm:flex-1">
             <label className="text-xs font-medium block mb-1">Cari</label>
             <Input
@@ -174,7 +192,7 @@ export default function AngsuranPinjamanPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setCurrentPage(1); // opsional: balik ke page 1 saat search
+                setCurrentPage(1);
               }}
             />
           </div>
@@ -223,6 +241,7 @@ export default function AngsuranPinjamanPage() {
         </CardContent>
       </Card>
 
+      {/* Tabel */}
       <Card>
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
@@ -233,59 +252,96 @@ export default function AngsuranPinjamanPage() {
                 <th className="px-4 py-2 whitespace-nowrap">User</th>
                 <th className="px-4 py-2">Amount</th>
                 <th className="px-4 py-2">Tipe</th>
+                <th className="px-4 py-2">Metode</th>
+                <th className="px-4 py-2">Channel</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2 whitespace-nowrap">Paid At</th>
                 <th className="px-4 py-2 whitespace-nowrap">Created</th>
+                <th className="px-4 py-2 whitespace-nowrap">Pembayaran</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-center p-4">
+                  <td colSpan={11} className="text-center p-4">
                     Memuat data...
                   </td>
                 </tr>
               ) : filteredList.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center p-4">
+                  <td colSpan={11} className="text-center p-4">
                     Tidak ada data
                   </td>
                 </tr>
               ) : (
-                filteredList.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="px-4 py-2">
-                      <ActionsGroup
-                        handleDetail={() => handleDetail(item)}
-                        handleEdit={() => handleEdit(item)}
-                        handleDelete={() => handleDelete(item)}
-                      />
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {item.reference ?? "-"}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {item.user_name ?? "-"}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {Number(item.amount).toLocaleString("id-ID")}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">{item.type}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <Badge variant={item.status ? "success" : "destructive"}>
-                        {item.status ? "Sukses" : "Pending"}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {item.paid_at
-                        ? new Date(item.paid_at).toLocaleString()
-                        : "-"}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {displayDate(item.created_at)}
-                    </td>
-                  </tr>
-                ))
+                filteredList.map((item: AngsuranPinjaman) => {
+                  const paid = Boolean(item.payment?.paid_at);
+                  const hasPayment = Boolean(item.payment);
+                  return (
+                    <tr key={item.id} className="border-t">
+                      <td className="px-4 py-2">
+                        <ActionsGroup
+                          handleDetail={() => handleDetail(item)}
+                          handleEdit={() => handleEdit(item)}
+                          handleDelete={() => handleDelete(item)}
+                        />
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.reference ?? "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.user_name ?? "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {Number(item.amount).toLocaleString("id-ID")}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.type}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.payment_method ?? "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.payment_channel ?? "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <Badge
+                          variant={item.status ? "success" : "destructive"}
+                        >
+                          {item.status ? "Sukses" : "Pending"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {item.paid_at
+                          ? new Date(item.paid_at).toLocaleString()
+                          : "-"}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {displayDate(item.created_at)}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        {hasPayment ? (
+                          paid ? (
+                            <Badge variant="success">Lunas</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                item.payment &&
+                                showPaymentInstruction(item.payment)
+                              }
+                            >
+                              Bayar
+                            </Button>
+                          )
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

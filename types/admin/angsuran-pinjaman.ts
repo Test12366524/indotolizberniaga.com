@@ -1,3 +1,5 @@
+import { Payment } from "./simpanan";
+
 export interface AngsuranPinjaman {
   id: number;
   pinjaman_id: number;
@@ -20,6 +22,9 @@ export interface AngsuranPinjaman {
   pinjaman_monthly_interest: number;
   pinjaman_monthly_installment: number;
   image: File | string | null;
+    payment_method: string; // Diisi kalau automatic bank_transfer,qris
+    payment_channel: string; // Diisi kalau automatic bca,bni,bri,cimb,qris
+    payment: Payment;
 }
 
 export type ListEnvelope<T> = {
