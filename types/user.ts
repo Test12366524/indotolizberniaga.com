@@ -1,6 +1,11 @@
 export interface User {
   id: number;
   role_id: number;
+  anggota: null | {
+    id: number;
+    reference: string | null;
+  };
+  email_verified_at: string | null;
   name: string;
   email: string;
   phone: string;
@@ -10,7 +15,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   roles: { id: number; name: string }[];
-  shop: {
+  shop: null | Array<{
     id: number;
     user_id: number;
     name: string;
@@ -31,7 +36,7 @@ export interface User {
     rajaongkir_district_id: string;
     logo: string;
     banner: string;
-  };
+  }>;
 }
 
 export interface CreateUserPayload {

@@ -260,12 +260,13 @@ export default function AnggotaPage() {
             <thead className="bg-muted text-left">
               <tr>
                 <th className="px-4 py-2">Aksi</th>
+                <th className="px-4 py-2">Nomor Anggota</th>
                 <th className="px-4 py-2">Nama</th>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Telepon</th>
                 <th className="px-4 py-2">Gender</th>
-                <th className="px-4 py-2">NIK</th>
-                <th className="px-4 py-2">NPWP</th>
+                {/* <th className="px-4 py-2">NIK</th> */}
+                {/* <th className="px-4 py-2">NPWP</th> */}
                 <th className="px-4 py-2">Status</th>
               </tr>
             </thead>
@@ -312,6 +313,7 @@ export default function AnggotaPage() {
                         }
                       />
                     </td>
+                    <td className="px-4 py-2 whitespace-nowrap">{item.reference}</td>
                     <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.email}
@@ -322,10 +324,10 @@ export default function AnggotaPage() {
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.gender}
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap">{item.nik}</td>
+                    {/* <td className="px-4 py-2 whitespace-nowrap">{item.nik}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.npwp ?? "-"}
-                    </td>
+                    </td> */}
                     <td className="px-4 py-2 whitespace-nowrap">
                       {statusBadge(item.status)}
                     </td>

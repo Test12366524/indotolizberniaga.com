@@ -59,6 +59,9 @@ import {
   useGetTransactionListQuery,
   useGetTransactionByIdQuery,
 } from "@/services/admin/transaction.service";
+import {
+  useCreateAnggotaMutation,
+} from "@/services/koperasi-service/anggota.service";
 import Swal from "sweetalert2";
 import { mapTxnStatusToOrderStatus, OrderStatus } from "@/lib/status-order";
 import type { Address as UserAddress } from "@/types/address";
@@ -66,11 +69,17 @@ import { ROResponse, toList, findName } from "@/types/geo";
 import { Region } from "@/types/shop";
 import ProfileEditModal from "../profile-page/edit-modal";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
+import { current } from "@reduxjs/toolkit";
 
 // ... (Interface declarations remain the same) ...
 
 interface UserProfile {
   id: string;
+  anggota: {
+    reference: string | null;
+  };
+  shop: string | null;
+  email_verified_at: string | null;
   fullName: string;
   email: string;
   phone: string;
@@ -193,20 +202,32 @@ const DaftarAnggotaModal = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
+  const { data: session } = useSession();
+  const [createAnggota, { isLoading: isCreating }] = useCreateAnggotaMutation();
   const [formData, setFormData] = useState({
-    nama: "",
-    ktp: "",
-    email: "",
-    noHp: "",
-    jenisKelamin: "",
-    tempatLahir: "",
-    tanggalLahir: "",
+    name: session?.user?.name || "",
+    nik: "",
+    email: session?.user?.email || "",
+    phone: session?.user?.phone || "",
+    gender: "",
+    birth_place: "",
+    birth_date: "",
     npwp: "",
     nip: "",
-    unitKerja: "",
+    unit_kerja: "",
     jabatan: "",
-    alamat: "",
+    address: "",
   });
+
+  // Sync session values if session changes
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      name: session?.user?.name || "",
+      email: session?.user?.email || "",
+      phone: session?.user?.phone || "",
+    }));
+  }, [session]);
 
   const [files, setFiles] = useState<{
     fileKtp: File | null;
@@ -232,12 +253,55 @@ const DaftarAnggotaModal = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form Data:", formData);
-    console.log("Files:", files);
-    Swal.fire("Berhasil", "Formulir pendaftaran telah dikirim!", "success");
-    onClose();
+    try {
+      // Validasi wajib
+      if (
+        !formData.name ||
+        !formData.email ||
+        !formData.phone ||
+        !formData.nik ||
+        !formData.gender ||
+        !formData.birth_place ||
+        !formData.birth_date ||
+        !formData.address
+      ) {
+        throw new Error("Semua field wajib diisi kecuali yang opsional.");
+      }
+      if (!files.fileKtp || !files.foto || !files.slipGaji) {
+        throw new Error("Semua dokumen wajib diupload.");
+      }
+
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("nik", formData.nik);
+      fd.append("email", formData.email);
+      fd.append("phone", formData.phone);
+      fd.append("gender", formData.gender);
+      fd.append("birth_place", formData.birth_place);
+      fd.append("birth_date", formData.birth_date);
+      fd.append("address", formData.address);
+      fd.append("status", '0');
+      if (formData.npwp) fd.append("npwp", formData.npwp);
+      if (formData.nip) fd.append("nip", formData.nip);
+      if (formData.unit_kerja) fd.append("unit_kerja", formData.unit_kerja);
+      if (formData.jabatan) fd.append("jabatan", formData.jabatan);
+
+      // File uploads
+      if (files.fileKtp) fd.append("file_nik", files.fileKtp);
+      if (files.foto) fd.append("foto", files.foto);
+      if (files.slipGaji) fd.append("slip_gaji", files.slipGaji);
+
+      await createAnggota(fd).unwrap();
+      Swal.fire("Sukses", "Formulir pendaftaran telah dikirim!", "success");
+      onClose();
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan";
+      Swal.fire("Gagal", msg, "error");
+      console.error(err);
+    }
   };
 
   if (!isOpen) return null;
@@ -306,14 +370,14 @@ const DaftarAnggotaModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             {/* Nama Lengkap */}
             <div>
-              <label htmlFor="nama" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
                 Nama Lengkap
               </label>
               <input
                 type="text"
-                name="nama"
-                id="nama"
-                value={formData.nama}
+                name="name"
+                id="name"
+                value={formData.name}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -321,14 +385,14 @@ const DaftarAnggotaModal = ({
             </div>
             {/* No. KTP */}
             <div>
-              <label htmlFor="ktp" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="nik" className="block text-sm font-semibold text-gray-900 mb-2">
                 No. KTP
               </label>
               <input
                 type="number"
-                name="ktp"
-                id="ktp"
-                value={formData.ktp}
+                name="nik"
+                id="nik"
+                value={formData.nik}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -351,14 +415,14 @@ const DaftarAnggotaModal = ({
             </div>
             {/* No. HP */}
             <div>
-              <label htmlFor="noHp" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 mb-2">
                 No. HP
               </label>
               <input
                 type="tel"
-                name="noHp"
-                id="noHp"
-                value={formData.noHp}
+                name="phone"
+                id="phone"
+                value={formData.phone}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -366,20 +430,20 @@ const DaftarAnggotaModal = ({
             </div>
             {/* Jenis Kelamin */}
             <div>
-              <label htmlFor="jenisKelamin" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="gender" className="block text-sm font-semibold text-gray-900 mb-2">
                 Jenis Kelamin
               </label>
               <select
-                name="jenisKelamin"
-                id="jenisKelamin"
-                value={formData.jenisKelamin}
+                name="gender"
+                id="gender"
+                value={formData.gender}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
               >
                 <option value="">Pilih Jenis Kelamin</option>
-                <option value="Laki-laki">Laki-laki</option>
-                <option value="Perempuan">Perempuan</option>
+                <option value="M">Laki-laki</option>
+                <option value="F">Perempuan</option>
               </select>
             </div>
             {/* NIP */}
@@ -398,14 +462,14 @@ const DaftarAnggotaModal = ({
             </div>
             {/* Tempat Lahir */}
             <div>
-              <label htmlFor="tempatLahir" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="birth_place" className="block text-sm font-semibold text-gray-900 mb-2">
                 Tempat Lahir
               </label>
               <input
                 type="text"
-                name="tempatLahir"
-                id="tempatLahir"
-                value={formData.tempatLahir}
+                name="birth_place"
+                id="birth_place"
+                value={formData.birth_place}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -413,14 +477,14 @@ const DaftarAnggotaModal = ({
             </div>
             {/* Tanggal Lahir */}
             <div>
-              <label htmlFor="tanggalLahir" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="birth_date" className="block text-sm font-semibold text-gray-900 mb-2">
                 Tanggal Lahir
               </label>
               <input
                 type="date"
-                name="tanggalLahir"
-                id="tanggalLahir"
-                value={formData.tanggalLahir}
+                name="birth_date"
+                id="birth_date"
+                value={formData.birth_date}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -456,28 +520,28 @@ const DaftarAnggotaModal = ({
             </div>
             {/* Unit Kerja */}
             <div className="md:col-span-2">
-              <label htmlFor="unitKerja" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="unit_kerja" className="block text-sm font-semibold text-gray-900 mb-2">
                 Unit Kerja
               </label>
               <input
                 type="text"
-                name="unitKerja"
-                id="unitKerja"
-                value={formData.unitKerja}
+                name="unit_kerja"
+                id="unit_kerja"
+                value={formData.unit_kerja}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
               />
             </div>
             {/* Alamat */}
             <div className="md:col-span-2">
-              <label htmlFor="alamat" className="block text-sm font-semibold text-gray-900 mb-2">
+              <label htmlFor="address" className="block text-sm font-semibold text-gray-900 mb-2">
                 Alamat Lengkap (sesuai KTP)
               </label>
               <textarea
-                name="alamat"
-                id="alamat"
+                name="address"
+                id="address"
                 rows={3}
-                value={formData.alamat}
+                value={formData.address}
                 onChange={handleInputChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
                 required
@@ -710,7 +774,7 @@ export default function ProfilePage() {
 
   const handleDeleteAddressApi = async (id: number) => {
     const result = await Swal.fire({
-      title: "Hapus alamat ini?",
+      title: "Hapus address ini?",
       text: "Tindakan ini tidak bisa dibatalkan.",
       icon: "warning",
       showCancelButton: true,
@@ -726,7 +790,7 @@ export default function ProfilePage() {
           await refetchUserAddressList();
         } catch (e) {
           console.error(e);
-          Swal.showValidationMessage("Gagal menghapus alamat.");
+          Swal.showValidationMessage("Gagal menghapus address.");
           throw e;
         }
       },
@@ -753,7 +817,7 @@ export default function ProfilePage() {
       await refetchUserAddressList();
     } catch (e) {
       console.error(e);
-      Swal.fire("Gagal", "Tidak dapat menyimpan alamat.", "error");
+      Swal.fire("Gagal", "Tidak dapat menyimpan address.", "error");
     }
   };
 
@@ -805,6 +869,11 @@ export default function ProfilePage() {
     id:
       (session?.user as { id?: number } | undefined)?.id?.toString?.() ??
       "user-id",
+    anggota: {
+      reference: "",
+    },
+    shop: "",
+    email_verified_at: "",
     fullName: sessionName,
     email: sessionEmail,
     phone: "",
@@ -840,6 +909,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const u = currentUserResp;
+
     if (!u) return;
 
     const apiImage =
@@ -851,6 +921,18 @@ export default function ProfilePage() {
     setUserProfile((prev) => ({
       ...prev,
       id: String(u.id ?? prev.id),
+      anggota: {
+        reference: u?.anggota?.reference ?? prev.anggota.reference,
+      },
+      shop:
+        typeof u.shop === "string"
+          ? u.shop
+          : Array.isArray(u.shop) && u.shop.length > 0 && u.shop[0]?.id
+          ? String(u.shop[0].id)
+          : u.shop == null
+          ? null
+          : prev.shop,
+      email_verified_at: u.email_verified_at ?? prev.email_verified_at,
       fullName: u.name ?? prev.fullName,
       email: u.email ?? prev.email,
       phone: u.phone ?? prev.phone,
@@ -1021,6 +1103,7 @@ export default function ProfilePage() {
     setImgSrc(wantedAvatar ? wantedAvatar : DEFAULT_AVATAR);
   }, [wantedAvatar]);
 
+
   /* --------------------- UI --------------------- */
 
   // --- Modals for new tabs ---
@@ -1055,7 +1138,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gradient-to-br from-white to-[#DFF19D]/10 pt-24">
       <div className="container mx-auto px-6 lg:px-12 pb-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 hidden lg:hidden">
           <div className="text-center">
             <div className="inline-flex items-center gap-2 bg-[#6B6B6B]/10 px-4 py-2 rounded-full mb-4">
               <span className="text-sm font-medium text-[#6B6B6B]">
@@ -1141,50 +1224,81 @@ export default function ProfilePage() {
                       <BarChart3 className="w-5 h-5" />
                     </div>
                     <h2 className="text-2xl font-bold text-gray-900">
-                      Dashboard Anggota
+                      {userProfile.anggota.reference === ""
+                        ? "Dashboard Customer"
+                        : "Dashboard Anggota"}
+                      {" "}
                     </h2>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-r from-[#6B6B6B] to-[#DFF19D] rounded-2xl p-6 text-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Total Belanja Marketplace */}
+                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/10 shadow-lg border border-[#F44336]/30">
                       <div className="flex items-center gap-3 mb-3">
-                        <DollarSign className="w-6 h-6" />
-                        <span className="font-semibold">
-                          Total Simpanan Sukarela
-                        </span>
+                      <CreditCard className="w-6 h-6 text-[#B71C1C]" />
+                      <span className="font-semibold">
+                        Total Belanja Marketplace
+                      </span>
                       </div>
                       <div className="text-3xl font-bold">
-                        {new Intl.NumberFormat("id-ID", {
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      }).format(userProfile.totalSpent)}
+                      </div>
+                      <div className="text-[#B71C1C]/80 text-sm">
+                      Total transaksi di marketplace
+                      </div>
+                    </div>
+                    {/* Total Keranjang */}
+                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/10 flex flex-col justify-between">
+                      <div className="flex items-center gap-3 mb-3">
+                      <Package className="w-6 h-6 text-[#B71C1C]" />
+                      <span className="font-semibold">
+                        Total Keranjang
+                      </span>
+                      </div>
+                      <div className="text-3xl font-bold">
+                      {/* Jumlah produk di keranjang */}
+                      {Array.isArray(orders)
+                        ? orders.reduce(
+                          (acc, order) =>
+                          acc +
+                          order.items.reduce(
+                            (sum, item) => sum + item.quantity,
+                            0
+                          ),
+                          0
+                        )
+                        : 0}{" "}
+                      produk
+                      </div>
+                      <div className="text-[#B71C1C]/80 text-sm">
+                      Total nominal:{" "}
+                      <span className="font-semibold">
+                        {Array.isArray(orders)
+                        ? new Intl.NumberFormat("id-ID", {
                           style: "currency",
                           currency: "IDR",
                           minimumFractionDigits: 0,
-                        }).format(1_500_000)}{" "}
-                        {/* Static data */}
-                      </div>
-                      <div className="text-white/80 text-sm">
-                        Total saldo simpanan sukarela
-                      </div>
-                    </div>
-
-                    <div className="bg-gradient-to-r from-[#F6CCD0] to-[#BFF0F5] rounded-2xl p-6 text-white">
-                      <div className="flex items-center gap-3 mb-3">
-                        <CreditCard className="w-6 h-6" />
-                        <span className="font-semibold">
-                          Total Belanja Marketplace
-                        </span>
-                      </div>
-                      <div className="text-3xl font-bold">
-                        {new Intl.NumberFormat("id-ID", {
-                          style: "currency",
-                          currency: "IDR",
-                          minimumFractionDigits: 0,
-                        }).format(userProfile.totalSpent)}
-                      </div>
-                      <div className="text-white/80 text-sm">
-                        Total transaksi di marketplace
+                          }).format(
+                          orders.reduce(
+                            (acc, order) =>
+                            acc +
+                            order.items.reduce(
+                              (sum, item) =>
+                              sum + item.price * item.quantity,
+                              0
+                            ),
+                            0
+                          )
+                          )
+                        : "Rp0"}
+                      </span>
                       </div>
                     </div>
-                  </div>
+                    </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-6">
@@ -1413,14 +1527,14 @@ export default function ProfilePage() {
                   </div>
 
                   {isFetchingAddressList ? (
-                    <div className="text-gray-600">Memuat alamat...</div>
+                    <div className="text-gray-600">Memuat address...</div>
                   ) : (
                     (() => {
                       const addressData: ReadonlyArray<UserAddress> =
                         userAddressList?.data ?? [];
                       if (addressData.length === 0) {
                         return (
-                          <div className="text-gray-600">Belum ada alamat.</div>
+                          <div className="text-gray-600">Belum ada address.</div>
                         );
                       }
                       return (
@@ -1466,7 +1580,7 @@ export default function ProfilePage() {
                                         openEditAddress(Number(a.id))
                                       }
                                       className="p-2 text-gray-400 hover:text-[#6B6B6B] transition-colors"
-                                      title="Edit alamat"
+                                      title="Edit address"
                                     >
                                       <Edit3 className="w-4 h-4" />
                                     </button>
@@ -1478,7 +1592,7 @@ export default function ProfilePage() {
                                       title={
                                         isDeletingAddr
                                           ? "Menghapus..."
-                                          : "Hapus alamat"
+                                          : "Hapus address"
                                       }
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -1719,7 +1833,7 @@ export default function ProfilePage() {
                               htmlFor="is_primary"
                               className="text-sm text-gray-800"
                             >
-                              Jadikan alamat default
+                              Jadikan address default
                             </label>
                           </div>
                         </div>
@@ -1902,64 +2016,100 @@ export default function ProfilePage() {
 
               {/* Anggota Koperasi (REVISED) */}
               {activeTab === "anggota" && (
-                <div className="space-y-12">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                      <Users className="w-6 h-6" />
+                userProfile.anggota && userProfile.anggota.reference !== "" ? (
+                  <div className="space-y-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold text-gray-900">
+                          Anggota Koperasi
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Anda telah terdaftar sebagai anggota koperasi.
+                        </p>
+                      </div>
                     </div>
+                    <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex flex-col items-center">
+                      <div className="flex items-center gap-2 mb-2">
+                        <ShieldCheck className="w-6 h-6 text-green-600" />
+                        <span className="font-semibold text-green-700">
+                          Status: Aktif
+                        </span>
+                      </div>
+                      <div className="text-gray-700 mb-4">
+                        Nomor Anggota: <span className="font-bold">{userProfile.anggota.reference}</span>
+                      </div>
+                      <button
+                        onClick={() => window.location.href = "/admin"}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105"
+                      >
+                        <Landmark className="w-5 h-5" />
+                        Masuk ke Portal Anggota
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-12">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold text-gray-900">
+                          Menjadi Anggota Koperasi
+                        </h2>
+                        <p className="text-gray-600 mt-1">
+                          Bergabunglah bersama kami dan nikmati berbagai
+                          keuntungan eksklusif.
+                        </p>
+                      </div>
+                    </div>
+
                     <div>
-                      <h2 className="text-3xl font-bold text-gray-900">
-                        Menjadi Anggota Koperasi
-                      </h2>
-                      <p className="text-gray-600 mt-1">
-                        Bergabunglah bersama kami dan nikmati berbagai
-                        keuntungan eksklusif.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-6">
-                      Keuntungan Menjadi Anggota
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {benefits.map((benefit, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5"
-                        >
-                          <div className="flex-shrink-0">{benefit.icon}</div>
-                          <div>
-                            <h4 className="font-bold text-lg text-gray-900">
-                              {benefit.title}
-                            </h4>
-                            <p className="text-gray-600 mt-1">
-                              {benefit.description}
-                            </p>
+                      <h3 className="text-2xl font-semibold text-gray-800 mb-6">
+                        Keuntungan Menjadi Anggota
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {benefits.map((benefit, index) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex gap-5"
+                          >
+                            <div className="flex-shrink-0">{benefit.icon}</div>
+                            <div>
+                              <h4 className="font-bold text-lg text-gray-900">
+                                {benefit.title}
+                              </h4>
+                              <p className="text-gray-600 mt-1">
+                                {benefit.description}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="text-center bg-white border border-gray-200 rounded-2xl p-8">
+                      <h3 className="text-2xl font-bold text-gray-900">
+                        Siap untuk Bergabung?
+                      </h3>
+                      <p className="text-gray-600 mt-2 max-w-xl mx-auto">
+                        Proses pendaftaran cepat dan mudah. Klik tombol di bawah
+                        ini untuk memulai langkah Anda menjadi bagian dari
+                        keluarga besar koperasi kami.
+                      </p>
+                      <button
+                        onClick={() => setIsDaftarAnggotaModalOpen(true)}
+                        className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105 mx-auto"
+                      >
+                        <UserPlus className="w-5 h-5" />
+                        Daftar Sekarang
+                      </button>
                     </div>
                   </div>
-
-                  <div className="text-center bg-white border border-gray-200 rounded-2xl p-8">
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      Siap untuk Bergabung?
-                    </h3>
-                    <p className="text-gray-600 mt-2 max-w-xl mx-auto">
-                      Proses pendaftaran cepat dan mudah. Klik tombol di bawah
-                      ini untuk memulai langkah Anda menjadi bagian dari
-                      keluarga besar koperasi kami.
-                    </p>
-                    <button
-                      onClick={() => setIsDaftarAnggotaModalOpen(true)}
-                      className="mt-6 flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105 mx-auto"
-                    >
-                      <UserPlus className="w-5 h-5" />
-                      Daftar Sekarang
-                    </button>
-                  </div>
-                </div>
+                )
               )}
 
               {/* Seller */}
@@ -2395,13 +2545,13 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 gap-y-4">
         {/* Nama Toko */}
         <div>
-          <label htmlFor="namaToko" className="block text-sm font-semibold text-gray-900 mb-2">
+          <label htmlFor="nameToko" className="block text-sm font-semibold text-gray-900 mb-2">
             Nama Toko
           </label>
           <input
             type="text"
-            name="namaToko"
-            id="namaToko"
+            name="nameToko"
+            id="nameToko"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
             required
           />
@@ -2421,25 +2571,25 @@ export default function ProfilePage() {
         </div>
         {/* No. HP */}
         <div>
-          <label htmlFor="noHpSeller" className="block text-sm font-semibold text-gray-900 mb-2">
+          <label htmlFor="phoneSeller" className="block text-sm font-semibold text-gray-900 mb-2">
             No. HP
           </label>
           <input
             type="tel"
-            name="noHpSeller"
-            id="noHpSeller"
+            name="phoneSeller"
+            id="phoneSeller"
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
             required
           />
         </div>
         {/* Alamat Toko */}
         <div>
-          <label htmlFor="alamatToko" className="block text-sm font-semibold text-gray-900 mb-2">
+          <label htmlFor="addressToko" className="block text-sm font-semibold text-gray-900 mb-2">
             Alamat Toko
           </label>
           <textarea
-            name="alamatToko"
-            id="alamatToko"
+            name="addressToko"
+            id="addressToko"
             rows={3}
             className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
             required
