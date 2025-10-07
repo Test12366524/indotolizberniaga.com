@@ -1,11 +1,10 @@
 import { apiSlice } from "../base-query";
-import { 
-  Transaction, 
-  CreateTransactionPayload,
-  CreateTransactionRequest, 
-  CreateTransactionResponse, 
+import {
+  Transaction,
+  CreateTransactionRequest,
+  CreateTransactionResponse,
   CreateTransactionFrontendRequest,
-  CreateTransactionFrontendResponse
+  CreateTransactionFrontendResponse,
 } from "@/types/admin/transaction";
 
 export const transactionApi = apiSlice.injectEndpoints({
@@ -27,7 +26,7 @@ export const transactionApi = apiSlice.injectEndpoints({
         params: {
           page,
           paginate,
-          user_id
+          user_id,
         },
       }),
       transformResponse: (response: {
@@ -84,7 +83,7 @@ export const transactionApi = apiSlice.injectEndpoints({
         method: "POST",
         body: payload, // Send JSON object instead of FormData
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }),
       transformResponse: (response: {
@@ -105,17 +104,16 @@ export const transactionApi = apiSlice.injectEndpoints({
       query: (payload) => ({
         url: `/transaction`,
         method: "POST",
-        body: payload, // Send JSON object instead of FormData
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        body: payload,
+        headers: { "Content-Type": "application/json" },
       }),
+      // <<< PERBAIKI TIPE DI SINI >>>
       transformResponse: (response: {
         code: number;
         message: string;
-        data: CreateTransactionPayload | CreateTransactionPayload[];
+        data: Transaction;
       }): CreateTransactionFrontendResponse => ({
-        success: response.code === 200 || response.code === 201,
+        code: response.code,
         message: response.message,
         data: response.data,
       }),

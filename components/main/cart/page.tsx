@@ -42,16 +42,22 @@ import {
   useGetCurrentUserQuery,
   useCheckShippingCostQuery,
 } from "@/services/auth.service";
-import {
-  useCreateTransactionFrontendMutation,
-  useCreateTransactionMutation,
-} from "@/services/admin/transaction.service";
+import { useCreateTransactionFrontendMutation } from "@/services/admin/transaction.service";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
 import { useSession } from "next-auth/react";
 import { useGetUserAddressListQuery } from "@/services/address.service";
 import type { Address } from "@/types/address";
-import { CreateTransactionFrontendRequest } from "@/types/admin/transaction";
+import {
+  CheckoutDetail,
+  CheckoutItem,
+  CheckoutPayload,
+  CheckoutShipment,
+} from "@/types/admin/payment";
+import { PaymentMethodSelect } from "@/components/ui/payment-method-select";
+import { PaymentChannelSelect } from "@/components/ui/payment-channel-select";
+import { Payment } from "@/types/admin/simpanan";
+import { showPaymentInstruction } from "@/lib/show-payment-instructions";
 
 const STORAGE_KEY = "cart-storage";
 
@@ -215,6 +221,10 @@ export default function CartPage() {
     useState<ShippingCostOption | null>(null);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [payType, setPayType] = useState<"automatic" | "manual">("automatic");
+  const [payMethod, setPayMethod] = useState<string | undefined>(undefined);
+  const [payChannel, setPayChannel] = useState<string | undefined>(undefined);
 
   const [shippingInfo, setShippingInfo] = useState({
     fullName: "",
@@ -448,9 +458,35 @@ export default function CartPage() {
 
   const total = subtotal - discount + shippingCost + codFee;
 
+  const buildCheckoutItem = (): CheckoutItem => {
+    const stored = parseStorage();
+    const details: CheckoutDetail[] = stored.map((it) => ({
+      product_id: it.id,
+      quantity: it.quantity ?? 1,
+    }));
+
+    const shipment: CheckoutShipment = {
+      parameter: JSON.stringify({
+        destination: String(shippingInfo.rajaongkir_district_id),
+        weight: 1000,
+        height: 0,
+        length: 0,
+        width: 0,
+        diameter: 0,
+        courier: shippingCourier ?? "",
+      }),
+      shipment_detail: JSON.stringify(shippingMethod),
+      courier: shippingCourier ?? "",
+      cost: shippingMethod!.cost,
+    };
+
+    return { shop_id: 1, details, shipment };
+  };
+
   const handleCheckout = async () => {
     setIsCheckingOut(true);
 
+    // validasi dasar
     if (
       !shippingMethod ||
       !shippingInfo.fullName ||
@@ -467,54 +503,33 @@ export default function CartPage() {
       return;
     }
 
-    // For manual payment, show different flow
+    // validasi khusus automatic (midtrans)
+    if (paymentType === "midtrans" && (!payMethod || !payChannel)) {
+      await Swal.fire({
+        icon: "warning",
+        title: "Metode Pembayaran",
+        text: "Pilih payment method & channel (mis. Bank Transfer + BCA atau QRIS).",
+      });
+      setIsCheckingOut(false);
+      return;
+    }
+
+    // payload sesuai kontrak backend
+    const item = buildCheckoutItem();
+    const payload: CheckoutPayload = {
+      address_line_1: shippingInfo.address_line_1,
+      address_line_2: undefined,
+      postal_code: shippingInfo.postal_code,
+      payment_type: paymentType === "midtrans" ? "automatic" : "saldo",
+      ...(paymentType === "midtrans"
+        ? { payment_method: payMethod, payment_channel: payChannel }
+        : {}),
+      data: [item],
+    };
+
+    // === FLOW MANUAL (tidak diubah) ===
     if (paymentType === "manual") {
       try {
-        const stored = parseStorage();
-        const itemDetails = stored.map((item) => ({
-          product_id: item.id,
-          quantity: item.quantity ?? 1,
-        }));
-
-        const payload: CreateTransactionFrontendRequest = {
-          data: [
-            {
-              address_line_1: shippingInfo.address_line_1,
-              postal_code: shippingInfo.postal_code,
-              payment_method: "manual",
-              data: [
-                {
-                  shop_id: 1,
-                  details: itemDetails,
-                  shipment: {
-                    parameter: JSON.stringify({
-                      destination: String(shippingInfo.rajaongkir_district_id),
-                      weight: 1000,
-                      height: 0,
-                      length: 0,
-                      width: 0,
-                      diameter: 0,
-                      courier: shippingCourier ?? "",
-                    }),
-                    shipment_detail: JSON.stringify(shippingMethod),
-                    courier: shippingCourier ?? "",
-                    cost: shippingMethod!.cost,
-                  },
-                  customer_info: {
-                    name: shippingInfo.fullName,
-                    phone: shippingInfo.phone,
-                    address_line_1: shippingInfo.address_line_1,
-                    postal_code: shippingInfo.postal_code,
-                    province_id: shippingInfo.rajaongkir_province_id,
-                    city_id: shippingInfo.rajaongkir_city_id,
-                    district_id: shippingInfo.rajaongkir_district_id,
-                  },
-                },
-              ],
-            },
-          ],
-        };
-
         setIsSubmitting(true);
         await createTransactionFrontend(payload).unwrap();
 
@@ -522,190 +537,141 @@ export default function CartPage() {
           icon: "success",
           title: "Pesanan Berhasil Dibuat",
           html: `
-            <div class="text-left">
-              <p class="mb-4">Pesanan Anda telah berhasil dibuat. Silakan lakukan pembayaran manual ke rekening berikut:</p>
-              
-              <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                <h4 class="font-semibold mb-2">ISMAIL MARZUKI</h4>
-                <p>Bank Mandiri</p>
-                <p class="font-mono text-lg">1340010955069</p>
-              </div>
-              
-              <div class="bg-gray-50 p-4 rounded-lg mb-4">
-                <h4 class="font-semibold mb-2">Herlina Hartosuharto</h4>
-                <p>Bank BCA</p>
-                <p class="font-mono text-lg">3030727834</p>
-              </div>
-              
-              <p class="text-sm text-gray-600">Setelah melakukan pembayaran, Anda dapat mengupload bukti transfer melalui halaman profil pesanan Anda.</p>
+          <div class="text-left">
+            <p class="mb-4">Pesanan Anda telah berhasil dibuat. Silakan lakukan pembayaran manual ke rekening berikut:</p>
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <h4 class="font-semibold mb-2">ISMAIL MARZUKI</h4>
+              <p>Bank Mandiri</p>
+              <p class="font-mono text-lg">1340010955069</p>
             </div>
-          `,
+            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+              <h4 class="font-semibold mb-2">Herlina Hartosuharto</h4>
+              <p>Bank BCA</p>
+              <p class="font-mono text-lg">3030727834</p>
+            </div>
+            <p class="text-sm text-gray-600">Setelah melakukan pembayaran, Anda dapat mengupload bukti transfer melalui halaman profil pesanan Anda.</p>
+          </div>
+        `,
           confirmButtonText: "Menuju Profil Pesanan",
         });
 
         clearCart();
         router.push("/me");
       } catch (err: unknown) {
-        setIsSubmitting(false);
-        console.error("Error creating transaction:", err);
-
         let serverMessage =
           "Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.";
         let fieldErrors = "";
-
         if (typeof err === "object" && err !== null) {
           const apiErr = err as {
             data?: { message?: string; errors?: ErrorBag };
           };
           const genericErr = err as { message?: string };
-
-          if (apiErr.data?.message) {
-            serverMessage = apiErr.data.message;
-          } else if (genericErr.message) {
-            serverMessage = genericErr.message;
-          }
-
+          if (apiErr.data?.message) serverMessage = apiErr.data.message;
+          else if (genericErr.message) serverMessage = genericErr.message;
           const rawErrors: ErrorBag | undefined = apiErr.data?.errors;
           if (rawErrors) {
             fieldErrors = Object.entries(rawErrors)
-              .map(([field, msgs]) => {
-                const list = Array.isArray(msgs) ? msgs : [msgs];
-                return `${field}: ${list.join(", ")}`;
-              })
+              .map(
+                ([field, msgs]) =>
+                  `${field}: ${(Array.isArray(msgs) ? msgs : [msgs]).join(
+                    ", "
+                  )}`
+              )
               .join("\n");
           }
         }
-
         await Swal.fire({
           icon: "error",
           title: "Gagal Membuat Pesanan",
-          html:
-            `<p style="text-align:left">${serverMessage}</p>` +
-            (fieldErrors
+          html: `<p style="text-align:left">${serverMessage}</p>${
+            fieldErrors
               ? `<pre style="text-align:left;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px">${fieldErrors}</pre>`
-              : ""),
+              : ""
+          }`,
         });
+      } finally {
+        setIsSubmitting(false);
+        setIsCheckingOut(false);
       }
-      setIsCheckingOut(false);
       return;
     }
 
-    // Original midtrans payment flow
-    setIsSubmitting(true);
+    // === FLOW AUTOMATIC (midtrans → baca objek payment) ===
     try {
-      const stored = parseStorage();
-
-      const itemDetails = stored.map((item) => ({
-        product_id: item.id,
-        quantity: item.quantity ?? 1,
-      }));
-
-      const payload: CreateTransactionFrontendRequest = {
-        data: [
-          {
-            address_line_1: shippingInfo.address_line_1,
-            postal_code: shippingInfo.postal_code,
-            payment_method: paymentType === "midtrans" ? "midtrans" : "cod",
-            data: [
-              {
-                shop_id: 1,
-                details: itemDetails,
-                shipment: {
-                  parameter: JSON.stringify({
-                    destination: String(shippingInfo.rajaongkir_district_id),
-                    weight: 1000,
-                    height: 0,
-                    length: 0,
-                    width: 0,
-                    diameter: 0,
-                    courier: shippingCourier ?? "",
-                  }),
-                  shipment_detail: JSON.stringify(shippingMethod),
-                  courier: shippingCourier ?? "",
-                  cost: shippingMethod!.cost,
-                },
-                customer_info: {
-                  name: shippingInfo.fullName,
-                  phone: shippingInfo.phone,
-                  address_line_1: shippingInfo.address_line_1,
-                  postal_code: shippingInfo.postal_code,
-                  province_id: shippingInfo.rajaongkir_province_id,
-                  city_id: shippingInfo.rajaongkir_city_id,
-                  district_id: shippingInfo.rajaongkir_district_id,
-                },
-              },
-            ],
-          },
-        ],
-      };
-
+      setIsSubmitting(true);
       const result = await createTransactionFrontend(payload).unwrap();
-      if (
-        result &&
-        result.data &&
-        typeof result.data === "object" &&
-        "payment_link" in result.data
-      ) {
+
+      // result.data mengandung Transaction dengan field payment
+      const resp = result as {
+        data?: { payment?: Payment; payment_link?: string };
+      };
+      const payment = resp?.data?.payment;
+
+      // 1) Jika ada objek payment (VA/QRIS) → tampilkan instruksi
+      if (payment) {
+        await Swal.fire({
+          icon: "success",
+          title: "Pesanan Berhasil Dibuat",
+          text: "Silakan lakukan pembayaran sesuai instruksi berikut.",
+          confirmButtonText: "Lihat Instruksi",
+        });
+
+        await showPaymentInstruction(payment); // QRIS/VA modal
+        clearCart();
+        router.push("/me");
+        return;
+      }
+
+      // 2) (fallback masa depan) kalau backend kirim payment_link
+      const link = resp?.data?.payment_link;
+      if (link) {
         await Swal.fire({
           icon: "success",
           title: "Pesanan Berhasil Dibuat",
           text: "Silakan lanjutkan ke halaman pembayaran.",
           confirmButtonText: "Lanjut ke Pembayaran",
         });
-        window.open(
-          (result.data as { payment_link: string }).payment_link,
-          "_blank"
-        );
+        window.open(link, "_blank");
         clearCart();
-        setTimeout(() => {
-          router.push("/me");
-        }, 2000);
-      } else {
-        console.warn("Unexpected response format:", result);
-        await Swal.fire({
-          icon: "info",
-          title: "Pesanan Dibuat",
-          text: "Pesanan berhasil dibuat, tetapi tidak dapat membuka link pembayaran.",
-        });
+        setTimeout(() => router.push("/me"), 500);
+        return;
       }
-    } catch (err: unknown) {
-      console.error("Error creating transaction:", err);
 
+      // 3) Jika tidak ada keduanya
+      await Swal.fire({
+        icon: "info",
+        title: "Pesanan Dibuat",
+        text: "Metode pembayaran tidak mengembalikan tautan/instruksi. Cek riwayat pesanan atau hubungi admin.",
+      });
+    } catch (err: unknown) {
       let serverMessage =
         "Terjadi kesalahan saat membuat pesanan. Silakan coba lagi.";
       let fieldErrors = "";
-
       if (typeof err === "object" && err !== null) {
         const apiErr = err as {
           data?: { message?: string; errors?: ErrorBag };
         };
         const genericErr = err as { message?: string };
-
-        if (apiErr.data?.message) {
-          serverMessage = apiErr.data.message;
-        } else if (genericErr.message) {
-          serverMessage = genericErr.message;
-        }
-
+        if (apiErr.data?.message) serverMessage = apiErr.data.message;
+        else if (genericErr.message) serverMessage = genericErr.message;
         const rawErrors: ErrorBag | undefined = apiErr.data?.errors;
         if (rawErrors) {
           fieldErrors = Object.entries(rawErrors)
-            .map(([field, msgs]) => {
-              const list = Array.isArray(msgs) ? msgs : [msgs];
-              return `${field}: ${list.join(", ")}`;
-            })
+            .map(
+              ([field, msgs]) =>
+                `${field}: ${(Array.isArray(msgs) ? msgs : [msgs]).join(", ")}`
+            )
             .join("\n");
         }
       }
-
       await Swal.fire({
         icon: "error",
         title: "Gagal Membuat Pesanan",
-        html:
-          `<p style="text-align:left">${serverMessage}</p>` +
-          (fieldErrors
+        html: `<p style="text-align:left">${serverMessage}</p>${
+          fieldErrors
             ? `<pre style="text-align:left;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px">${fieldErrors}</pre>`
-            : ""),
+            : ""
+        }`,
       });
     } finally {
       setIsSubmitting(false);
@@ -1244,6 +1210,7 @@ export default function CartPage() {
               </h3>
 
               <div className="space-y-4">
+                {/* TIPE PEMBAYARAN */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tipe Pembayaran
@@ -1252,16 +1219,20 @@ export default function CartPage() {
                     <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-neutral-50">
                       <input
                         type="radio"
-                        name="payment-type"
-                        value="midtrans"
-                        checked={paymentType === "midtrans"}
-                        onChange={(e) => setPaymentType(e.target.value)}
+                        name="pay-type"
+                        value="automatic"
+                        checked={payType === "automatic"}
+                        onChange={() => {
+                          setPayType("automatic");
+                          setPayMethod(undefined);
+                          setPayChannel(undefined);
+                        }}
                         className="form-radio text-[#6B6B6B] h-4 w-4"
                       />
                       <div>
                         <p className="font-medium">Otomatis</p>
                         <p className="text-sm text-gray-500">
-                          Pembayaran online (Gateway)
+                          Gateway (VA/QRIS)
                         </p>
                       </div>
                     </label>
@@ -1269,80 +1240,61 @@ export default function CartPage() {
                     <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-neutral-50">
                       <input
                         type="radio"
-                        name="payment-type"
+                        name="pay-type"
                         value="manual"
-                        checked={paymentType === "manual"}
-                        onChange={(e) => setPaymentType(e.target.value)}
+                        checked={payType === "manual"}
+                        onChange={() => {
+                          setPayType("manual");
+                          setPayMethod(undefined);
+                          setPayChannel(undefined);
+                        }}
                         className="form-radio text-[#6B6B6B] h-4 w-4"
                       />
                       <div>
                         <p className="font-medium">Manual</p>
                         <p className="text-sm text-gray-500">
-                          Transfer bank manual
-                        </p>
-                      </div>
-                    </label>
-
-                    <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors hover:bg-neutral-50">
-                      <input
-                        type="radio"
-                        name="payment-type"
-                        value="cod"
-                        checked={paymentType === "cod"}
-                        onChange={(e) => setPaymentType(e.target.value)}
-                        className="form-radio text-[#6B6B6B] h-4 w-4"
-                      />
-                      <div>
-                        <p className="font-medium">COD</p>
-                        <p className="text-sm text-gray-500">
-                          +Fee 2% terhadap nilai pesanan
+                          Transfer bank manual / QRIS
                         </p>
                       </div>
                     </label>
                   </div>
                 </div>
 
-                {paymentType === "manual" && (
-                  <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="w-5 h-5 text-blue-600 mt-0.5" />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-blue-900 mb-2">
-                            Rekening Tujuan Transfer
-                          </h4>
-
-                          <div className="bg-white p-3 rounded-lg mb-3">
-                            <p className="font-semibold text-gray-900">
-                              ISMAIL MARZUKI
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              Bank Mandiri
-                            </p>
-                            <p className="font-mono text-lg font-bold text-gray-900">
-                              1340010955069
-                            </p>
-                          </div>
-
-                          <div className="bg-white p-3 rounded-lg">
-                            <p className="font-semibold text-gray-900">
-                              Herlina Hartosuharto
-                            </p>
-                            <p className="text-sm text-gray-600">Bank BCA</p>
-                            <p className="font-mono text-lg font-bold text-gray-900">
-                              3030727834
-                            </p>
-                          </div>
-
-                          <p className="text-sm text-blue-700 mt-3">
-                            Setelah transfer, Anda dapat mengupload bukti
-                            pembayaran melalui halaman profil pesanan.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                {/* METHOD & CHANNEL */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Payment Method{payType === "automatic" ? " *" : ""}
+                    </label>
+                    <PaymentMethodSelect
+                      mode={payType}
+                      value={payMethod}
+                      onChange={(v) => {
+                        if (v === "qris") {
+                          setPayMethod("qris");
+                          setPayChannel("qris"); // channel otomatis qris
+                        } else if (v === "bank_transfer") {
+                          setPayMethod("bank_transfer");
+                          setPayChannel(undefined); // pilih bank di bawah
+                        } else {
+                          setPayMethod(v);
+                        }
+                      }}
+                    />
                   </div>
-                )}
+
+                  <div className="flex flex-col gap-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Payment Channel{payType === "automatic" ? " *" : ""}
+                    </label>
+                    <PaymentChannelSelect
+                      mode={payType}
+                      method={payMethod}
+                      value={payChannel}
+                      onChange={setPayChannel}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1458,7 +1410,8 @@ export default function CartPage() {
                   !shippingInfo.address_line_1 ||
                   !shippingInfo.postal_code ||
                   !isPhoneValid ||
-                  !paymentType
+                  !paymentType ||
+                  (payType === "automatic" && (!payMethod || !payChannel))
                 }
                 className="w-full bg-[#6B6B6B] text-white py-4 rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >

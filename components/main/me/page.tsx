@@ -22,27 +22,23 @@ import {
   CreditCard,
   Truck,
   Download,
-  Upload,
   X,
-  FileText,
-  DollarSign,
   Landmark,
   Store,
-  ArrowLeft,
-  ArrowRight,
-  UserPlus, // Icon baru
-  ShieldCheck, // Icon baru
-  TrendingUp, // Icon baru
+  UserPlus,
+  ShieldCheck,
+  TrendingUp,
   Briefcase,
   Users,
-  Image as ImageIcon,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
+
 import {
   useLogoutMutation,
   useGetCurrentUserQuery,
   useUpdateCurrentUserMutation,
 } from "@/services/auth.service";
+
 import {
   useGetUserAddressListQuery,
   useGetUserAddressByIdQuery,
@@ -50,936 +46,60 @@ import {
   useUpdateUserAddressMutation,
   useDeleteUserAddressMutation,
 } from "@/services/address.service";
+
 import {
-  useCreateShopMutation,
   useGetProvincesQuery,
   useGetCitiesQuery,
   useGetDistrictsQuery,
 } from "@/services/shop/open-shop/open-shop.service";
+
 import {
   useGetTransactionListQuery,
   useGetTransactionByIdQuery,
 } from "@/services/admin/transaction.service";
-import {
-  useCreateAnggotaMutation,
-} from "@/services/koperasi-service/anggota.service";
+
 import Swal from "sweetalert2";
-import { mapTxnStatusToOrderStatus, OrderStatus } from "@/lib/status-order";
+import { mapTxnStatusToOrderStatus } from "@/lib/status-order";
 import type { Address as UserAddress } from "@/types/address";
 import { ROResponse, toList, findName } from "@/types/geo";
-import { Region } from "@/types/shop";
+import type { Region } from "@/types/shop";
+
 import ProfileEditModal from "../profile-page/edit-modal";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
-import { current } from "@reduxjs/toolkit";
+import OrderDetailModal from "./order-detail-modal";
+import DaftarAnggotaModal from "./daftar-anggota-modal";
+import DaftarSellerModal from "./daftar-seller-modal";
+import PaymentProofModal from "./payment-proof-modal";
 
-// ... (Interface declarations remain the same) ...
+import {
+  ApiTransaction,
+  ApiTransactionDetail,
+  Order,
+  OrderItem,
+  UserProfile,
+  pickImageUrl,
+  DEFAULT_AVATAR,
+  normalizeUrl,
+  getStatusColor,
+  getStatusText,
+} from "./types";
 
-interface UserProfile {
-  id: string;
-  anggota: {
-    reference: string | null;
-  };
-  shop: string | null;
-  email_verified_at: string | null;
-  fullName: string;
-  email: string;
-  phone: string;
-  birthDate: string;
-  image: string;
-  joinDate: string;
-  totalOrders: number;
-  totalSpent: number;
-  loyaltyPoints: number;
-}
+import useUploadPaymentProofMutation from "./use-upload-payment-proof";
+import type { TxnDetailExtra } from "@/types/admin/payment";
 
-interface OrderItem {
-  id: string;
-  name: string;
-  image: string;
-  quantity: number;
-  price: number;
-}
-interface Order {
-  id: string;
-  orderNumber: string;
-  date: string;
-  status: OrderStatus;
-  total: number;
-  grand_total: number;
-  items: OrderItem[];
-  trackingNumber?: string;
-  payment_method?: string;
-  payment_proof?: string;
-  shipment_cost?: number;
-  cod?: number;
-  discount_total?: number;
-  address_line_1?: string;
-  postal_code?: string;
-}
-interface ApiTransactionDetail {
-  id?: number | string;
-  product_id?: number;
-  quantity?: number;
-  price?: number;
-  product_name?: string;
-  product?: {
-    name?: string;
-    image?: string;
-    media?: Array<{ original_url: string }>;
-  } | null;
-  image?: string | null;
-}
-interface ApiTransaction {
-  id: number | string;
-  reference?: string;
-  status?: number;
-  total: number;
-  grand_total: number;
-  discount_total?: number;
-  created_at?: string;
-  details?: ApiTransactionDetail[];
-  tracking_number?: string;
-  payment_method?: string;
-  payment_proof?: string;
-  shipment_cost?: number;
-  cod?: number;
-  address_line_1?: string;
-  postal_code?: string;
-}
-
-// ... (useUploadPaymentProofMutation and pickImageUrl hooks remain the same) ...
-const useUploadPaymentProofMutation = () => {
-  const [isLoading, setIsLoading] = useState(false);
-
-  const uploadPaymentProof = async (transactionId: string, file: File) => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append("payment_proof", file);
-      formData.append("_method", "PUT");
-
-      const response = await fetch(
-        `https://cms.yameiyashop.com/api/v1/public/transaction/${transactionId}/manual?_method=PUT`,
-        {
-          method: "POST", // Using POST with _method=PUT for form-data
-          body: formData,
-          headers: {
-            // Don't set Content-Type, let browser set it for FormData
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to upload payment proof");
-      }
-
-      const data = await response.json();
-      return data;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return { uploadPaymentProof, isLoading };
-};
-
-const pickImageUrl = (d?: ApiTransactionDetail): string => {
-  if (!d) return "/api/placeholder/80/80";
-  if (typeof d.image === "string" && d.image) return d.image;
-  const prod = d.product;
-  if (prod?.image) return prod.image;
-  const firstMedia = prod?.media?.[0]?.original_url;
-  if (firstMedia) return firstMedia;
-  return "/api/placeholder/80/80";
-};
-
-// =======================================================================
-// NEW COMPONENT: Modal Pendaftaran Anggota Koperasi
-// =======================================================================
-const DaftarAnggotaModal = ({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) => {
-  const { data: session } = useSession();
-  const [createAnggota, { isLoading: isCreating }] = useCreateAnggotaMutation();
-  const [formData, setFormData] = useState({
-    name: session?.user?.name || "",
-    nik: "",
-    email: session?.user?.email || "",
-    phone: session?.user?.phone || "",
-    gender: "",
-    birth_place: "",
-    birth_date: "",
-    npwp: "",
-    nip: "",
-    unit_kerja: "",
-    jabatan: "",
-    address: "",
-  });
-
-  // Sync session values if session changes
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      name: session?.user?.name || "",
-      email: session?.user?.email || "",
-      phone: session?.user?.phone || "",
-    }));
-  }, [session]);
-
-  const [files, setFiles] = useState<{
-    fileKtp: File | null;
-    foto: File | null;
-    slipGaji: File | null;
-  }>({
-    fileKtp: null,
-    foto: null,
-    slipGaji: null,
-  });
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files: selectedFiles } = e.target;
-    if (selectedFiles && selectedFiles.length > 0) {
-      setFiles((prev) => ({ ...prev, [name]: selectedFiles[0] }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      // Validasi wajib
-      if (
-        !formData.name ||
-        !formData.email ||
-        !formData.phone ||
-        !formData.nik ||
-        !formData.gender ||
-        !formData.birth_place ||
-        !formData.birth_date ||
-        !formData.address
-      ) {
-        throw new Error("Semua field wajib diisi kecuali yang opsional.");
-      }
-      if (!files.fileKtp || !files.foto || !files.slipGaji) {
-        throw new Error("Semua dokumen wajib diupload.");
-      }
-
-      const fd = new FormData();
-      fd.append("name", formData.name);
-      fd.append("nik", formData.nik);
-      fd.append("email", formData.email);
-      fd.append("phone", formData.phone);
-      fd.append("gender", formData.gender);
-      fd.append("birth_place", formData.birth_place);
-      fd.append("birth_date", formData.birth_date);
-      fd.append("address", formData.address);
-      fd.append("status", '0');
-      if (formData.npwp) fd.append("npwp", formData.npwp);
-      if (formData.nip) fd.append("nip", formData.nip);
-      if (formData.unit_kerja) fd.append("unit_kerja", formData.unit_kerja);
-      if (formData.jabatan) fd.append("jabatan", formData.jabatan);
-
-      // File uploads
-      if (files.fileKtp) fd.append("file_nik", files.fileKtp);
-      if (files.foto) fd.append("foto", files.foto);
-      if (files.slipGaji) fd.append("slip_gaji", files.slipGaji);
-
-      await createAnggota(fd).unwrap();
-      Swal.fire("Sukses", "Formulir pendaftaran telah dikirim!", "success");
-      onClose();
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan";
-      Swal.fire("Gagal", msg, "error");
-      console.error(err);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  const FileInput = ({
-    name,
-    label,
-    icon,
-    currentFile,
-  }: {
-    name: keyof typeof files;
-    label: string;
-    icon: React.ReactNode;
-    currentFile: File | null;
-  }) => (
-    <div>
-      <label
-        htmlFor={name}
-        className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
-      >
-        {icon}
-        <div className="flex flex-col">
-          <span className="font-semibold text-gray-700">{label}</span>
-          <span className="text-xs text-gray-500 truncate">
-            {currentFile ? currentFile.name : "Pilih file..."}
-          </span>
-        </div>
-      </label>
-      <input
-        id={name}
-        name={name}
-        type="file"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-    </div>
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 m-4 relative transform transition-all"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">
-              Formulir Pendaftaran Anggota
-            </h3>
-            <p className="text-sm text-gray-500">
-              Lengkapi data di bawah ini untuk bergabung.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            {/* Nama Lengkap */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
-                Nama Lengkap
-              </label>
-              <input
-                type="text"
-                name="name"
-                id="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* No. KTP */}
-            <div>
-              <label htmlFor="nik" className="block text-sm font-semibold text-gray-900 mb-2">
-                No. KTP
-              </label>
-              <input
-                type="number"
-                name="nik"
-                id="nik"
-                value={formData.nik}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* No. HP */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 mb-2">
-                No. HP
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                id="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* Jenis Kelamin */}
-            <div>
-              <label htmlFor="gender" className="block text-sm font-semibold text-gray-900 mb-2">
-                Jenis Kelamin
-              </label>
-              <select
-                name="gender"
-                id="gender"
-                value={formData.gender}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              >
-                <option value="">Pilih Jenis Kelamin</option>
-                <option value="M">Laki-laki</option>
-                <option value="F">Perempuan</option>
-              </select>
-            </div>
-            {/* NIP */}
-            <div>
-              <label htmlFor="nip" className="block text-sm font-semibold text-gray-900 mb-2">
-                NIP (Opsional)
-              </label>
-              <input
-                type="text"
-                name="nip"
-                id="nip"
-                value={formData.nip}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              />
-            </div>
-            {/* Tempat Lahir */}
-            <div>
-              <label htmlFor="birth_place" className="block text-sm font-semibold text-gray-900 mb-2">
-                Tempat Lahir
-              </label>
-              <input
-                type="text"
-                name="birth_place"
-                id="birth_place"
-                value={formData.birth_place}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* Tanggal Lahir */}
-            <div>
-              <label htmlFor="birth_date" className="block text-sm font-semibold text-gray-900 mb-2">
-                Tanggal Lahir
-              </label>
-              <input
-                type="date"
-                name="birth_date"
-                id="birth_date"
-                value={formData.birth_date}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* NPWP */}
-            <div>
-              <label htmlFor="npwp" className="block text-sm font-semibold text-gray-900 mb-2">
-                NPWP (Opsional)
-              </label>
-              <input
-                type="text"
-                name="npwp"
-                id="npwp"
-                value={formData.npwp}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              />
-            </div>
-            {/* Jabatan */}
-            <div>
-              <label htmlFor="jabatan" className="block text-sm font-semibold text-gray-900 mb-2">
-                Jabatan
-              </label>
-              <input
-                type="text"
-                name="jabatan"
-                id="jabatan"
-                value={formData.jabatan}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              />
-            </div>
-            {/* Unit Kerja */}
-            <div className="md:col-span-2">
-              <label htmlFor="unit_kerja" className="block text-sm font-semibold text-gray-900 mb-2">
-                Unit Kerja
-              </label>
-              <input
-                type="text"
-                name="unit_kerja"
-                id="unit_kerja"
-                value={formData.unit_kerja}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              />
-            </div>
-            {/* Alamat */}
-            <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-semibold text-gray-900 mb-2">
-                Alamat Lengkap (sesuai KTP)
-              </label>
-              <textarea
-                name="address"
-                id="address"
-                rows={3}
-                value={formData.address}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              ></textarea>
-            </div>
-          </div>
-          
-          <div className="border-t pt-6">
-            <h4 className="text-lg font-semibold text-gray-800 mb-4">Upload Dokumen</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FileInput name="fileKtp" label="Upload KTP" icon={<FileText className="w-6 h-6 text-gray-500" />} currentFile={files.fileKtp} />
-              <FileInput name="foto" label="Upload Foto" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.foto} />
-              <FileInput name="slipGaji" label="Upload Slip Gaji" icon={<FileText className="w-6 h-6 text-gray-500" />} currentFile={files.slipGaji} />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors"
-            >
-              Kirim Pendaftaran
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-
-// =======================================================================
-// NEW COMPONENT: Modal Pendaftaran Seller
-// =======================================================================
-interface DaftarSellerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  userProfile: UserProfile;
-}
-
-const DaftarSellerModal = ({
-  isOpen,
-  onClose,
-  onSuccess,
-  userProfile,
-}: DaftarSellerModalProps) => {
-  const { data: session } = useSession();
-  const [createShop, { isLoading: isCreatingShop }] = useCreateShopMutation();
-
-  // Use existing address hooks logic for regional data
-  const { data: provinces } = useGetProvincesQuery();
-  const provinceList = useMemo(() => toList(provinces), [provinces]);
-
-  const [formData, setFormData] = useState({
-    name: "", // Nama Toko
-    phone: userProfile.phone || session?.user?.phone || "",
-    email: userProfile.email || session?.user?.email || "",
-    address: "", // Alamat Toko
-    description: "",
-    rajaongkir_province_id: null,
-    rajaongkir_city_id: null,
-    rajaongkir_district_id: null,
-    postal_code: "",
-    latitude: "0",
-    longitude: "0",
-  });
-
-  const [files, setFiles] = useState({
-    logo: null,
-    banner: null,
-  });
-
-  const provinceId = formData.rajaongkir_province_id ?? 0;
-  const { data: cities } = useGetCitiesQuery(provinceId, {
-    skip: !formData.rajaongkir_province_id,
-  });
-  const cityList = useMemo(() => toList(cities), [cities]);
-
-  const cityId = formData.rajaongkir_city_id ?? 0;
-  const { data: districts } = useGetDistrictsQuery(cityId, {
-    skip: !formData.rajaongkir_city_id,
-  });
-  const districtList = useMemo(() => toList(districts), [districts]);
-
-  useEffect(() => {
-    // Sync user data to form on open
-    if (isOpen) {
-      setFormData(prev => ({
-        ...prev,
-        phone: userProfile.phone || session?.user?.phone || "",
-        email: userProfile.email || session?.user?.email || "",
-      }));
-    }
-  }, [isOpen, session, userProfile]);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, files: selectedFiles } = e.target;
-    if (selectedFiles && selectedFiles.length > 0) {
-      setFiles((prev) => ({ ...prev, [name]: selectedFiles[0] }));
-    }
-  };
-
-  const handleRegionChange = (
-    name: string,
-    value: string | number | null
-  ) => {
-    const v = value ? Number(value) : null;
-    setFormData((prev) => {
-      const newState = { ...prev, [name]: v };
-      if (name === "rajaongkir_province_id") {
-        newState.rajaongkir_city_id = null;
-        newState.rajaongkir_district_id = null;
-      } else if (name === "rajaongkir_city_id") {
-        newState.rajaongkir_district_id = null;
-      }
-      return newState;
-    });
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    try {
-      // Basic Validation
-      if (
-        !formData.name ||
-        !formData.phone ||
-        !formData.email ||
-        !formData.address ||
-        !formData.rajaongkir_province_id ||
-        !formData.rajaongkir_city_id ||
-        !formData.rajaongkir_district_id
-      ) {
-        throw new Error("Mohon lengkapi semua data toko dan alamat.");
-      }
-
-      const fd = new FormData();
-      fd.append("name", formData.name);
-      fd.append("phone", formData.phone);
-      fd.append("email", formData.email);
-      fd.append("address", formData.address);
-      fd.append("description", formData.description);
-      fd.append("rajaongkir_province_id", String(formData.rajaongkir_province_id));
-      fd.append("rajaongkir_city_id", String(formData.rajaongkir_city_id));
-      fd.append("rajaongkir_district_id", String(formData.rajaongkir_district_id));
-      fd.append("postal_code", formData.postal_code);
-      fd.append("latitude", formData.latitude);
-      fd.append("longitude", formData.longitude);
-      fd.append("status", "1"); // Set status to '1' (Active/Pending Approval) upon registration
-
-      if (files.logo) fd.append("logo", files.logo);
-      if (files.banner) fd.append("banner", files.banner);
-
-      await createShop(fd).unwrap();
-      await Swal.fire("Sukses", "Formulir pendaftaran seller telah dikirim dan akan segera diverifikasi!", "success");
-      onSuccess(); // To refresh user data/UI
-      onClose(); // Hide modal after submit
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat mendaftar seller";
-      Swal.fire("Gagal", msg, "error");
-      console.error(err);
-    }
-  };
-
-  const FileInput: React.FC<{
-    name: keyof typeof files;
-    label: string;
-    icon: React.ReactNode;
-    currentFile: File | null;
-  }> = ({ name, label, icon, currentFile }) => (
-    <div>
-      <label
-        htmlFor={name}
-        className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
-      >
-        {icon}
-        <div className="flex flex-col">
-          <span className="font-semibold text-gray-700">{label}</span>
-          <span className="text-xs text-gray-500 truncate">
-            {currentFile ? currentFile.name : "Pilih file..."}
-          </span>
-        </div>
-      </label>
-      <input
-        id={name}
-        name={name}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-    </div>
-  );
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 m-4 relative transform transition-all"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900">
-              Formulir Pendaftaran Seller
-            </h3>
-            <p className="text-sm text-gray-500">
-              Lengkapi data toko Anda untuk mulai berjualan.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            {/* Nama Toko */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
-                Nama Toko
-              </label>
-              <input
-                type="text"
-                name="name"
-                id="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* No. HP */}
-            <div>
-              <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 mb-2">
-                No. HP Toko
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                id="phone"
-                value={formData.phone}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-            {/* Email */}
-            <div className="md:col-span-2">
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
-                Email Toko
-              </label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              />
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
-                Deskripsi Toko (Opsional)
-              </label>
-              <textarea
-                name="description"
-                id="description"
-                rows={2}
-                value={formData.description}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              ></textarea>
-            </div>
-
-            {/* Alamat Toko Section */}
-            <div className="md:col-span-2 border-t pt-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">Alamat Toko</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
-                {/* Province */}
-                <div>
-                  <label htmlFor="rajaongkir_province_id" className="block text-sm font-semibold text-gray-900 mb-2">
-                    Provinsi
-                  </label>
-                  <select
-                    name="rajaongkir_province_id"
-                    id="rajaongkir_province_id"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                    value={formData.rajaongkir_province_id ?? ""}
-                    onChange={(e) => handleRegionChange("rajaongkir_province_id", e.target.value)}
-                    required
-                  >
-                    <option value="">-- Pilih Provinsi --</option>
-                    {provinceList.map((p) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* City */}
-                <div>
-                  <label htmlFor="rajaongkir_city_id" className="block text-sm font-semibold text-gray-900 mb-2">
-                    Kota/Kabupaten
-                  </label>
-                  <select
-                    name="rajaongkir_city_id"
-                    id="rajaongkir_city_id"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                    value={formData.rajaongkir_city_id ?? ""}
-                    onChange={(e) => handleRegionChange("rajaongkir_city_id", e.target.value)}
-                    disabled={!formData.rajaongkir_province_id}
-                    required
-                  >
-                    <option value="">-- Pilih Kota/Kabupaten --</option>
-                    {cityList.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* District */}
-                <div>
-                  <label htmlFor="rajaongkir_district_id" className="block text-sm font-semibold text-gray-900 mb-2">
-                    Kecamatan
-                  </label>
-                  <select
-                    name="rajaongkir_district_id"
-                    id="rajaongkir_district_id"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                    value={formData.rajaongkir_district_id ?? ""}
-                    onChange={(e) => handleRegionChange("rajaongkir_district_id", e.target.value)}
-                    disabled={!formData.rajaongkir_city_id}
-                    required
-                  >
-                    <option value="">-- Pilih Kecamatan --</option>
-                    {districtList.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Alamat Lengkap */}
-            <div className="md:col-span-2">
-              <label htmlFor="address" className="block text-sm font-semibold text-gray-900 mb-2">
-                Detail Alamat (Jalan, Nomor, RT/RW)
-              </label>
-              <textarea
-                name="address"
-                id="address"
-                rows={2}
-                value={formData.address}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                required
-              ></textarea>
-            </div>
-            {/* Kode Pos */}
-            <div>
-              <label htmlFor="postal_code" className="block text-sm font-semibold text-gray-900 mb-2">
-                Kode Pos (Opsional)
-              </label>
-              <input
-                type="text"
-                name="postal_code"
-                id="postal_code"
-                value={formData.postal_code}
-                onChange={handleInputChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div className="border-t pt-6">
-            <h4 className="text-lg font-semibold text-gray-800 mb-4">Upload Logo & Banner (Opsional)</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FileInput name="logo" label="Upload Logo Toko" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.logo} />
-              <FileInput name="banner" label="Upload Banner Toko" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.banner} />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              disabled={isCreatingShop}
-              className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors disabled:opacity-50"
-            >
-              {isCreatingShop ? "Mengirim..." : "Kirim Pendaftaran"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
+/* -------------------------------------------------------------------------------------------------
+ * Page
+ * -----------------------------------------------------------------------------------------------*/
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session } = useSession();
+
   const [logoutReq, { isLoading: isLoggingOut }] = useLogoutMutation();
   const [updateCurrentUser, { isLoading: isUpdatingProfile }] =
     useUpdateCurrentUserMutation();
   const [isPrefillingProfile, setIsPrefillingProfile] = useState(false);
 
+  // Profile modal state
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [profileForm, setProfileForm] = useState<{
     name: string;
@@ -997,22 +117,16 @@ export default function ProfilePage() {
     imageFile: null,
   });
 
-  // Order detail modal states
+  // Order detail & payment proof modals
   const [orderDetailModalOpen, setOrderDetailModalOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [paymentProofModalOpen, setPaymentProofModalOpen] = useState(false);
-  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null);
 
+  const [paymentProofModalOpen, setPaymentProofModalOpen] = useState(false);
+
+  // Tabs
   const [activeTab, setActiveTab] = useState<
-    | "dashboard"
-    | "profile"
-    | "addresses"
-    | "orders"
-    | "anggota"
-    | "seller"
+    "dashboard" | "profile" | "addresses" | "orders" | "anggota" | "seller"
   >("dashboard");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isEditing, setIsEditing] = useState(false);
 
   // Session basics
   const sessionName = useMemo(() => session?.user?.name ?? "User", [session]);
@@ -1022,11 +136,11 @@ export default function ProfilePage() {
   );
   const sessionId = (session?.user as { id?: number } | undefined)?.id;
 
-  // Payment proof upload mutation
+  // Upload payment proof (manual)
   const { uploadPaymentProof, isLoading: isUploadingProof } =
     useUploadPaymentProofMutation();
 
-  /* --------------------- Transaksi (tetap) --------------------- */
+  /** ---------------------------------- Transaksi ---------------------------------- */
   const { data: txnResp, refetch: refetchTransactions } =
     useGetTransactionListQuery(
       { page: 1, paginate: 10, user_id: sessionId },
@@ -1043,7 +157,7 @@ export default function ProfilePage() {
       const items: OrderItem[] = (t.details || []).map((det, idx) => ({
         id: String(det.id ?? `${t.id}-${idx}`),
         name: det.product?.name ?? det.product_name ?? "Produk",
-        image: pickImageUrl(det),
+        image: pickImageUrl(det as ApiTransactionDetail),
         quantity: det.quantity ?? 1,
         price: det.price ?? 0,
       }));
@@ -1067,7 +181,6 @@ export default function ProfilePage() {
     });
   }, [transactions]);
 
-  // Get order detail query
   const { data: orderDetailResp } = useGetTransactionByIdQuery(
     selectedOrderId ?? "",
     { skip: !selectedOrderId }
@@ -1075,10 +188,13 @@ export default function ProfilePage() {
 
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
-    return orders.find((order) => order.id === selectedOrderId) || null;
+    return orders.find((o) => o.id === selectedOrderId) ?? null;
   }, [selectedOrderId, orders]);
 
-  /* --------------------- Address via SERVICE --------------------- */
+  const selectedDetail: TxnDetailExtra | undefined =
+    (orderDetailResp as TxnDetailExtra | undefined) ?? undefined;
+
+  /** ---------------------------------- Address ---------------------------------- */
   const [addrModalOpen, setAddrModalOpen] = useState(false);
   const [addrEditId, setAddrEditId] = useState<number | null>(null);
 
@@ -1114,23 +230,23 @@ export default function ProfilePage() {
     skip: !addrEditId,
   });
 
-  // RO hooks – pakai 0 saat skip agar param number tetap valid
-  const provinceId = addrForm.rajaongkir_province_id ?? 0;
+  // RO lists
   const { data: provinces } = useGetProvincesQuery();
-  const { data: cities } = useGetCitiesQuery(provinceId, {
+  const provinceList = toList<Region>(provinces as ROResponse<Region>);
+
+  const provinceIdForAddr = addrForm.rajaongkir_province_id ?? 0;
+  const { data: cities } = useGetCitiesQuery(provinceIdForAddr, {
     skip: !addrForm.rajaongkir_province_id,
   });
-  const cityId = addrForm.rajaongkir_city_id ?? 0;
-  const { data: districts } = useGetDistrictsQuery(cityId, {
+  const cityList = toList<Region>(cities as ROResponse<Region>);
+
+  const cityIdForAddr = addrForm.rajaongkir_city_id ?? 0;
+  const { data: districts } = useGetDistrictsQuery(cityIdForAddr, {
     skip: !addrForm.rajaongkir_city_id,
   });
-
-  // Normalisasi RO lists (tanpa any)
-  const provinceList = toList<Region>(provinces as ROResponse<Region>);
-  const cityList = toList<Region>(cities as ROResponse<Region>);
   const districtList = toList<Region>(districts as ROResponse<Region>);
 
-  // Prefill form saat edit
+  // Prefill edit address
   useEffect(() => {
     if (!addrDetail) return;
     setAddrForm({
@@ -1214,63 +330,18 @@ export default function ProfilePage() {
     }
   };
 
-  // Handle order detail modal
-  const openOrderDetailModal = (orderId: string) => {
-    setSelectedOrderId(orderId);
-    setOrderDetailModalOpen(true);
-  };
-
-  const closeOrderDetailModal = () => {
-    setOrderDetailModalOpen(false);
-    setSelectedOrderId(null);
-  };
-
-  // Handle payment proof upload
-  const openPaymentProofModal = () => {
-    setPaymentProofModalOpen(true);
-  };
-
-  const closePaymentProofModal = () => {
-    setPaymentProofModalOpen(false);
-    setPaymentProofFile(null);
-  };
-
-  const handlePaymentProofUpload = async () => {
-    if (!paymentProofFile || !selectedOrderId) {
-      Swal.fire("Error", "Silakan pilih file bukti pembayaran", "error");
-      return;
-    }
-
-    try {
-      await uploadPaymentProof(selectedOrderId, paymentProofFile);
-      await Swal.fire(
-        "Berhasil",
-        "Bukti pembayaran berhasil diupload",
-        "success"
-      );
-      closePaymentProofModal();
-      closeOrderDetailModal();
-      await refetchTransactions();
-    } catch (error) {
-      console.error("Upload error:", error);
-      Swal.fire("Error", "Gagal mengupload bukti pembayaran", "error");
-    }
-  };
-
-  /* --------------------- Profil/dsb (tetap) --------------------- */
+  /** ---------------------------------- Profile/User ---------------------------------- */
   const [userProfile, setUserProfile] = useState<UserProfile>({
     id:
       (session?.user as { id?: number } | undefined)?.id?.toString?.() ??
       "user-id",
-    anggota: {
-      reference: "",
-    },
+    anggota: { reference: "" },
     shop: "",
     email_verified_at: "",
     fullName: sessionName,
     email: sessionEmail,
     phone: "",
-    birthDate: "1990-05-15", // default birth date
+    birthDate: "1990-05-15",
     image: session?.user?.image || "/api/placeholder/150/150",
     joinDate: "",
     totalOrders: 0,
@@ -1306,7 +377,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const u = currentUserResp;
-
     if (!u) return;
 
     const apiImage =
@@ -1338,56 +408,6 @@ export default function ProfilePage() {
     }));
   }, [currentUserResp]);
 
-  const tabs = [
-    {
-      id: "dashboard",
-      label: "Dashboard",
-      icon: <BarChart3 className="w-5 h-5" />,
-    },
-    { id: "profile", label: "Profil", icon: <UserIcon className="w-5 h-5" /> },
-    { id: "addresses", label: "Alamat", icon: <MapPin className="w-5 h-5" /> },
-    { id: "orders", label: "Pesanan", icon: <Package className="w-5 h-5" /> },
-    {
-      id: "anggota",
-      label: "Anggota Koperasi",
-      icon: <Landmark className="w-5 h-5" />,
-    },
-    { id: "seller", label: "Seller", icon: <Store className="w-5 h-5" /> },
-  ] as const;
-
-  const getStatusColor = (status: Order["status"]) => {
-    switch (status) {
-      case "delivered":
-        return "text-green-600 bg-green-50";
-      case "shipped":
-        return "text-blue-600 bg-blue-50";
-      case "processing":
-        return "text-yellow-600 bg-yellow-50";
-      case "pending":
-        return "text-orange-600 bg-orange-50";
-      case "cancelled":
-        return "text-red-600 bg-red-50";
-      default:
-        return "text-gray-600 bg-gray-50";
-    }
-  };
-  const getStatusText = (status: Order["status"]) => {
-    switch (status) {
-      case "delivered":
-        return "Diterima";
-      case "shipped":
-        return "Dikirim";
-      case "processing":
-        return "Diproses";
-      case "pending":
-        return "Menunggu";
-      case "cancelled":
-        return "Dibatalkan";
-      default:
-        return status;
-    }
-  };
-
   const openEditProfileModal = async () => {
     setIsPrefillingProfile(true);
     try {
@@ -1412,11 +432,10 @@ export default function ProfilePage() {
   const handleSubmitProfile = async () => {
     try {
       const fd = new FormData();
-      // wajib/umum
       fd.append("name", profileForm.name ?? "");
       fd.append("email", profileForm.email ?? "");
       fd.append("phone", profileForm.phone ?? "");
-      // password opsional (hanya kirim jika diisi)
+
       if (profileForm.password) {
         fd.append("password", profileForm.password);
         fd.append(
@@ -1424,7 +443,6 @@ export default function ProfilePage() {
           profileForm.password_confirmation || ""
         );
       }
-      // image opsional
       if (profileForm.imageFile) {
         fd.append("image", profileForm.imageFile);
       }
@@ -1432,13 +450,11 @@ export default function ProfilePage() {
       await updateCurrentUser(fd).unwrap();
       await refetchCurrentUser();
 
-      // sinkronkan tampilan lokal
       setUserProfile((prev) => ({
         ...prev,
         fullName: profileForm.name || prev.fullName,
         email: profileForm.email || prev.email,
         phone: profileForm.phone || prev.phone,
-        // avatar akan ikut dari current user ketika di-SSR/CSR fetch; di sini cukup refetch
       }));
 
       setProfileModalOpen(false);
@@ -1474,86 +490,65 @@ export default function ProfilePage() {
     }
   };
 
-  const DEFAULT_AVATAR =
-    "https://8nc5ppykod.ufs.sh/f/H265ZJJzf6brRRAfCOa62KGLnZzEJ8j0tpdrMSvRcPXiYUsh";
-
-  const normalizeUrl = (u?: string) => {
-    if (!u) return "";
-    try {
-      // encode karakter spesial, tapi tetap pertahankan slash
-      return encodeURI(u);
-    } catch {
-      return u;
-    }
-  };
-  // Avatar source dengan fallback otomatis
+  // Avatar handling (fallback)
   const rawAvatar = (userProfile.image ?? "").trim();
   const wantedAvatar = normalizeUrl(rawAvatar);
-
-  // pegang src di state supaya bisa diganti saat onError
   const [imgSrc, setImgSrc] = useState<string>(
     wantedAvatar ? wantedAvatar : DEFAULT_AVATAR
   );
-
-  // update kalau userProfile.image berubah
   useEffect(() => {
     setImgSrc(wantedAvatar ? wantedAvatar : DEFAULT_AVATAR);
   }, [wantedAvatar]);
 
-
-  /* --------------------- UI --------------------- */
-
   // --- Modals for new tabs ---
-  const [isDaftarAnggotaModalOpen, setIsDaftarAnggotaModalOpen] = useState(false);
+  const [isDaftarAnggotaModalOpen, setIsDaftarAnggotaModalOpen] =
+    useState(false);
   const [isDaftarSellerModalOpen, setIsDaftarSellerModalOpen] = useState(false);
+
   const benefits = [
     {
       icon: <ShieldCheck className="w-8 h-8 text-[#6B6B6B]" />,
       title: "Simpanan Aman & Menguntungkan",
-      description: "Dana Anda dikelola secara profesional dan transparan dengan bagi hasil yang kompetitif."
+      description:
+        "Dana Anda dikelola secara profesional dan transparan dengan bagi hasil yang kompetitif.",
     },
     {
       icon: <TrendingUp className="w-8 h-8 text-[#6B6B6B]" />,
       title: "Akses Permodalan Mudah",
-      description: "Dapatkan pinjaman dengan proses yang cepat dan bunga yang ringan untuk berbagai kebutuhan."
+      description:
+        "Dapatkan pinjaman dengan proses yang cepat dan bunga yang ringan untuk berbagai kebutuhan.",
     },
     {
       icon: <Briefcase className="w-8 h-8 text-[#6B6B6B]" />,
       title: "Program Kesejahteraan",
-      description: "Ikut serta dalam berbagai program untuk meningkatkan kesejahteraan anggota dan keluarga."
+      description:
+        "Ikut serta dalam berbagai program untuk meningkatkan kesejahteraan anggota dan keluarga.",
     },
     {
       icon: <Users className="w-8 h-8 text-[#6B6B6B]" />,
       title: "Membangun Jaringan",
-      description: "Menjadi bagian dari komunitas yang solid dan saling mendukung satu sama lain."
+      description:
+        "Menjadi bagian dari komunitas yang solid dan saling mendukung satu sama lain.",
     },
   ];
 
-  const hasSellerStore = false; // Static state for demo
+  // Helpers for order detail modal
+  const openOrderDetailModal = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setOrderDetailModalOpen(true);
+  };
+  const closeOrderDetailModal = () => {
+    setOrderDetailModalOpen(false);
+    setSelectedOrderId(null);
+  };
+
+  // Payment proof (manual)
+  const openPaymentProofModal = () => setPaymentProofModalOpen(true);
+  const closePaymentProofModal = () => setPaymentProofModalOpen(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-[#DFF19D]/10 pt-24">
       <div className="container mx-auto px-6 lg:px-12 pb-12">
-        {/* Header */}
-        <div className="mb-8 hidden lg:hidden">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-[#6B6B6B]/10 px-4 py-2 rounded-full mb-4">
-              <span className="text-sm font-medium text-[#6B6B6B]">
-                Profil Anggota
-              </span>
-            </div>
-            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Selamat Datang,{" "}
-              <span className="text-[#6B6B6B]">
-                {userProfile.fullName.split(" ")[0]}
-              </span>
-            </h1>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Kelola profil, keuangan, dan aktivitas di Koperasi Merah Putih
-            </p>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
@@ -1582,12 +577,53 @@ export default function ProfilePage() {
               </div>
 
               <nav className="space-y-2 mb-6">
-                {tabs.map((tab) => (
+                {[
+                  {
+                    id: "dashboard",
+                    label: "Dashboard",
+                    icon: <BarChart3 className="w-5 h-5" />,
+                  },
+                  {
+                    id: "profile",
+                    label: "Profil",
+                    icon: <UserIcon className="w-5 h-5" />,
+                  },
+                  {
+                    id: "addresses",
+                    label: "Alamat",
+                    icon: <MapPin className="w-5 h-5" />,
+                  },
+                  {
+                    id: "orders",
+                    label: "Pesanan",
+                    icon: <Package className="w-5 h-5" />,
+                  },
+                  {
+                    id: "anggota",
+                    label: "Anggota Koperasi",
+                    icon: <Landmark className="w-5 h-5" />,
+                  },
+                  {
+                    id: "seller",
+                    label: "Seller",
+                    icon: <Store className="w-5 h-5" />,
+                  },
+                ].map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() =>
+                      setActiveTab(
+                        tab.id as
+                          | "dashboard"
+                          | "profile"
+                          | "addresses"
+                          | "orders"
+                          | "anggota"
+                          | "seller"
+                      )
+                    }
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${
-                      activeTab === tab.id
+                      activeTab === (tab.id as typeof activeTab)
                         ? "bg-[#6B6B6B] text-white shadow-lg"
                         : "text-gray-700 hover:bg-[#6B6B6B]/10 hover:text-[#6B6B6B]"
                     }`}
@@ -1610,92 +646,72 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Main Content */}
+          {/* Main */}
           <div className="lg:col-span-3">
             <div className="bg-white rounded-3xl p-8 shadow-lg">
               {/* Dashboard */}
               {activeTab === "dashboard" && (
                 <div className="space-y-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
-                      <BarChart3 className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {userProfile.anggota.reference === ""
-                        ? "Dashboard Customer"
-                        : "Dashboard Anggota"}
-                      {" "}
-                    </h2>
-                  </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Total Belanja Marketplace */}
-                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/10 shadow-lg border border-[#F44336]/30">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/30">
                       <div className="flex items-center gap-3 mb-3">
-                      <CreditCard className="w-6 h-6 text-[#B71C1C]" />
-                      <span className="font-semibold">
-                        Total Belanja Marketplace
-                      </span>
+                        <CreditCard className="w-6 h-6 text-[#B71C1C]" />
+                        <span className="font-semibold">
+                          Total Belanja Marketplace
+                        </span>
                       </div>
                       <div className="text-3xl font-bold">
-                      {new Intl.NumberFormat("id-ID", {
-                        style: "currency",
-                        currency: "IDR",
-                        minimumFractionDigits: 0,
-                      }).format(userProfile.totalSpent)}
-                      </div>
-                      <div className="text-[#B71C1C]/80 text-sm">
-                      Total transaksi di marketplace
-                      </div>
-                    </div>
-                    {/* Total Keranjang */}
-                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/10 flex flex-col justify-between">
-                      <div className="flex items-center gap-3 mb-3">
-                      <Package className="w-6 h-6 text-[#B71C1C]" />
-                      <span className="font-semibold">
-                        Total Keranjang
-                      </span>
-                      </div>
-                      <div className="text-3xl font-bold">
-                      {/* Jumlah produk di keranjang */}
-                      {Array.isArray(orders)
-                        ? orders.reduce(
-                          (acc, order) =>
-                          acc +
-                          order.items.reduce(
-                            (sum, item) => sum + item.quantity,
-                            0
-                          ),
-                          0
-                        )
-                        : 0}{" "}
-                      produk
-                      </div>
-                      <div className="text-[#B71C1C]/80 text-sm">
-                      Total nominal:{" "}
-                      <span className="font-semibold">
-                        {Array.isArray(orders)
-                        ? new Intl.NumberFormat("id-ID", {
+                        {new Intl.NumberFormat("id-ID", {
                           style: "currency",
                           currency: "IDR",
                           minimumFractionDigits: 0,
-                          }).format(
-                          orders.reduce(
-                            (acc, order) =>
-                            acc +
-                            order.items.reduce(
-                              (sum, item) =>
-                              sum + item.price * item.quantity,
-                              0
-                            ),
-                            0
-                          )
-                          )
-                        : "Rp0"}
-                      </span>
+                        }).format(userProfile.totalSpent)}
+                      </div>
+                      <div className="text-[#B71C1C]/80 text-sm">
+                        Total transaksi di marketplace
                       </div>
                     </div>
+
+                    <div className="bg-gradient-to-r from-white via-[#F44336]/10 to-[#F44336]/30 rounded-2xl p-6 text-[#B71C1C] shadow-lg border border-[#F44336]/30">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Package className="w-6 h-6 text-[#B71C1C]" />
+                        <span className="font-semibold">Total Keranjang</span>
+                      </div>
+                      <div className="text-3xl font-bold">
+                        {(orders || []).reduce(
+                          (acc, order) =>
+                            acc +
+                            order.items.reduce(
+                              (sum, item) => sum + item.quantity,
+                              0
+                            ),
+                          0
+                        )}{" "}
+                        produk
+                      </div>
+                      <div className="text-[#B71C1C]/80 text-sm">
+                        Total nominal:{" "}
+                        <span className="font-semibold">
+                          {new Intl.NumberFormat("id-ID", {
+                            style: "currency",
+                            currency: "IDR",
+                            minimumFractionDigits: 0,
+                          }).format(
+                            (orders || []).reduce(
+                              (acc, order) =>
+                                acc +
+                                order.items.reduce(
+                                  (sum, item) =>
+                                    sum + item.price * item.quantity,
+                                  0
+                                ),
+                              0
+                            )
+                          )}
+                        </span>
+                      </div>
                     </div>
+                  </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-6">
@@ -1790,89 +806,41 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Nama Lengkap
-                      </label>
-                      <div className="relative">
-                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="text"
-                          value={userProfile.fullName}
-                          onChange={(e) =>
-                            setUserProfile((prev) => ({
-                              ...prev,
-                              fullName: e.target.value,
-                            }))
-                          }
-                          disabled={!isEditing}
-                          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent disabled:bg-gray-50"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Email
-                      </label>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="email"
-                          value={userProfile.email}
-                          onChange={(e) =>
-                            setUserProfile((prev) => ({
-                              ...prev,
-                              email: e.target.value,
-                            }))
-                          }
-                          disabled={!isEditing}
-                          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent disabled:bg-gray-50"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Nomor Telepon
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="tel"
-                          value={userProfile.phone}
-                          onChange={(e) =>
-                            setUserProfile((prev) => ({
-                              ...prev,
-                              phone: e.target.value,
-                            }))
-                          }
-                          disabled={!isEditing}
-                          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent disabled:bg-gray-50"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        Tanggal Lahir
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <input
-                          type="date"
-                          value={userProfile.birthDate}
-                          onChange={(e) =>
-                            setUserProfile((prev) => ({
-                              ...prev,
-                              birthDate: e.target.value,
-                            }))
-                          }
-                          disabled={!isEditing}
-                          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent disabled:bg-gray-50"
-                        />
-                      </div>
-                    </div>
+                    <LabeledInput
+                      label="Nama Lengkap"
+                      icon={<UserIcon className="w-5 h-5 text-gray-400" />}
+                      value={userProfile.fullName}
+                      onChange={(v) =>
+                        setUserProfile((p) => ({ ...p, fullName: v }))
+                      }
+                    />
+                    <LabeledInput
+                      label="Email"
+                      type="email"
+                      icon={<Mail className="w-5 h-5 text-gray-400" />}
+                      value={userProfile.email}
+                      onChange={(v) =>
+                        setUserProfile((p) => ({ ...p, email: v }))
+                      }
+                    />
+                    <LabeledInput
+                      label="Nomor Telepon"
+                      type="tel"
+                      icon={<Phone className="w-5 h-5 text-gray-400" />}
+                      value={userProfile.phone}
+                      onChange={(v) =>
+                        setUserProfile((p) => ({ ...p, phone: v }))
+                      }
+                    />
+                    <LabeledInput
+                      label="Tanggal Lahir"
+                      type="date"
+                      icon={<Calendar className="w-5 h-5 text-gray-400" />}
+                      value={userProfile.birthDate}
+                      onChange={(v) =>
+                        setUserProfile((p) => ({ ...p, birthDate: v }))
+                      }
+                    />
                   </div>
 
                   <div className="bg-[#6B6B6B]/5 rounded-2xl p-6">
@@ -1883,10 +851,16 @@ export default function ProfilePage() {
                       <div>
                         <span className="text-gray-600">Bergabung sejak:</span>
                         <div className="font-semibold text-gray-900">
-                          {new Date(userProfile.joinDate).toLocaleDateString(
-                            "id-ID",
-                            { year: "numeric", month: "long", day: "numeric" }
-                          )}
+                          {userProfile.joinDate
+                            ? new Date(userProfile.joinDate).toLocaleDateString(
+                                "id-ID",
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )
+                            : "-"}
                         </div>
                       </div>
                       <div>
@@ -1902,6 +876,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
               )}
+
               {/* Addresses */}
               {activeTab === "addresses" && (
                 <div className="space-y-8">
@@ -1931,7 +906,9 @@ export default function ProfilePage() {
                         userAddressList?.data ?? [];
                       if (addressData.length === 0) {
                         return (
-                          <div className="text-gray-600">Belum ada address.</div>
+                          <div className="text-gray-600">
+                            Belum ada address.
+                          </div>
                         );
                       }
                       return (
@@ -2264,6 +1241,7 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
+
               {/* Orders */}
               {activeTab === "orders" && (
                 <div className="space-y-8">
@@ -2345,9 +1323,9 @@ export default function ProfilePage() {
                               <div className="text-right">
                                 <div className="font-semibold text-gray-900">
                                   Rp{" "}
-                                  {(
-                                    item.price * item.quantity
-                                  ).toLocaleString("id-ID")}
+                                  {(item.price * item.quantity).toLocaleString(
+                                    "id-ID"
+                                  )}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   @Rp {item.price.toLocaleString("id-ID")}
@@ -2366,22 +1344,16 @@ export default function ProfilePage() {
                             Detail
                           </button>
                           {order.status === "delivered" && (
-                            <button className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-2xl hover:bg-[#6B6B6B]/90 transition-colors">
-                              <Download className="w-4 h-4" />
-                              Invoice
-                            </button>
-                          )}
-                          {order.trackingNumber && (
-                            <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-2xl hover:bg-gray-200 transition-colors">
-                              <Truck className="w-4 h-4" />
-                              Lacak
-                            </button>
-                          )}
-                          {order.status === "delivered" && (
-                            <button className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-2xl hover:bg-yellow-200 transition-colors">
-                              <Star className="w-4 h-4" />
-                              Beri Review
-                            </button>
+                            <>
+                              <button className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-2xl hover:bg-[#6B6B6B]/90 transition-colors">
+                                <Download className="w-4 h-4" />
+                                Invoice
+                              </button>
+                              <button className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-2xl hover:bg-yellow-200 transition-colors">
+                                <Star className="w-4 h-4" />
+                                Beri Review
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -2411,9 +1383,9 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Anggota Koperasi (REVISED) */}
-              {activeTab === "anggota" && (
-                userProfile.anggota && userProfile.anggota.reference !== "" ? (
+              {/* Anggota Koperasi */}
+              {activeTab === "anggota" &&
+                (userProfile.anggota && userProfile.anggota.reference !== "" ? (
                   <div className="space-y-8">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-[#6B6B6B] rounded-2xl flex items-center justify-center text-white">
@@ -2436,10 +1408,13 @@ export default function ProfilePage() {
                         </span>
                       </div>
                       <div className="text-gray-700 mb-4">
-                        Nomor Anggota: <span className="font-bold">{userProfile.anggota.reference}</span>
+                        Nomor Anggota:{" "}
+                        <span className="font-bold">
+                          {userProfile.anggota.reference}
+                        </span>
                       </div>
                       <button
-                        onClick={() => window.location.href = "/admin"}
+                        onClick={() => (window.location.href = "/admin")}
                         className="flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105"
                       >
                         <Landmark className="w-5 h-5" />
@@ -2506,8 +1481,7 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   </div>
-                )
-              )}
+                ))}
 
               {/* Seller */}
               {activeTab === "seller" && (
@@ -2521,7 +1495,8 @@ export default function ProfilePage() {
                         Menjadi Seller di Marketplace
                       </h2>
                       <p className="text-gray-600 mt-1">
-                        Mulai jual produk Anda di marketplace Koperasi Merah Putih dan jangkau lebih banyak pelanggan.
+                        Mulai jual produk Anda di marketplace Koperasi Merah
+                        Putih dan jangkau lebih banyak pelanggan.
                       </p>
                     </div>
                   </div>
@@ -2538,7 +1513,8 @@ export default function ProfilePage() {
                             Potensi Penjualan Lebih Besar
                           </h4>
                           <p className="text-gray-600 mt-1">
-                            Jangkau ribuan anggota koperasi dan pelanggan marketplace.
+                            Jangkau ribuan anggota koperasi dan pelanggan
+                            marketplace.
                           </p>
                         </div>
                       </div>
@@ -2571,7 +1547,8 @@ export default function ProfilePage() {
                             Komunitas Seller
                           </h4>
                           <p className="text-gray-600 mt-1">
-                            Bergabung dengan komunitas seller koperasi untuk berbagi pengalaman dan tips.
+                            Bergabung dengan komunitas seller koperasi untuk
+                            berbagi pengalaman dan tips.
                           </p>
                         </div>
                       </div>
@@ -2583,7 +1560,9 @@ export default function ProfilePage() {
                       Siap Menjadi Seller?
                     </h3>
                     <p className="text-gray-600 mt-2 max-w-xl mx-auto">
-                      Proses pendaftaran seller sangat mudah. Klik tombol di bawah ini untuk memulai membuka toko Anda di marketplace kami.
+                      Proses pendaftaran seller sangat mudah. Klik tombol di
+                      bawah ini untuk memulai membuka toko Anda di marketplace
+                      kami.
                     </p>
                     <button
                       onClick={() => setIsDaftarSellerModalOpen(true)}
@@ -2599,6 +1578,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
       {/* Profile Edit Modal */}
       {profileModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -2618,306 +1598,31 @@ export default function ProfilePage() {
           />
         </div>
       )}
-      {/* Order Detail Modal */}
+
+      {/* Order Detail Modal (lihat + bayar + buka modal bukti) */}
       {orderDetailModalOpen && selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={closeOrderDetailModal}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-bold text-gray-900">
-                Detail Pesanan #{selectedOrder.orderNumber}
-              </h3>
-              <button
-                onClick={closeOrderDetailModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              {/* Order Info */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Informasi Pesanan
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Nomor Pesanan:</span>
-                      <span className="font-medium">
-                        #{selectedOrder.orderNumber}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tanggal:</span>
-                      <span className="font-medium">
-                        {new Date(selectedOrder.date).toLocaleDateString(
-                          "id-ID",
-                          {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          }
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                          selectedOrder.status
-                        )}`}
-                      >
-                        {getStatusText(selectedOrder.status)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Metode Pembayaran:</span>
-                      <span className="font-medium uppercase">
-                        {selectedOrder.payment_method || "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Payment Info */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Rincian Pembayaran
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal:</span>
-                      <span className="font-medium">
-                        Rp {selectedOrder.total.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    {selectedOrder.shipment_cost && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ongkos Kirim:</span>
-                        <span className="font-medium">
-                          Rp{" "}
-                          {selectedOrder.shipment_cost.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                    )}
-                    {selectedOrder.cod && selectedOrder.cod > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Fee COD:</span>
-                        <span className="font-medium">
-                          Rp {selectedOrder.cod.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                    )}
-                    {selectedOrder.discount_total &&
-                      selectedOrder.discount_total > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Diskon:</span>
-                          <span className="font-medium text-green-600">
-                            -Rp{" "}
-                            {selectedOrder.discount_total.toLocaleString(
-                              "id-ID"
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    <div className="border-t pt-2">
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-gray-900">
-                          Total:
-                        </span>
-                        <span className="font-bold text-[#6B6B6B]">
-                          Rp {selectedOrder.grand_total.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Shipping Info */}
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">
-                    Alamat Pengiriman
-                  </h4>
-                  <div className="text-sm">
-                    <p className="text-gray-800">
-                      {selectedOrder.address_line_1}
-                    </p>
-                    <p className="text-gray-600">{selectedOrder.postal_code}</p>
-                  </div>
-                </div>
-
-                {/* Payment Proof Section */}
-                {selectedOrder.payment_method === "manual" && (
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      Bukti Pembayaran
-                    </h4>
-                    {selectedOrder.payment_proof ? (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center gap-2 text-green-600">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">
-                            Bukti pembayaran telah diupload
-                          </span>
-                        </div>
-                        <div className="mt-2">
-                          <Image
-                            src={selectedOrder.payment_proof}
-                            alt="Bukti Pembayaran"
-                            width={200}
-                            height={200}
-                            className="rounded-lg object-cover"
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                        <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                        <p className="text-sm text-gray-600 mb-3">
-                          Belum ada bukti pembayaran
-                        </p>
-                        <button
-                          onClick={openPaymentProofModal}
-                          className="flex items-center gap-2 px-4 py-2 bg-[#6B6B6B] text-white rounded-lg font-medium hover:bg-[#6B6B6B]/90 transition-colors mx-auto"
-                        >
-                          <Upload className="w-4 h-4" />
-                          Upload Bukti
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Order Items */}
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-4">
-                Produk Pesanan
-              </h4>
-              <div className="space-y-4">
-                {selectedOrder.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 p-4 border rounded-lg"
-                  >
-                    <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <h5 className="font-semibold text-gray-900">
-                        {item.name}
-                      </h5>
-                      <p className="text-sm text-gray-600">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold text-gray-900">
-                        Rp{" "}
-                        {(item.price * item.quantity).toLocaleString("id-ID")}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        @Rp {item.price.toLocaleString("id-ID")}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderDetailModal
+          open={orderDetailModalOpen}
+          onClose={closeOrderDetailModal}
+          order={selectedOrder}
+          detail={selectedDetail}
+          onOpenUploadProof={openPaymentProofModal}
+        />
       )}
-      {/* Payment Proof Upload Modal */}
-      {paymentProofModalOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={closePaymentProofModal}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                Upload Bukti Pembayaran
-              </h3>
-              <button
-                onClick={closePaymentProofModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pilih File Bukti Pembayaran
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    setPaymentProofFile(e.target.files?.[0] || null)
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                />
-              </div>
-
-              {paymentProofFile && (
-                <div className="text-sm text-gray-600">
-                  File dipilih: {paymentProofFile.name}
-                </div>
-              )}
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  <strong>Catatan:</strong> Pastikan file yang diupload adalah
-                  bukti pembayaran yang valid dan jelas terbaca.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={closePaymentProofModal}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handlePaymentProofUpload}
-                disabled={!paymentProofFile || isUploadingProof}
-                className="flex-1 px-4 py-2 bg-[#6B6B6B] text-white rounded-lg hover:bg-[#6B6B6B]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isUploadingProof ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4" />
-                    Upload
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* --- Modals for new tabs --- */}
+      {/* Payment Proof Upload (untuk payment_method = manual) */}
+      <PaymentProofModal
+        open={paymentProofModalOpen}
+        onClose={closePaymentProofModal}
+        transactionId={selectedOrderId}
+        onUploaded={async () => {
+          closePaymentProofModal();
+          closeOrderDetailModal();
+          await refetchTransactions();
+        }}
+        uploadFn={uploadPaymentProof}
+        isUploading={isUploadingProof}
+      />
 
       {/* Daftar Anggota Modal */}
       <DaftarAnggotaModal
@@ -2927,11 +1632,43 @@ export default function ProfilePage() {
 
       {/* Daftar Seller Modal */}
       <DaftarSellerModal
-          isOpen={isDaftarSellerModalOpen}
-          onClose={() => setIsDaftarSellerModalOpen(false)}
-          onSuccess={handleModalSuccess} // To refetch current user and update isSeller state
-          userProfile={userProfile}
+        isOpen={isDaftarSellerModalOpen}
+        onClose={() => setIsDaftarSellerModalOpen(false)}
+        onSuccess={handleModalSuccess}
+        userProfile={userProfile}
       />
+    </div>
+  );
+}
+
+/* --------------------------------- tiny UI helper --------------------------------- */
+function LabeledInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: "text" | "email" | "tel" | "date";
+  icon: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-900 mb-2">
+        {label}
+      </label>
+      <div className="relative">
+        <span className="absolute left-4 top-1/2 -translate-y-1/2">{icon}</span>
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+        />
+      </div>
     </div>
   );
 }

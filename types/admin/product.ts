@@ -41,10 +41,6 @@ export interface Product {
     disk: string;
     conversions_disk: string;
     size: number;
-    manipulations: any[];
-    custom_properties: any[];
-    generated_conversions: any[];
-    responsive_images: any[];
     order_column: number;
     created_at: string;
     updated_at: string;

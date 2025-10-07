@@ -1,4 +1,6 @@
 import { Voucher } from "../voucher";
+import { CheckoutPayload } from "./payment";
+import { Payment } from "./simpanan";
 
 // Main Transaction interface for API responses
 export interface Transaction {
@@ -30,6 +32,7 @@ export interface Transaction {
   media?: Array<{ original_url: string }>;
   // An array of stores associated with this transaction
   stores: Store[];
+  payment?: Payment;
 }
 
 // Interface for a single store within a transaction
@@ -106,15 +109,12 @@ export interface CreateTransactionRequest {
   voucher?: Voucher[]; // Add proper voucher type if needed
 }
 
-export interface CreateTransactionFrontendRequest {
-  data: CreateTransactionPayload[];
-  voucher?: Voucher[]; // Add proper voucher type if needed
-}
+export type CreateTransactionFrontendRequest = CheckoutPayload;
 
 export interface CreateTransactionFrontendResponse {
-  success: boolean;
+  code: number;
   message: string;
-  data: CreateTransactionPayload | CreateTransactionPayload[]; // Could be single or multiple transactions
+  data: Transaction;
 }
 
 // Create transaction response

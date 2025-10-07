@@ -30,6 +30,7 @@ import { AdminLayoutProps, MenuItem } from "@/types";
 import { FaMoneyBillWave, FaCoins } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import type { User } from "@/types/user";
+import ClientAuthGuard from "@/components/client-guards";
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -282,7 +283,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "pemisah-marketplace",
       label: "Marketplace",
       isSeparator: true,
-      href: "#"
+      href: "#",
     },
     {
       id: "dashboard-marketplace",
@@ -294,13 +295,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "seller",
       label: "Seller",
       icon: <UserCheck className="h-5 w-5" />,
-      href: "/admin/seller", 
+      href: "/admin/seller",
     },
     {
       id: "product-marketplace",
       label: "Produk",
       icon: <Package className="h-5 w-5" />,
-      href: "/admin/product-list", 
+      href: "/admin/product-list",
     },
     {
       id: "transaction-marketplace",
@@ -366,13 +367,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "voucher",
       label: "Voucher",
       icon: <Tag className="h-5 w-5" />,
-      href: "/admin/voucher", 
+      href: "/admin/voucher",
     },
     {
       id: "master-marketplace",
       label: "Master",
       icon: <Database className="h-5 w-5" />,
-      href: "#", 
+      href: "#",
       children: [
         {
           id: "master-product-category-marketplace",
@@ -401,31 +402,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "pemisah-konten-website",
       label: "Konten Website",
       isSeparator: true,
-      href: "#"
+      href: "#",
     },
     {
       id: "home",
       label: "Home",
       icon: <Webhook className="h-5 w-5" />,
-      href: "/admin/home", 
+      href: "/admin/home",
     },
     {
       id: "tentang-kami",
       label: "Tentang Kami",
       icon: <FileStack className="h-5 w-5" />,
-      href: "/admin/tentang-kami", 
+      href: "/admin/tentang-kami",
     },
     {
       id: "gallery",
       label: "Galeri",
       icon: <GalleryVertical className="h-5 w-5" />,
-      href: "/admin/gallery", 
+      href: "/admin/gallery",
     },
     {
       id: "news",
       label: "Berita",
       icon: <Newspaper className="h-5 w-5" />,
-      href: "/admin/news", 
+      href: "/admin/news",
     },
   ];
 
@@ -441,13 +442,13 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "pemisah-marketplace-admin",
       label: "Marketplace",
       isSeparator: true,
-      href: "#"
+      href: "#",
     },
     {
       id: "master-admin",
       label: "Master",
       icon: <Database className="h-5 w-5" />,
-      href: "#", 
+      href: "#",
       children: [
         {
           id: "master-product-category-admin",
@@ -465,7 +466,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       id: "product-admin",
       label: "Produk",
       icon: <Package className="h-5 w-5" />,
-      href: "/admin/product-list", 
+      href: "/admin/product-list",
     },
     {
       id: "transaction-admin",
@@ -506,6 +507,11 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         <main className="flex-1 relative overflow-y-auto focus:outline-none">
           <div className="py-2">
             <div className="max-w-7xl mx-auto px-2 sm:px-2 lg:px-2">
+              <ClientAuthGuard
+                excludedRoutes={["/auth", "/auth/login", "/public", "/"]}
+                excludedFetchPrefixes={["/api/auth/", "/auth/"]}
+                loginPath="/auth/login"
+              />
               {children}
             </div>
           </div>
