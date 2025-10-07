@@ -51,6 +51,7 @@ import {
   useDeleteUserAddressMutation,
 } from "@/services/address.service";
 import {
+  useCreateShopMutation,
   useGetProvincesQuery,
   useGetCitiesQuery,
   useGetDistrictsQuery,
@@ -579,6 +580,398 @@ const DaftarAnggotaModal = ({
   );
 };
 
+
+// =======================================================================
+// NEW COMPONENT: Modal Pendaftaran Seller
+// =======================================================================
+interface DaftarSellerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  userProfile: UserProfile;
+}
+
+const DaftarSellerModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  userProfile,
+}: DaftarSellerModalProps) => {
+  const { data: session } = useSession();
+  const [createShop, { isLoading: isCreatingShop }] = useCreateShopMutation();
+
+  // Use existing address hooks logic for regional data
+  const { data: provinces } = useGetProvincesQuery();
+  const provinceList = useMemo(() => toList(provinces), [provinces]);
+
+  const [formData, setFormData] = useState({
+    name: "", // Nama Toko
+    phone: userProfile.phone || session?.user?.phone || "",
+    email: userProfile.email || session?.user?.email || "",
+    address: "", // Alamat Toko
+    description: "",
+    rajaongkir_province_id: null,
+    rajaongkir_city_id: null,
+    rajaongkir_district_id: null,
+    postal_code: "",
+    latitude: "0",
+    longitude: "0",
+  });
+
+  const [files, setFiles] = useState({
+    logo: null,
+    banner: null,
+  });
+
+  const provinceId = formData.rajaongkir_province_id ?? 0;
+  const { data: cities } = useGetCitiesQuery(provinceId, {
+    skip: !formData.rajaongkir_province_id,
+  });
+  const cityList = useMemo(() => toList(cities), [cities]);
+
+  const cityId = formData.rajaongkir_city_id ?? 0;
+  const { data: districts } = useGetDistrictsQuery(cityId, {
+    skip: !formData.rajaongkir_city_id,
+  });
+  const districtList = useMemo(() => toList(districts), [districts]);
+
+  useEffect(() => {
+    // Sync user data to form on open
+    if (isOpen) {
+      setFormData(prev => ({
+        ...prev,
+        phone: userProfile.phone || session?.user?.phone || "",
+        email: userProfile.email || session?.user?.email || "",
+      }));
+    }
+  }, [isOpen, session, userProfile]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files: selectedFiles } = e.target;
+    if (selectedFiles && selectedFiles.length > 0) {
+      setFiles((prev) => ({ ...prev, [name]: selectedFiles[0] }));
+    }
+  };
+
+  const handleRegionChange = (
+    name: string,
+    value: string | number | null
+  ) => {
+    const v = value ? Number(value) : null;
+    setFormData((prev) => {
+      const newState = { ...prev, [name]: v };
+      if (name === "rajaongkir_province_id") {
+        newState.rajaongkir_city_id = null;
+        newState.rajaongkir_district_id = null;
+      } else if (name === "rajaongkir_city_id") {
+        newState.rajaongkir_district_id = null;
+      }
+      return newState;
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      // Basic Validation
+      if (
+        !formData.name ||
+        !formData.phone ||
+        !formData.email ||
+        !formData.address ||
+        !formData.rajaongkir_province_id ||
+        !formData.rajaongkir_city_id ||
+        !formData.rajaongkir_district_id
+      ) {
+        throw new Error("Mohon lengkapi semua data toko dan alamat.");
+      }
+
+      const fd = new FormData();
+      fd.append("name", formData.name);
+      fd.append("phone", formData.phone);
+      fd.append("email", formData.email);
+      fd.append("address", formData.address);
+      fd.append("description", formData.description);
+      fd.append("rajaongkir_province_id", String(formData.rajaongkir_province_id));
+      fd.append("rajaongkir_city_id", String(formData.rajaongkir_city_id));
+      fd.append("rajaongkir_district_id", String(formData.rajaongkir_district_id));
+      fd.append("postal_code", formData.postal_code);
+      fd.append("latitude", formData.latitude);
+      fd.append("longitude", formData.longitude);
+      fd.append("status", "1"); // Set status to '1' (Active/Pending Approval) upon registration
+
+      if (files.logo) fd.append("logo", files.logo);
+      if (files.banner) fd.append("banner", files.banner);
+
+      await createShop(fd).unwrap();
+      await Swal.fire("Sukses", "Formulir pendaftaran seller telah dikirim dan akan segera diverifikasi!", "success");
+      onSuccess(); // To refresh user data/UI
+      onClose(); // Hide modal after submit
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat mendaftar seller";
+      Swal.fire("Gagal", msg, "error");
+      console.error(err);
+    }
+  };
+
+  const FileInput: React.FC<{
+    name: keyof typeof files;
+    label: string;
+    icon: React.ReactNode;
+    currentFile: File | null;
+  }> = ({ name, label, icon, currentFile }) => (
+    <div>
+      <label
+        htmlFor={name}
+        className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
+      >
+        {icon}
+        <div className="flex flex-col">
+          <span className="font-semibold text-gray-700">{label}</span>
+          <span className="text-xs text-gray-500 truncate">
+            {currentFile ? currentFile.name : "Pilih file..."}
+          </span>
+        </div>
+      </label>
+      <input
+        id={name}
+        name={name}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+    </div>
+  );
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 m-4 relative transform transition-all"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">
+              Formulir Pendaftaran Seller
+            </h3>
+            <p className="text-sm text-gray-500">
+              Lengkapi data toko Anda untuk mulai berjualan.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            {/* Nama Toko */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-semibold text-gray-900 mb-2">
+                Nama Toko
+              </label>
+              <input
+                type="text"
+                name="name"
+                id="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* No. HP */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-semibold text-gray-900 mb-2">
+                No. HP Toko
+              </label>
+              <input
+                type="tel"
+                name="phone"
+                id="phone"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+            {/* Email */}
+            <div className="md:col-span-2">
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2">
+                Email Toko
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="md:col-span-2">
+              <label htmlFor="description" className="block text-sm font-semibold text-gray-900 mb-2">
+                Deskripsi Toko (Opsional)
+              </label>
+              <textarea
+                name="description"
+                id="description"
+                rows={2}
+                value={formData.description}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              ></textarea>
+            </div>
+
+            {/* Alamat Toko Section */}
+            <div className="md:col-span-2 border-t pt-6">
+              <h4 className="text-lg font-semibold text-gray-800 mb-4">Alamat Toko</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4">
+                {/* Province */}
+                <div>
+                  <label htmlFor="rajaongkir_province_id" className="block text-sm font-semibold text-gray-900 mb-2">
+                    Provinsi
+                  </label>
+                  <select
+                    name="rajaongkir_province_id"
+                    id="rajaongkir_province_id"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                    value={formData.rajaongkir_province_id ?? ""}
+                    onChange={(e) => handleRegionChange("rajaongkir_province_id", e.target.value)}
+                    required
+                  >
+                    <option value="">-- Pilih Provinsi --</option>
+                    {provinceList.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* City */}
+                <div>
+                  <label htmlFor="rajaongkir_city_id" className="block text-sm font-semibold text-gray-900 mb-2">
+                    Kota/Kabupaten
+                  </label>
+                  <select
+                    name="rajaongkir_city_id"
+                    id="rajaongkir_city_id"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                    value={formData.rajaongkir_city_id ?? ""}
+                    onChange={(e) => handleRegionChange("rajaongkir_city_id", e.target.value)}
+                    disabled={!formData.rajaongkir_province_id}
+                    required
+                  >
+                    <option value="">-- Pilih Kota/Kabupaten --</option>
+                    {cityList.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* District */}
+                <div>
+                  <label htmlFor="rajaongkir_district_id" className="block text-sm font-semibold text-gray-900 mb-2">
+                    Kecamatan
+                  </label>
+                  <select
+                    name="rajaongkir_district_id"
+                    id="rajaongkir_district_id"
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                    value={formData.rajaongkir_district_id ?? ""}
+                    onChange={(e) => handleRegionChange("rajaongkir_district_id", e.target.value)}
+                    disabled={!formData.rajaongkir_city_id}
+                    required
+                  >
+                    <option value="">-- Pilih Kecamatan --</option>
+                    {districtList.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Alamat Lengkap */}
+            <div className="md:col-span-2">
+              <label htmlFor="address" className="block text-sm font-semibold text-gray-900 mb-2">
+                Detail Alamat (Jalan, Nomor, RT/RW)
+              </label>
+              <textarea
+                name="address"
+                id="address"
+                rows={2}
+                value={formData.address}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                required
+              ></textarea>
+            </div>
+            {/* Kode Pos */}
+            <div>
+              <label htmlFor="postal_code" className="block text-sm font-semibold text-gray-900 mb-2">
+                Kode Pos (Opsional)
+              </label>
+              <input
+                type="text"
+                name="postal_code"
+                id="postal_code"
+                value={formData.postal_code}
+                onChange={handleInputChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-4">Upload Logo & Banner (Opsional)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FileInput name="logo" label="Upload Logo Toko" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.logo} />
+              <FileInput name="banner" label="Upload Banner Toko" icon={<ImageIcon className="w-6 h-6 text-gray-500" />} currentFile={files.banner} />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={isCreatingShop}
+              className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors disabled:opacity-50"
+            >
+              {isCreatingShop ? "Mengirim..." : "Kirim Pendaftaran"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -906,6 +1299,10 @@ export default function ProfilePage() {
 
   const { data: currentUserResp, refetch: refetchCurrentUser } =
     useGetCurrentUserQuery();
+
+  const handleModalSuccess = async () => {
+    await refetchCurrentUser();
+  };
 
   useEffect(() => {
     const u = currentUserResp;
@@ -2529,146 +2926,12 @@ export default function ProfilePage() {
       />
 
       {/* Daftar Seller Modal */}
-      <Modal
-        isOpen={isDaftarSellerModalOpen}
-        onClose={() => setIsDaftarSellerModalOpen(false)}
-        title="Formulir Pendaftaran Seller"
-      >
-        <form
-          className="space-y-6"
-          onSubmit={e => {
-        e.preventDefault();
-        Swal.fire("Berhasil", "Formulir pendaftaran seller telah dikirim!", "success");
-        setIsDaftarSellerModalOpen(false);
-          }}
-        >
-          <div className="grid grid-cols-1 gap-y-4">
-        {/* Nama Toko */}
-        <div>
-          <label htmlFor="nameToko" className="block text-sm font-semibold text-gray-900 mb-2">
-            Nama Toko
-          </label>
-          <input
-            type="text"
-            name="nameToko"
-            id="nameToko"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-            required
-          />
-        </div>
-        {/* Email */}
-        <div>
-          <label htmlFor="emailSeller" className="block text-sm font-semibold text-gray-900 mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            name="emailSeller"
-            id="emailSeller"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-            required
-          />
-        </div>
-        {/* No. HP */}
-        <div>
-          <label htmlFor="phoneSeller" className="block text-sm font-semibold text-gray-900 mb-2">
-            No. HP
-          </label>
-          <input
-            type="tel"
-            name="phoneSeller"
-            id="phoneSeller"
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-            required
-          />
-        </div>
-        {/* Alamat Toko */}
-        <div>
-          <label htmlFor="addressToko" className="block text-sm font-semibold text-gray-900 mb-2">
-            Alamat Toko
-          </label>
-          <textarea
-            name="addressToko"
-            id="addressToko"
-            rows={3}
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-            required
-          ></textarea>
-        </div>
-        {/* Upload Dokumen */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-900 mb-2">
-            Upload Dokumen (Opsional)
-          </label>
-          <div className="flex flex-col gap-3">
-            <label
-          htmlFor="fileKtpSeller"
-          className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
-            >
-          <FileText className="w-6 h-6 text-gray-500" />
-          <span className="font-semibold text-gray-700">Upload KTP</span>
-            </label>
-            <input id="fileKtpSeller" name="fileKtpSeller" type="file" className="hidden" />
-            <label
-          htmlFor="fileNpwpSeller"
-          className="flex items-center gap-3 px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#6B6B6B] hover:bg-gray-100 transition-all"
-            >
-          <FileText className="w-6 h-6 text-gray-500" />
-          <span className="font-semibold text-gray-700">Upload NPWP</span>
-            </label>
-            <input id="fileNpwpSeller" name="fileNpwpSeller" type="file" className="hidden" />
-          </div>
-        </div>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t mt-6">
-        <button
-          type="button"
-          onClick={() => setIsDaftarSellerModalOpen(false)}
-          className="px-6 py-2 bg-gray-100 text-gray-800 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-        >
-          Batal
-        </button>
-        <button
-          type="submit"
-          className="px-6 py-2 bg-[#6B6B6B] text-white rounded-lg font-semibold hover:bg-[#5a5a5a] transition-colors"
-        >
-          Kirim Pendaftaran
-        </button>
-          </div>
-        </form>
-      </Modal>
+      <DaftarSellerModal
+          isOpen={isDaftarSellerModalOpen}
+          onClose={() => setIsDaftarSellerModalOpen(false)}
+          onSuccess={handleModalSuccess} // To refetch current user and update isSeller state
+          userProfile={userProfile}
+      />
     </div>
   );
 }
-
-// Reusable Modal Component
-const Modal = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
