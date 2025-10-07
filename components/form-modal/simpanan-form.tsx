@@ -7,23 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {  UploadCloud, X } from "lucide-react";
+import { UploadCloud, X } from "lucide-react";
 
 import { Simpanan } from "@/types/admin/simpanan";
 import { useGetSimpananCategoryListQuery } from "@/services/master/simpanan-category.service";
 import { formatRupiah, parseRupiah } from "@/lib/format-utils";
 import { AnggotaPicker } from "../ui/anggota-picker";
+import { PaymentChannelSelect } from "../ui/payment-channel-select";
+import { PaymentMethodSelect } from "../ui/payment-method-select";
 
 type CategoryItem = { id: number; name: string; code?: string | null };
 
-interface FormPinjamanProps {
+type Props = {
   form: Partial<Simpanan>;
   setForm: (data: Partial<Simpanan>) => void;
   onCancel: () => void;
   onSubmit: () => void;
   readonly?: boolean;
   isLoading?: boolean;
-}
+};
 
 export default function FormSimpanan({
   form,
@@ -32,8 +34,8 @@ export default function FormSimpanan({
   onSubmit,
   readonly = false,
   isLoading = false,
-}: FormPinjamanProps) {
-  const [dragActive, setDragActive] = useState(false); // untuk dropzone
+}: Props) {
+  const [dragActive, setDragActive] = useState(false);
 
   const { data: categoriesData } = useGetSimpananCategoryListQuery({
     page: 1,
@@ -47,20 +49,16 @@ export default function FormSimpanan({
     { id: "manual", label: "MANUAL", value: "manual" as const },
   ];
 
-  // nominal presets seperti desain (50k, 120k, 500k, 1M, 5M, 10M)
   const nominalPresets: number[] = [
-    50000, 120000, 500000, 1_000_000, 5_000_000, 10_000_000,
+    50_000, 120_000, 500_000, 1_000_000, 5_000_000, 10_000_000,
   ];
 
-  const selectedMethod =
+  const selectedMethod: "automatic" | "manual" | undefined =
     (form.type as "automatic" | "manual" | undefined) ?? undefined;
 
-  // helper dropzone
   const onPickFile = (file: File | null) => {
     if (!file) return;
-    // batas 5MB (sesuai teks desain)
-    const over = file.size > 5 * 1024 * 1024;
-    if (over) {
+    if (file.size > 5 * 1024 * 1024) {
       alert("Ukuran file melebihi 5MB.");
       return;
     }
@@ -81,6 +79,8 @@ export default function FormSimpanan({
     "2": "DITOLAK",
   } as const;
 
+  const isAuto = form.type === "automatic";
+
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-4xl space-y-6 max-h-[90vh] overflow-y-auto">
       <div className="flex justify-between items-center">
@@ -91,13 +91,13 @@ export default function FormSimpanan({
             ? "Edit Simpanan"
             : "Tambah Simpanan"}
         </h2>
-        <Button variant="ghost" onClick={onCancel}>
+        <Button variant="ghost" onClick={onCancel} aria-label="Tutup">
           ✕
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* ========== KATEGORI (TERPISAH) ========== */}
+        {/* KATEGORI */}
         <div className="md:col-span-2">
           <Label className="mb-2 block">Kategori Simpanan *</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -126,7 +126,7 @@ export default function FormSimpanan({
           </div>
         </div>
 
-        {/* ========== NOMINAL DEPOSIT (MIRIP DESAIN) ========== */}
+        {/* NOMINAL */}
         <div className="md:col-span-2">
           <Label className="mb-2 block">Pilih Nominal Simpanan</Label>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -195,7 +195,7 @@ export default function FormSimpanan({
           <Label>Tanggal Simpanan *</Label>
           <Input
             type="datetime-local"
-            className="h-12 rounded-2xl" // ⬅️ tambah ini
+            className="h-12 rounded-2xl"
             value={
               form.date ? new Date(form.date).toISOString().slice(0, 16) : ""
             }
@@ -204,22 +204,27 @@ export default function FormSimpanan({
           />
         </div>
 
-        {/* Metode Pembayaran */}
+        {/* Jenis (automatic/manual) */}
         <div>
           <Label className="mb-2 block">Metode Pembayaran</Label>
           <RadioGroup
             className="grid grid-cols-2 gap-3 w-full"
             value={selectedMethod ?? ""}
-            onValueChange={(val: "automatic" | "manual") =>
-              setForm({ ...form, type: val })
-            }
+            onValueChange={(val: "automatic" | "manual") => {
+              // reset payment fields saat switching
+              setForm({
+                ...form,
+                type: val,
+                payment_method: undefined,
+                payment_channel: undefined,
+              });
+            }}
             disabled={readonly}
           >
             {SimpananTypes.map((t) => (
               <label
                 key={t.id}
-                className="w-full flex items-center gap-2 rounded-2xl border border-neutral-200
-                   bg-white px-4 py-3 shadow-sm"
+                className="w-full flex items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm"
               >
                 <RadioGroupItem value={t.value} id={t.id} />
                 <span className="text-sm font-medium">{t.label}</span>
@@ -228,8 +233,92 @@ export default function FormSimpanan({
           </RadioGroup>
         </div>
 
+        {/* ====== FIELD PAYMENT BARU ====== */}
+        {/* Automatic: pilih method (bank_transfer/qris), dan channel (bank atau 'qris') */}
+        {isAuto && (
+          <>
+            <div>
+              <Label className="mb-2 block">Payment Method *</Label>
+              <PaymentMethodSelect
+                mode="automatic"
+                value={form.payment_method}
+                onChange={(v) => {
+                  if (v === "qris") {
+                    setForm({
+                      ...form,
+                      payment_method: "qris",
+                      payment_channel: "qris",
+                    });
+                  } else if (v === "bank_transfer") {
+                    setForm({
+                      ...form,
+                      payment_method: "bank_transfer",
+                      payment_channel: undefined,
+                    });
+                  } else {
+                    // custom value tetap diperbolehkan
+                    setForm({
+                      ...form,
+                      payment_method: v,
+                      payment_channel: undefined,
+                    });
+                  }
+                }}
+                disabled={readonly}
+              />
+            </div>
+
+            <div>
+              <Label className="mb-2 block">Payment Channel *</Label>
+              <PaymentChannelSelect
+                mode="automatic"
+                method={form.payment_method}
+                value={form.payment_channel}
+                onChange={(v) => setForm({ ...form, payment_channel: v })}
+                disabled={readonly}
+              />
+            </div>
+          </>
+        )}
+
+        {form.type === "manual" && (
+          <>
+            <div>
+              <Label className="mb-2 block">Payment Method (Manual)</Label>
+              <PaymentMethodSelect
+                mode="manual"
+                value={form.payment_method}
+                onChange={(v) => {
+                  // jika user memilih qris → channel ikut qris
+                  if (v === "qris") {
+                    setForm({
+                      ...form,
+                      payment_method: "qris",
+                      payment_channel: "qris",
+                    });
+                  } else {
+                    setForm({ ...form, payment_method: v });
+                  }
+                }}
+                disabled={readonly}
+              />
+            </div>
+
+            <div>
+              <Label className="mb-2 block">Payment Channel (Manual)</Label>
+              <PaymentChannelSelect
+                mode="manual"
+                method={form.payment_method}
+                value={form.payment_channel}
+                onChange={(v) => setForm({ ...form, payment_channel: v })}
+                disabled={readonly}
+              />
+            </div>
+          </>
+        )}
+
         {/* Deskripsi */}
-        <div>
+        <div className="md:col-span-2">
           <Label className="mb-2">Deskripsi (Opsional)</Label>
           <Textarea
             value={form.description ?? ""}
@@ -239,7 +328,7 @@ export default function FormSimpanan({
           />
         </div>
 
-        {/* Upload Bukti Transfer - Drag & Drop (hidden jika automatic) */}
+        {/* Upload bukti (hidden saat automatic) */}
         {form.type !== "automatic" && (
           <div className="md:col-span-2">
             <Label className="mb-2 block">
@@ -264,7 +353,6 @@ export default function FormSimpanan({
               )
             ) : (
               <>
-                {/* Dropzone */}
                 <div
                   onDragOver={(e) => {
                     e.preventDefault();
@@ -289,7 +377,7 @@ export default function FormSimpanan({
                     Tarik & letakkan gambar di sini
                   </p>
                   <p className="text-xs text-neutral-500">
-                    atau klik tombol di bawah • Maksimal 5MB
+                    atau klik tombol di bawah • Maks 5MB
                   </p>
                   <div className="mt-3">
                     <input
@@ -311,7 +399,6 @@ export default function FormSimpanan({
                   </div>
                 </div>
 
-                {/* Preview */}
                 {form.image && (
                   <div className="mt-3 flex items-center gap-3 rounded-xl border p-3">
                     {typeof form.image === "string" ? (
@@ -343,7 +430,7 @@ export default function FormSimpanan({
         )}
 
         {/* readonly info */}
-        {form.status !== undefined && (
+        {typeof form.status !== "undefined" && (
           <div className="flex flex-col gap-y-1 col-span-2">
             <Label>Status</Label>
             <Input

@@ -1,3 +1,20 @@
+export interface Payment {
+  id: number;
+  driver: string;
+  payable_type: string;
+  payable_id: number;
+  order_id: string;
+  transaction_id: string;
+  payment_type: string;
+  account_number: string;
+  account_code: string |null;
+  channel: string;
+  expired_at: string;
+  paid_at: string;
+  amount: number;
+  created_at: string;
+  updated_at: string;
+}
 export interface Simpanan {
   id: number;
   simpanan_category_id: number;
@@ -20,6 +37,9 @@ export interface Simpanan {
   category_name: string;
   image: File | string | null;
   media: string[];
+  payment_method: string; // Diisi kalau automatic bank_transfer,qris
+  payment_channel: string; // Diisi kalau automatic bca,bni,bri,cimb,qris
+  payment: Payment;
 }
 
 export interface SimpananResponse {
@@ -55,6 +75,8 @@ export interface CreateSimpananRequest {
   nominal: number;
   type: "automatic" | "manual";
   image?: File;
+  payment_method?: string;
+  payment_channel?: string;
 }
 
 export interface UpdateSimpananRequest {

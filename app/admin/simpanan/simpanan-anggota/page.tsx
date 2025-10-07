@@ -39,6 +39,13 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { formatRupiahWithRp } from "@/lib/format-utils";
+import { showPaymentInstruction } from "@/lib/show-payment-instructions";
+
+type Anggota = { id: number; name?: string; email?: string };
+
+type WrappedCreateResp = { code: number; message: string; data: Simpanan };
+const isWrappedResp = (x: unknown): x is WrappedCreateResp =>
+  typeof x === "object" && x !== null && "data" in x;
 
 export default function SimpananAnggotaPage() {
   const [form, setForm] = useState<Partial<Simpanan>>({});
@@ -47,6 +54,7 @@ export default function SimpananAnggotaPage() {
   const { isOpen, openModal, closeModal } = useModal();
   const [isExporting, setIsExporting] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+
   const initialFilters = {
     category_id: "",
     status: "",
@@ -55,44 +63,37 @@ export default function SimpananAnggotaPage() {
     member_query: "",
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
-      // Don't close if clicking on dropdown button or dropdown content
       if (openDropdownId && !target.closest(".dropdown-container")) {
         setOpenDropdownId(null);
       }
     };
-
     if (openDropdownId) {
-      // Use setTimeout to avoid immediate closure
-      setTimeout(() => {
-        document.addEventListener("click", handleClickOutside);
-      }, 100);
+      setTimeout(
+        () => document.addEventListener("click", handleClickOutside),
+        100
+      );
     }
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
+    return () => document.removeEventListener("click", handleClickOutside);
   }, [openDropdownId]);
 
-  // Pagination
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Filters
   const [filters, setFilters] = useState(initialFilters);
 
-  const hasActiveFilters = useMemo(() => {
-    return Boolean(
-      filters.category_id ||
-        filters.status ||
-        filters.member_query.trim() ||
-        filters.date_from ||
-        filters.date_to
-    );
-  }, [filters]);
+  const hasActiveFilters = useMemo(
+    () =>
+      Boolean(
+        filters.category_id ||
+          filters.status ||
+          filters.member_query.trim() ||
+          filters.date_from ||
+          filters.date_to
+      ),
+    [filters]
+  );
 
   const handleResetFilters = () => {
     setCurrentPage(1);
@@ -113,7 +114,6 @@ export default function SimpananAnggotaPage() {
       : undefined,
   });
 
-  // Get categories and users for filters
   const { data: categoriesData } = useGetSimpananCategoryListQuery({
     page: 1,
     paginate: 100,
@@ -125,8 +125,6 @@ export default function SimpananAnggotaPage() {
     status: 1,
   });
 
-  type Anggota = { id: number; name?: string; email?: string };
-
   const rawUsers: Anggota[] | undefined = usersData?.data;
   const users: Anggota[] = useMemo(() => rawUsers ?? [], [rawUsers]);
 
@@ -135,31 +133,21 @@ export default function SimpananAnggotaPage() {
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
   const usersById = useMemo(() => {
-    const m = new Map<number, { id: number; name?: string; email?: string }>();
+    const m = new Map<number, Anggota>();
     users.forEach((u) => m.set(u.id, u));
     return m;
   }, [users]);
 
-  // Helper functions to get names by ID
-  const getUserName = (userId: number) => {
-    const user = users.find((u) => u.id === userId);
-    return user?.name || `User ID: ${userId}`;
-  };
-
-  const getUserEmail = (userId: number) => {
-    const user = users.find((u) => u.id === userId);
-    return user?.email || "Email tidak tersedia";
-  };
-
-  const getCategoryName = (categoryId: number) => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category?.name || `Category ID: ${categoryId}`;
-  };
-
-  const getCategoryCode = (categoryId: number) => {
-    const category = categories.find((c) => c.id === categoryId);
-    return category?.code || "Kode tidak tersedia";
-  };
+  const getUserName = (userId: number) =>
+    usersById.get(userId)?.name || `User ID: ${userId}`;
+  const getUserEmail = (userId: number) =>
+    usersById.get(userId)?.email || "Email tidak tersedia";
+  const getCategoryName = (categoryId: number) =>
+    categories.find((c: { id: number; name: string }) => c.id === categoryId)
+      ?.name ?? `Category ID: ${categoryId}`;
+  const getCategoryCode = (categoryId: number) =>
+    categories.find((c: { id: number; code?: string }) => c.id === categoryId)
+      ?.code ?? "Kode tidak tersedia";
 
   const [createSimpanan, { isLoading: isCreating }] =
     useCreateSimpananMutation();
@@ -168,23 +156,49 @@ export default function SimpananAnggotaPage() {
   const [deleteSimpanan] = useDeleteSimpananMutation();
   const [updateStatus] = useUpdateSimpananStatusMutation();
 
+  type CreatePayload = {
+    simpanan_category_id: number;
+    user_id: number;
+    description: string;
+    date: string;
+    nominal: number;
+    type: "automatic" | "manual";
+    payment_method?: string;
+    payment_channel?: string;
+  };
+
   const handleSubmit = async () => {
     try {
-      const payload = {
+      const payload: CreatePayload = {
         simpanan_category_id: form.simpanan_category_id || 0,
         user_id: form.user_id || 0,
         description: form.description || "",
         date: form.date || "",
         nominal: form.nominal || 0,
-        type: form.type as "automatic",
+        type: (form.type as "automatic" | "manual") || "automatic",
+        ...(form.payment_method ? { payment_method: form.payment_method } : {}),
+        ...(form.payment_channel
+          ? { payment_channel: form.payment_channel }
+          : {}),
       };
 
       if (editingId) {
         await updateSimpanan({ id: editingId, payload }).unwrap();
-        Swal.fire("Sukses", "Simpanan diperbarui", "success");
+        await Swal.fire("Sukses", "Simpanan diperbarui", "success");
       } else {
-        await createSimpanan(payload).unwrap();
-        Swal.fire("Sukses", "Simpanan ditambahkan", "success");
+        const resp = await createSimpanan(payload).unwrap();
+
+        // 👉 pastikan kita pegang objek Simpanan murni
+        const createdSimpanan: Simpanan = isWrappedResp(resp)
+          ? resp.data
+          : (resp as Simpanan);
+
+        await Swal.fire("Sukses", "Simpanan ditambahkan", "success");
+
+        // Tampilkan instruksi pembayaran kalau ada
+        if (createdSimpanan.payment) {
+          showPaymentInstruction(createdSimpanan.payment);
+        }
       }
 
       setForm({});
@@ -193,7 +207,7 @@ export default function SimpananAnggotaPage() {
       closeModal();
     } catch (error) {
       console.error(error);
-      Swal.fire("Gagal", "Gagal menyimpan data", "error");
+      await Swal.fire("Gagal", "Gagal menyimpan data", "error");
     }
   };
 
@@ -225,9 +239,9 @@ export default function SimpananAnggotaPage() {
       try {
         await deleteSimpanan(item.id).unwrap();
         await refetch();
-        Swal.fire("Berhasil", "Simpanan dihapus", "success");
+        void Swal.fire("Berhasil", "Simpanan dihapus", "success");
       } catch (error) {
-        Swal.fire("Gagal", "Gagal menghapus simpanan", "error");
+        void Swal.fire("Gagal", "Gagal menghapus simpanan", "error");
         console.error(error);
       }
     }
@@ -266,13 +280,13 @@ export default function SimpananAnggotaPage() {
 
     if (result.isConfirmed) {
       await refetch();
-      Swal.fire("Berhasil", "Status simpanan diperbarui.", "success");
+      void Swal.fire("Berhasil", "Status simpanan diperbarui.", "success");
     }
   };
 
   const handleExport = async () => {
     if (filteredData.length === 0) {
-      Swal.fire("Info", "Tidak bisa export karena datanya kosong", "info");
+      void Swal.fire("Info", "Tidak bisa export karena datanya kosong", "info");
       return;
     }
 
@@ -289,7 +303,6 @@ export default function SimpananAnggotaPage() {
 
     setIsExporting(true);
 
-    // Prepare data for export
     const exportData = filteredData.map((item, index) => ({
       No: index + 1,
       Reference: item.reference,
@@ -299,6 +312,8 @@ export default function SimpananAnggotaPage() {
       "Kode Kategori": getCategoryCode(item.simpanan_category_id),
       "Nominal (Rp)": formatCurrency(item.nominal || 0),
       Tipe: item.type.toUpperCase(),
+      "Metode Bayar": item.payment_method ?? "-",
+      "Channel Bayar": item.payment_channel ?? "-",
       Status: item.status || "-",
       "Tanggal Simpanan": item.date
         ? new Date(item.date).toLocaleDateString("id-ID")
@@ -309,25 +324,19 @@ export default function SimpananAnggotaPage() {
         : "-",
     }));
 
-    // Create CSV content with metadata
     const headers = Object.keys(exportData[0]);
-    const filterInfo = [];
+    const filterInfo: string[] = [];
 
     if (filters.category_id) {
       const category = categories.find(
-        (c) => c.id === Number(filters.category_id)
+        (c: { id: number; name: string }) =>
+          c.id === Number(filters.category_id)
       );
       filterInfo.push(`Kategori: ${category?.name || "Unknown"}`);
     }
-    if (filters.status) {
-      filterInfo.push(`Status: ${filters.status}`);
-    }
-    if (filters.date_from) {
-      filterInfo.push(`Dari: ${filters.date_from}`);
-    }
-    if (filters.date_to) {
-      filterInfo.push(`Sampai: ${filters.date_to}`);
-    }
+    if (filters.status) filterInfo.push(`Status: ${filters.status}`);
+    if (filters.date_from) filterInfo.push(`Dari: ${filters.date_from}`);
+    if (filters.date_to) filterInfo.push(`Sampai: ${filters.date_to}`);
 
     const csvContent = [
       "LAPORAN SIMPANAN ANGGOTA",
@@ -340,7 +349,6 @@ export default function SimpananAnggotaPage() {
         headers
           .map((header) => {
             const value = row[header as keyof typeof row];
-            // Escape commas and quotes in values
             if (
               typeof value === "string" &&
               (value.includes(",") || value.includes('"'))
@@ -353,7 +361,6 @@ export default function SimpananAnggotaPage() {
       ),
     ].join("\n");
 
-    // Create and download file
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -367,7 +374,7 @@ export default function SimpananAnggotaPage() {
     link.click();
     document.body.removeChild(link);
 
-    Swal.fire(
+    void Swal.fire(
       "Berhasil",
       `Data berhasil diekspor (${filteredData.length} record)`,
       "success"
@@ -375,30 +382,26 @@ export default function SimpananAnggotaPage() {
     setIsExporting(false);
   };
 
-  // Filter data based on search query
   const filteredData = useMemo(() => {
     let out = simpananList;
-
     const q = filters.member_query.trim().toLowerCase();
     if (q.length >= 2) {
-      out = out.filter((item) => {
+      out = out.filter((item: Simpanan) => {
         const u = usersById.get(item.user_id);
         const name = u?.name?.toLowerCase() ?? "";
         const email = u?.email?.toLowerCase() ?? "";
         return name.includes(q) || email.includes(q);
       });
     }
-
     return out;
   }, [simpananList, filters.member_query, usersById]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
-  };
 
   const getStatusBadge = (status: string | number) => {
     const statusConfig = {
@@ -409,13 +412,11 @@ export default function SimpananAnggotaPage() {
       approved: { variant: "success" as const, label: "Approved" },
       rejected: { variant: "destructive" as const, label: "Ditolak" },
     };
-
     const statusKey = String(status);
     const config = statusConfig[statusKey as keyof typeof statusConfig] || {
       variant: "destructive" as const,
       label: String(status),
     };
-
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -425,9 +426,9 @@ export default function SimpananAnggotaPage() {
       <Card>
         <CardContent>
           <div className="flex justify-between items-center">
-            {/* Anggota + Filter */}
+            {/* kiri */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-              {/* Anggota */}
+              {/* Anggota search */}
               <div className="flex flex-col gap-y-1 min-w-0">
                 <div className="relative">
                   <input
@@ -458,9 +459,8 @@ export default function SimpananAnggotaPage() {
                 </div>
               </div>
 
-              {/* Kategori + Status (dibuat lebih lebar) */}
+              {/* Kategori + Status */}
               <div className="grid grid-cols-2 gap-4 lg:col-span-2 min-w-0">
-                {/* Kategori */}
                 <div className="flex flex-col gap-y-1 min-w-0">
                   <select
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -471,15 +471,16 @@ export default function SimpananAnggotaPage() {
                     aria-label="Filter kategori simpanan"
                   >
                     <option value="">Semua Kategori</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
+                    {categories.map(
+                      (category: { id: number; name: string }) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      )
+                    )}
                   </select>
                 </div>
 
-                {/* Status */}
                 <div className="flex flex-col gap-y-1 min-w-0">
                   <select
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -545,7 +546,7 @@ export default function SimpananAnggotaPage() {
               </div>
             </div>
 
-            {/* Actions */}
+            {/* kanan actions */}
             <div className="flex gap-2">
               <Button
                 onClick={handleExport}
@@ -587,108 +588,155 @@ export default function SimpananAnggotaPage() {
                 <th className="px-4 py-2">Kategori</th>
                 <th className="px-4 py-2">Nominal</th>
                 <th className="px-4 py-2">Type</th>
+                <th className="px-4 py-2">Metode</th>
+                <th className="px-4 py-2">Channel</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Tanggal</th>
+                <th className="px-4 py-2">Pembayaran</th>
               </tr>
             </thead>
             <tbody>
               {isLoading || isFetching ? (
                 <tr>
-                  <td colSpan={8} className="text-center p-4">
+                  <td colSpan={11} className="text-center p-4">
                     Memuat data...
                   </td>
                 </tr>
               ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center p-4">
+                  <td colSpan={11} className="text-center p-4">
                     Tidak ada data
                   </td>
                 </tr>
               ) : (
-                filteredData.map((item) => (
-                  <tr key={item.id} className="border-t">
-                    <td className="px-4 py-2">
-                      <ActionsGroup
-                        handleDetail={() => handleDetail(item)}
-                        handleEdit={() => handleEdit(item)}
-                        handleDelete={() => handleDelete(item)}
-                        additionalActions={
-                          <>
-                            {item.status === 0 && (
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      onClick={() =>
-                                        handleStatusUpdate(item, "1")
-                                      }
-                                      title="Approve"
-                                      className="bg-green-600 hover:bg-green-700"
-                                    >
-                                      <CheckCircle className="size-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Approve</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      onClick={() =>
-                                        handleStatusUpdate(item, "2")
-                                      }
-                                      title="Reject"
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      <XCircle className="size-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Reject</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </>
-                            )}
-                          </>
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-2">{item.reference}</td>
-                    <td className="px-4 py-2">
-                      <div>
-                        <div className="font-medium">
-                          {getUserName(item.user_id)}
+                filteredData.map((item: Simpanan) => {
+                  const paid = Boolean(item.payment?.paid_at);
+                  const hasPayment = Boolean(item.payment);
+
+                  return (
+                    <tr key={item.id} className="border-t">
+                      <td className="px-4 py-2">
+                        <ActionsGroup
+                          handleDetail={() => handleDetail(item)}
+                          handleEdit={() => handleEdit(item)}
+                          handleDelete={() => handleDelete(item)}
+                          additionalActions={
+                            <>
+                              {item.status === 0 && (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleStatusUpdate(item, "1")
+                                        }
+                                        title="Approve"
+                                        className="bg-green-600 hover:bg-green-700"
+                                      >
+                                        <CheckCircle className="size-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Approve</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          handleStatusUpdate(item, "2")
+                                        }
+                                        title="Reject"
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        <XCircle className="size-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Reject</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </>
+                          }
+                        />
+                      </td>
+
+                      <td className="px-4 py-2">{item.reference}</td>
+
+                      <td className="px-4 py-2">
+                        <div>
+                          <div className="font-medium">
+                            {getUserName(item.user_id)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {getUserEmail(item.user_id)}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {getUserEmail(item.user_id)}
+                      </td>
+
+                      <td className="px-4 py-2">
+                        <div>
+                          <div className="font-medium whitespace-nowrap">
+                            {getCategoryName(item.simpanan_category_id)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {getCategoryCode(item.simpanan_category_id)}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2">
-                      <div>
-                        <div className="font-medium whitespace-nowrap">
-                          {getCategoryName(item.simpanan_category_id)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {getCategoryCode(item.simpanan_category_id)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2 font-medium whitespace-nowrap">
-                      {formatRupiahWithRp(item.nominal)}
-                    </td>
-                    <td className="px-4 py-2">
-                      {item.type.toLocaleLowerCase()}
-                    </td>
-                    <td className="px-4 py-2">{getStatusBadge(item.status)}</td>
-                    <td className="px-4 py-2 text-sm text-gray-500">
-                      {new Date(item.date).toLocaleDateString("id-ID")}
-                    </td>
-                  </tr>
-                ))
+                      </td>
+
+                      <td className="px-4 py-2 font-medium whitespace-nowrap">
+                        {formatRupiahWithRp(item.nominal)}
+                      </td>
+
+                      <td className="px-4 py-2">
+                        {item.type.toLocaleLowerCase()}
+                      </td>
+
+                      {/* NEW: method & channel */}
+                      <td className="px-4 py-2">
+                        {item.payment_method ?? "-"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {item.payment_channel ?? "-"}
+                      </td>
+
+                      <td className="px-4 py-2">
+                        {getStatusBadge(item.status)}
+                      </td>
+
+                      <td className="px-4 py-2 text-sm text-gray-500">
+                        {new Date(item.date).toLocaleDateString("id-ID")}
+                      </td>
+
+                      {/* NEW: Payment cell */}
+                      <td className="px-4 py-2">
+                        {hasPayment ? (
+                          paid ? (
+                            <Badge variant="success">Lunas</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() =>
+                                item.payment &&
+                                showPaymentInstruction(item.payment)
+                              }
+                            >
+                              Bayar
+                            </Button>
+                          )
+                        ) : (
+                          "-"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -719,7 +767,7 @@ export default function SimpananAnggotaPage() {
         </div>
       </Card>
 
-      {/* Simpanan Form Modal */}
+      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
           <FormSimpanan
