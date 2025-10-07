@@ -19,6 +19,8 @@ import {
   BookUser,
   CreditCard,
   Building,
+  Webhook,
+  FileStack,
 } from "lucide-react";
 import Header from "@/components/admin-components/header";
 import Sidebar from "@/components/admin-components/sidebar";
@@ -323,14 +325,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "#",
       children: [
         {
-          id: "pos-kasir/history",
-          label: "History",
-          href: "/admin/pos-kasir/history",
-        },
-        {
           id: "pos-kasir/kasir",
           label: "Kasir",
           href: "/admin/pos-kasir/kasir",
+        },
+        {
+          id: "pos-kasir/history",
+          label: "History",
+          href: "/admin/pos-kasir/history",
         },
       ],
     },
@@ -339,18 +341,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Data Customer",
       icon: <BookUser className="h-5 w-5" />,
       href: "/admin/customer",
-    },
-    {
-      id: "gallery",
-      label: "Galeri",
-      icon: <GalleryVertical className="h-5 w-5" />,
-      href: "/admin/gallery", 
-    },
-    {
-      id: "news",
-      label: "Berita",
-      icon: <Newspaper className="h-5 w-5" />,
-      href: "/admin/news", 
     },
     {
       id: "voucher",
@@ -381,6 +371,36 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Profile Toko",
       icon: <Building className="h-5 w-5" />,
       href: "/admin/profile-toko",
+    },
+    {
+      id: "pemisah-konten-website",
+      label: "Konten Website",
+      isSeparator: true,
+      href: "#"
+    },
+    {
+      id: "home",
+      label: "Home",
+      icon: <Webhook className="h-5 w-5" />,
+      href: "/admin/home", 
+    },
+    {
+      id: "tentang-kami",
+      label: "Tentang Kami",
+      icon: <FileStack className="h-5 w-5" />,
+      href: "/admin/tentang-kami", 
+    },
+    {
+      id: "gallery",
+      label: "Galeri",
+      icon: <GalleryVertical className="h-5 w-5" />,
+      href: "/admin/gallery", 
+    },
+    {
+      id: "news",
+      label: "Berita",
+      icon: <Newspaper className="h-5 w-5" />,
+      href: "/admin/news", 
     },
   ];
 
