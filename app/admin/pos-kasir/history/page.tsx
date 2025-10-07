@@ -333,10 +333,6 @@ export default function PosKasirPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">POS Kasir History</h1>
-      </div>
-
       <ProdukToolbar
         onSearchChange={(q) => setQuery(q)}
         enableStatusFilter
@@ -360,13 +356,9 @@ export default function PosKasirPage() {
               <tr>
                 <th className="px-4 py-2 whitespace-nowrap">Aksi</th>
                 <th className="px-2 py-2 whitespace-nowrap">Reference</th>
-                <th className="px-2 py-2 whitespace-nowrap">Ref Number</th>
                 <th className="px-4 py-2 whitespace-nowrap">Customer</th>
                 <th className="px-4 py-2 whitespace-nowrap">Harga</th>
                 <th className="px-4 py-2 whitespace-nowrap">Diskon</th>
-                <th className="px-4 py-2 whitespace-nowrap">
-                  Biaya Pengiriman
-                </th>
                 <th className="px-4 py-2 whitespace-nowrap">Total harga</th>
                 <th className="px-4 py-2 whitespace-nowrap">Tipe Pembayaran</th>
                 <th className="px-4 py-2 whitespace-nowrap">Payment Link</th>
@@ -402,9 +394,6 @@ export default function PosKasirPage() {
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.reference}
                       </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        {item.ref_number}
-                      </td>
                       <td className="px-4 py-2">
                         {item.user_name || item.guest_name || "Guest"}
                       </td>
@@ -413,9 +402,6 @@ export default function PosKasirPage() {
                       </td>
                       <td className="px-4 py-2 font-medium text-orange-600">
                         {formatRupiah(item.discount_total)}
-                      </td>
-                      <td className="px-4 py-2 font-medium text-blue-600">
-                        {formatRupiah(item.shipment_cost)}
                       </td>
                       <td className="px-4 py-2 font-bold text-green-700">
                         {formatRupiah(item.grand_total)}
