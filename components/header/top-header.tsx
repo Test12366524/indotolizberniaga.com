@@ -201,7 +201,7 @@ export default function Header() {
                     height={50}
                     className="flex-shrink-0 object-contain"
                   />
-                  <div>
+                  <div className="hidden sm:flex flex-col leading-tight">
                     <h2 className="text-lg font-semibold text-gray-800">
                       Koperasi Merah Putih
                     </h2>

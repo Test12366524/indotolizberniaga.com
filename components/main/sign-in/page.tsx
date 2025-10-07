@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -26,6 +26,7 @@ import { signIn } from "next-auth/react";
 import { useRegisterMutation } from "@/services/auth.service";
 import { Button } from "@/components/ui/button";
 import PolicyModal from "@/components/modals/PolicyModal";
+import { useSession, signOut } from "next-auth/react";
 
 interface LoginFormData {
   email: string;
@@ -121,6 +122,14 @@ const PRIVACY_POLICY_CONTENT = {
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const sessionId = (session?.user as { id?: number } | undefined)?.id;
+
+  // Redirect if already logged in
+  if (sessionId) {
+    router.replace("/me");
+  }
+
 
   const [isLogin, setIsLogin] = useState<boolean>(true);
   const [showPassword, setShowPassword] = useState<boolean>(false);
