@@ -547,7 +547,6 @@ export default function ProfilePage() {
   // Helpers for order detail modal
   const openOrderDetailModal = (orderId: string) => {
     setSelectedOrderId(orderId);
-    console.log("id: ", orderId);
     setOrderDetailModalOpen(true);
   };
   const closeOrderDetailModal = () => {
