@@ -388,7 +388,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         {
           id: "master-supplier-marketplace",
           label: "Supplier",
-          href: "/admin/supplier",
+          href: "/admin/master/supplier",
         },
       ],
     },
