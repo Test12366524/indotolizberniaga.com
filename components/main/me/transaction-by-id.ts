@@ -1,8 +1,9 @@
-export interface ApiEnvelope<T> {
-  code: number;
-  message: string;
-  data: T;
-}
+export type ApiEnvelope<T> = { code: number; message: string; data: T };
+
+export const isApiEnvelope = <T>(v: unknown): v is ApiEnvelope<T> =>
+  typeof v === "object" &&
+  v !== null &&
+  "data" in (v as Record<string, unknown>);
 
 export interface ShipmentDetail {
   name?: string;
@@ -104,3 +105,9 @@ export function isTxnByIdEnvelope(
     !!v && typeof v === "object" && "data" in (v as Record<string, unknown>)
   );
 }
+
+export const isTxnByIdData = (v: unknown): v is ApiTransactionByIdData => {
+  if (typeof v !== "object" || v === null) return false;
+  const o = v as Record<string, unknown>;
+  return typeof o.id === "number" && Array.isArray(o.shops);
+};

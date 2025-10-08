@@ -84,7 +84,13 @@ import {
 } from "./types";
 
 import useUploadPaymentProofMutation from "./use-upload-payment-proof";
-import { ApiTransactionByIdData, isTxnByIdEnvelope } from "./transaction-by-id";
+import {
+  ApiEnvelope,
+  ApiTransactionByIdData,
+  isApiEnvelope,
+  isTxnByIdData,
+  isTxnByIdEnvelope,
+} from "./transaction-by-id";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -177,20 +183,27 @@ export default function ProfilePage() {
     });
   }, [transactions]);
 
-  const { data: orderDetailResp } = useGetTransactionByIdQuery(
-    selectedOrderId ?? "",
-    { skip: !selectedOrderId }
-  );
-
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
     return orders.find((o) => o.id === selectedOrderId) ?? null;
   }, [selectedOrderId, orders]);
 
+  const { data: orderDetailResp, isFetching: isDetailFetching } =
+    useGetTransactionByIdQuery(selectedOrderId ?? "", {
+      skip: !selectedOrderId,
+    });
+
+  type DetailResp =
+    | ApiEnvelope<ApiTransactionByIdData>
+    | ApiTransactionByIdData
+    | undefined;
+
   const selectedDetail: ApiTransactionByIdData | undefined = useMemo(() => {
-    return isTxnByIdEnvelope(orderDetailResp)
-      ? orderDetailResp.data
-      : undefined;
+    const resp = orderDetailResp as DetailResp;
+    if (!resp) return undefined;
+    if (isApiEnvelope<ApiTransactionByIdData>(resp)) return resp.data;
+    if (isTxnByIdData(resp)) return resp;
+    return undefined;
   }, [orderDetailResp]);
 
   /** ---------------------------------- Address ---------------------------------- */
@@ -534,6 +547,7 @@ export default function ProfilePage() {
   // Helpers for order detail modal
   const openOrderDetailModal = (orderId: string) => {
     setSelectedOrderId(orderId);
+    console.log("id: ", orderId);
     setOrderDetailModalOpen(true);
   };
   const closeOrderDetailModal = () => {
@@ -1605,6 +1619,7 @@ export default function ProfilePage() {
           onClose={closeOrderDetailModal}
           order={selectedOrder}
           detail={selectedDetail}
+          detailLoading={isDetailFetching}
           onOpenUploadProof={openPaymentProofModal}
         />
       )}
