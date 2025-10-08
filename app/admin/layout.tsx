@@ -214,46 +214,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Settings className="h-5 w-5" />,
       href: "#",
       children: [
-        // {
-        //   id: "konfigurasi/jenis-marketing",
-        //   label: "Jenis Marketing",
-        //   href: "/admin/konfigurasi/jenis-marketing",
-        // },
-        // {
-        //   id: "konfigurasi/marketing",
-        //   label: "Marketing",
-        //   href: "/admin/konfigurasi/marketing",
-        // },
-        // {
-        //   id: "konfigurasi/suku-bunga",
-        //   label: "Suku Bunga",
-        //   href: "/admin/konfigurasi/suku-bunga",
-        // },
-        // {
-        //   id: "konfigurasi/coa-induk",
-        //   label: "COA Induk",
-        //   href: "/admin/konfigurasi/coa-induk",
-        // },
-        // {
-        //   id: "konfigurasi/general-ledger",
-        //   label: "General Ledger",
-        //   href: "/admin/konfigurasi/general-ledger",
-        // },
-        // {
-        //   id: "konfigurasi/sub-general-ledger",
-        //   label: "Sub General Ledger",
-        //   href: "/admin/konfigurasi/sub-general-ledger",
-        // },
-        // {
-        //   id: "konfigurasi/rekening-general-ledger",
-        //   label: "Rekening General Ledger",
-        //   href: "/admin/konfigurasi/rekening-general-ledger",
-        // },
-        // {
-        //   id: "konfigurasi/kode-transaksi",
-        //   label: "Kode Transaksi",
-        //   href: "/admin/master/kode-transaksi",
-        // },
         {
           id: "master/coa",
           label: "Chart of Accounts",
@@ -276,24 +236,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         },
       ],
     },
-    // {
-    //   id: "master",
-    //   label: "Master",
-    //   icon: <Database className="h-5 w-5" />,
-    //   href: "#",
-    //   children: [
-    //     {
-    //       id: "master/coa",
-    //       label: "COA",
-    //       href: "/admin/master/coas",
-    //     },
-    //     {
-    //       id: "master/kode-transaksi",
-    //       label: "Kode Transaksi",
-    //       href: "/admin/master/kode-transaksi",
-    //     },
-    //   ],
-    // },
     {
       id: "pemisah-marketplace",
       label: "Marketplace",
@@ -336,9 +278,19 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           href: "/admin/ppob/transaksi",
         },
         {
+          id: "ppob/deposit",
+          label: "Deposit Saldo",
+          href: "/admin/ppob/deposit",
+        },
+        {
           id: "ppob/produk",
           label: "Produk PPOB",
           href: "/admin/ppob/produk",
+        },
+        {
+          id: "ppob/category",
+          label: "Kategori Produk PPOB",
+          href: "/admin/ppob/category",
         },
       ],
     },
