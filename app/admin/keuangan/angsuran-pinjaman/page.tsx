@@ -184,9 +184,8 @@ export default function AngsuranPinjamanPage() {
     <div className="p-6 space-y-6">
       {/* Toolbar filter */}
       <Card>
-        <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="w-full sm:flex-1">
-            <label className="text-xs font-medium block mb-1">Cari</label>
             <Input
               placeholder="Cari reference, user, amount, atau tipe…"
               value={search}
@@ -198,7 +197,6 @@ export default function AngsuranPinjamanPage() {
           </div>
 
           <div className="w-full sm:w-48">
-            <label className="text-xs font-medium block mb-1">Tipe</label>
             <Select
               value={type}
               onValueChange={(v) => setType(v as TypeFilter)}
