@@ -214,43 +214,53 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Settings className="h-5 w-5" />,
       href: "#",
       children: [
+        // {
+        //   id: "konfigurasi/jenis-marketing",
+        //   label: "Jenis Marketing",
+        //   href: "/admin/konfigurasi/jenis-marketing",
+        // },
+        // {
+        //   id: "konfigurasi/marketing",
+        //   label: "Marketing",
+        //   href: "/admin/konfigurasi/marketing",
+        // },
+        // {
+        //   id: "konfigurasi/suku-bunga",
+        //   label: "Suku Bunga",
+        //   href: "/admin/konfigurasi/suku-bunga",
+        // },
+        // {
+        //   id: "konfigurasi/coa-induk",
+        //   label: "COA Induk",
+        //   href: "/admin/konfigurasi/coa-induk",
+        // },
+        // {
+        //   id: "konfigurasi/general-ledger",
+        //   label: "General Ledger",
+        //   href: "/admin/konfigurasi/general-ledger",
+        // },
+        // {
+        //   id: "konfigurasi/sub-general-ledger",
+        //   label: "Sub General Ledger",
+        //   href: "/admin/konfigurasi/sub-general-ledger",
+        // },
+        // {
+        //   id: "konfigurasi/rekening-general-ledger",
+        //   label: "Rekening General Ledger",
+        //   href: "/admin/konfigurasi/rekening-general-ledger",
+        // },
+        // {
+        //   id: "konfigurasi/kode-transaksi",
+        //   label: "Kode Transaksi",
+        //   href: "/admin/master/kode-transaksi",
+        // },
         {
-          id: "konfigurasi/jenis-marketing",
-          label: "Jenis Marketing",
-          href: "/admin/konfigurasi/jenis-marketing",
+          id: "master/coa",
+          label: "Chart of Accounts",
+          href: "/admin/master/coas",
         },
         {
-          id: "konfigurasi/marketing",
-          label: "Marketing",
-          href: "/admin/konfigurasi/marketing",
-        },
-        {
-          id: "konfigurasi/suku-bunga",
-          label: "Suku Bunga",
-          href: "/admin/konfigurasi/suku-bunga",
-        },
-        {
-          id: "konfigurasi/coa-induk",
-          label: "COA Induk",
-          href: "/admin/konfigurasi/coa-induk",
-        },
-        {
-          id: "konfigurasi/general-ledger",
-          label: "General Ledger",
-          href: "/admin/konfigurasi/general-ledger",
-        },
-        {
-          id: "konfigurasi/sub-general-ledger",
-          label: "Sub General Ledger",
-          href: "/admin/konfigurasi/sub-general-ledger",
-        },
-        {
-          id: "konfigurasi/rekening-general-ledger",
-          label: "Rekening General Ledger",
-          href: "/admin/konfigurasi/rekening-general-ledger",
-        },
-        {
-          id: "konfigurasi/kode-transaksi",
+          id: "master/kode-transaksi",
           label: "Kode Transaksi",
           href: "/admin/master/kode-transaksi",
         },
@@ -259,26 +269,31 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           label: "Pengelola",
           href: "/admin/pengelola",
         },
-      ],
-    },
-    {
-      id: "master",
-      label: "Master",
-      icon: <Database className="h-5 w-5" />,
-      href: "#",
-      children: [
         {
-          id: "master/coa",
-          label: "COA",
-          href: "/admin/master/coas",
-        },
-        {
-          id: "master/kode-transaksi",
-          label: "Kode Transaksi",
-          href: "/admin/master/kode-transaksi",
+          id: "konfigurasi/role",
+          label: "Role",
+          href: "/admin/role",
         },
       ],
     },
+    // {
+    //   id: "master",
+    //   label: "Master",
+    //   icon: <Database className="h-5 w-5" />,
+    //   href: "#",
+    //   children: [
+    //     {
+    //       id: "master/coa",
+    //       label: "COA",
+    //       href: "/admin/master/coas",
+    //     },
+    //     {
+    //       id: "master/kode-transaksi",
+    //       label: "Kode Transaksi",
+    //       href: "/admin/master/kode-transaksi",
+    //     },
+    //   ],
+    // },
     {
       id: "pemisah-marketplace",
       label: "Marketplace",

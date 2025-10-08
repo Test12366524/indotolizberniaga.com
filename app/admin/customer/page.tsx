@@ -217,7 +217,6 @@ export default function CustomerPage() {
   return (
     <div className="p-6 space-y-6">
       <ProdukToolbar
-        openModal={openModal}
         onSearchChange={setQuery}
       />
 
@@ -226,11 +225,9 @@ export default function CustomerPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted text-left">
               <tr>
-                <th className="px-4 py-2 whitespace-nowrap">Aksi</th>
                 <th className="px-4 py-2 whitespace-nowrap">Nama</th>
                 <th className="px-4 py-2 whitespace-nowrap">No. Hanphone</th>
                 <th className="px-4 py-2 whitespace-nowrap">Email</th>
-                <th className="px-4 py-2 whitespace-nowrap">Role</th>
                 <th className="px-4 py-2 whitespace-nowrap">Tanggal Daftar</th>
               </tr>
             </thead>
@@ -254,12 +251,6 @@ export default function CustomerPage() {
                   )?.[0]?.name;
                   return (
                     <tr key={item.id} className="border-t">
-                      <td className="px-4 py-2">
-                        <ActionsGroup
-                          handleEdit={() => handleOpenEditModal(item)}
-                          handleDelete={() => handleDelete(item)}
-                        />
-                      </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.name}
                       </td>
@@ -268,9 +259,6 @@ export default function CustomerPage() {
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {item.email}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <Badge variant="secondary">{roleName || "-"}</Badge>
                       </td>
                       <td className="px-4 py-2 whitespace-nowrap">
                         {formatDateTime(item.created_at || "")}
@@ -367,42 +355,6 @@ export default function CustomerPage() {
                 value={form.phone || ""}
                 onChange={(e) =>
                   setForm({ ...form, phone: Number(e.target.value) })
-                }
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-700"
-              >
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Masukkan password..."
-                value={form.password || ""}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="h-11"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label
-                htmlFor="password_confirmation"
-                className="text-sm font-medium text-gray-700"
-              >
-                Password Konfirmasi
-              </Label>
-              <Input
-                id="password_confirmation"
-                type="password"
-                placeholder="Masukkan password konfirmasi..."
-                value={form.password_confirmation || ""}
-                onChange={(e) =>
-                  setForm({ ...form, password_confirmation: e.target.value })
                 }
                 className="h-11"
               />
