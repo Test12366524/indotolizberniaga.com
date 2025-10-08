@@ -8,7 +8,6 @@ declare module "next-auth" {
       token: string;
       phone: string;
       roles: { id: number; name: string }[];
-      // ⬇️ perbaikan: izinkan array atau null, bukan single object
       shop:
         | {
             id: number;
