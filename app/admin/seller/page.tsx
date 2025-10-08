@@ -77,13 +77,6 @@ export default function SellerPage() {
       <Badge className="bg-red-100 text-red-800">Nonaktif</Badge>
     );
 
-  const getAnggotaStatusBadge = (status: number) =>
-    status === 1 ? (
-      <Badge className="bg-blue-100 text-blue-800">Anggota</Badge>
-    ) : (
-      <Badge className="bg-gray-100 text-gray-800">Non-Anggota</Badge>
-    );
-
   const handleDetail = (seller: Seller) => {
     setSelectedSeller(seller);
     setIsDetailModalOpen(true);
@@ -252,9 +245,6 @@ export default function SellerPage() {
                           </div>
                           <div className="text-sm text-gray-500">
                             {seller.anggota_reference}
-                          </div>
-                          <div className="mt-1">
-                            {getAnggotaStatusBadge(seller.anggota_status)}
                           </div>
                         </div>
                       </td>
