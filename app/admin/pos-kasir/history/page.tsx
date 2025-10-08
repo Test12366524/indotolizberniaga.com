@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { Plus, Trash2 } from "lucide-react";
 import ActionsGroup from "@/components/admin-components/actions-group";
+import PaymentActionCell from "@/components/pos-kasir/payment-action-cells";
 
 // Status enum mapping
 type TransactionStatusKey = 0 | 1 | 2 | -1 | -2 | -3;
@@ -69,7 +70,7 @@ type CategoryFilter =
   | "expired"
   | "cancel";
 
-export default function PosKasirPage() {
+export default function PosKasirHistoryPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] =
@@ -415,29 +416,17 @@ export default function PosKasirPage() {
                           }
                         </Badge>
                       </td>
+
+                      {/* ⬇️ Payment Link / Bayar */}
                       <td className="px-4 py-2">
-                        {item.payment_link ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs px-2 py-1 h-auto"
-                            onClick={() =>
-                              item.payment_link &&
-                              window.open(
-                                item.payment_link,
-                                "_blank",
-                                "noopener,noreferrer"
-                              )
-                            }
-                          >
-                            Buka Link
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">
-                            Tidak ada link
-                          </span>
-                        )}
+                        <PaymentActionCell
+                          id={item.id}
+                          status={item.status}
+                          payment_type={item.payment_type}
+                          payment_link={item.payment_link}
+                        />
                       </td>
+
                       <td className="px-4 py-2 text-sm whitespace-nowrap">
                         {formatDateTime(item.created_at)}
                       </td>
@@ -655,7 +644,7 @@ export default function PosKasirPage() {
                           parseInt(e.target.value) || 1
                         )
                       }
-                      min="1"
+                      min={1}
                     />
                   </div>
                   <Button
