@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
-import { Combobox} from "@/components/ui/combo-box";
+import { Combobox } from "@/components/ui/combo-box";
 
 type Option = { value: string; label: string };
 
@@ -197,7 +197,7 @@ export function ProdukToolbar({
                 onStatusChange?.(val);
               }}
             >
-              <SelectTrigger className="h-12 py-3 w-full sm:w-56" >
+              <SelectTrigger className="h-12 py-3 w-full sm:w-56">
                 <SelectValue placeholder="Pilih status" />
               </SelectTrigger>
               <SelectContent>
@@ -306,7 +306,11 @@ export function ProdukToolbar({
         <div className="shrink-0 flex flex-wrap items-center gap-2">
           {/* Reset (opsional) */}
           {onResetAllFilters && (
-            <Button className="h-10" variant="destructive" onClick={onResetAllFilters}>
+            <Button
+              className="h-10"
+              variant="destructive"
+              onClick={onResetAllFilters}
+            >
               Reset Filter
             </Button>
           )}

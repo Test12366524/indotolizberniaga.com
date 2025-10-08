@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -20,6 +19,7 @@ import {
 } from "@/services/admin/seller.service";
 import ActionsGroup from "@/components/admin-components/actions-group";
 import SellerDetailModal from "@/components/form-modal/admin/seller-detail-modal";
+import SellerStatusModal from "@/components/form-modal/seller-status-modal";
 
 type RatingFilter = "all" | "4" | "3" | "2" | "1" | "0";
 
@@ -35,9 +35,15 @@ export default function SellerPage() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<Seller | null>(null);
 
-  const { data: sellerData, isLoading } = useGetSellerListQuery({
+  // ⬇️ ambil refetch dari query list
+  const {
+    data: sellerData,
+    isLoading,
+    refetch,
+  } = useGetSellerListQuery({
     page: currentPage,
     paginate: 10,
   });
@@ -62,7 +68,6 @@ export default function SellerPage() {
       const ratingMin =
         filters.rating === "all" ? -Infinity : Number(filters.rating);
 
-      // ✅ pastikan numeric
       const sellerRating = Number(seller.shop.rating ?? 0);
       const matchesRating = sellerRating >= ratingMin;
 
@@ -80,6 +85,11 @@ export default function SellerPage() {
   const handleDetail = (seller: Seller) => {
     setSelectedSeller(seller);
     setIsDetailModalOpen(true);
+  };
+
+  const handleOpenStatusModal = (seller: Seller) => {
+    setSelectedSeller(seller);
+    setIsStatusModalOpen(true);
   };
 
   const formatDate = (dateString: string) =>
@@ -282,7 +292,15 @@ export default function SellerPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(seller.shop.status)}
+                        {/* Klik status untuk membuka modal ubah status */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenStatusModal(seller)}
+                          className="focus:outline-none"
+                          aria-label="Ubah status toko"
+                        >
+                          {getStatusBadge(seller.shop.status)}
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(seller.created_at)}
@@ -327,11 +345,22 @@ export default function SellerPage() {
         </div>
       )}
 
-      {/* Detail Modal (file terpisah) */}
+      {/* Detail Modal */}
       <SellerDetailModal
         open={isDetailModalOpen}
         onOpenChange={setIsDetailModalOpen}
         seller={selectedSeller}
+      />
+
+      {/* Status Modal */}
+      <SellerStatusModal
+        open={isStatusModalOpen}
+        onOpenChange={setIsStatusModalOpen}
+        seller={selectedSeller}
+        // ⬇️ refetch list setelah update status sukses
+        onSuccess={() => {
+          refetch();
+        }}
       />
     </div>
   );

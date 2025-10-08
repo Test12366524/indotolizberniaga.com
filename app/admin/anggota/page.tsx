@@ -20,34 +20,9 @@ import ActionsGroup from "@/components/admin-components/actions-group";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  CreditCard,
-  HistoryIcon
-} from "lucide-react";
-
-type AnggotaPayload = {
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  gender: "M" | "F";
-  birth_date: string;
-  birth_place: string;
-  nik: string;
-  npwp: string | null;
-  nip?: string;
-  unit_kerja?: string;
-  jabatan?: string;
-  status: 0 | 1 | 2;
-  password?: string;
-  password_confirmation?: string;
-  ktp?: File;
-  photo?: File;
-  slip_gaji?: File;
-};
+import { HistoryIcon } from "lucide-react";
 
 export default function AnggotaPage() {
   const [form, setForm] = useState<
@@ -313,7 +288,9 @@ export default function AnggotaPage() {
                         }
                       />
                     </td>
-                    <td className="px-4 py-2 whitespace-nowrap">{item.reference}</td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      {item.reference}
+                    </td>
                     <td className="px-4 py-2 whitespace-nowrap">{item.name}</td>
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.email}

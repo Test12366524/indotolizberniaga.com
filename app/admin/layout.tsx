@@ -237,6 +237,24 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       ],
     },
     {
+      id: "master",
+      label: "Master",
+      icon: <Database className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "master/coa",
+          label: "COA",
+          href: "/admin/master/coas",
+        },
+        {
+          id: "master/kode-transaksi",
+          label: "Kode Transaksi",
+          href: "/admin/master/kode-transaksi",
+        },
+      ],
+    },
+    {
       id: "pemisah-marketplace",
       label: "Marketplace",
       isSeparator: true,
