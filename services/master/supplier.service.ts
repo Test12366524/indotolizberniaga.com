@@ -17,14 +17,15 @@ export const supplierApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number; search?: string }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, search }) => ({
         url: `/master/suppliers`,
         method: "GET",
         params: {
           page,
           paginate,
+          ...(search ? { search } : {}),
         },
       }),
       transformResponse: (response: SupplierResponse) => ({
@@ -50,10 +51,7 @@ export const supplierApi = apiSlice.injectEndpoints({
     }),
 
     // ➕ Create Simpanan Category
-    createSupplier: builder.mutation<
-      Supplier,
-      CreateSupplierRequest
-    >({
+    createSupplier: builder.mutation<Supplier, CreateSupplierRequest>({
       query: (payload) => ({
         url: `/master/suppliers`,
         method: "POST",
@@ -84,20 +82,19 @@ export const supplierApi = apiSlice.injectEndpoints({
     }),
 
     // ❌ Delete Simpanan Category by ID
-    deleteSupplier: builder.mutation<
-      { code: number; message: string },
-      number
-    >({
-      query: (id) => ({
-        url: `/master/suppliers/${id}`,
-        method: "DELETE",
-      }),
-      transformResponse: (response: {
-        code: number;
-        message: string;
-        data: null;
-      }) => response,
-    }),
+    deleteSupplier: builder.mutation<{ code: number; message: string }, number>(
+      {
+        query: (id) => ({
+          url: `/master/suppliers/${id}`,
+          method: "DELETE",
+        }),
+        transformResponse: (response: {
+          code: number;
+          message: string;
+          data: null;
+        }) => response,
+      }
+    ),
   }),
   overrideExisting: false,
 });

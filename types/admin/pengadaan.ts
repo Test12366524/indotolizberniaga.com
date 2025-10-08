@@ -18,6 +18,8 @@ export interface PurchaseOrder {
   user_id: number;
   shop_id: number;
   supplier: string;
+  supplier_id: number;
+  supplier_name: string;
   date: string;
   notes: string;
   total: number;

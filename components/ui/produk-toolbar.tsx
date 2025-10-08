@@ -36,33 +36,47 @@ type SellerLite = {
   name: string;
   email?: string;
   shop?: { name?: string } | null;
-  shop_name?: string; // fallback kalau mau langsung isi nama tokonya
+  shop_name?: string;
+};
+
+/** Tambahan: tipe minimal Supplier untuk combobox */
+type SupplierLite = {
+  id: number;
+  name: string;
 };
 
 type Props = {
   openModal?: () => void;
   onSearchChange?: (q: string) => void;
 
-  /** ====== Status filter (opsional) ====== */
+  /** ===== Status filter (opsional) ===== */
   enableStatusFilter?: boolean;
-  statusOptions?: Option[]; // default disediakan di bawah
+  statusOptions?: Option[];
   initialStatus?: string;
   onStatusChange?: (status: string) => void;
 
-  /** ====== Seller filter (opsional & hanya superadmin) ====== */
+  /** ===== Seller filter (opsional & hanya superadmin) ===== */
   enableSellerFilter?: boolean;
-  isSuperAdmin?: boolean; // kalau true dan enableSellerFilter, baru tampil
+  isSuperAdmin?: boolean;
   sellers?: SellerLite[];
   selectedSellerId?: number | null;
   onSellerChange?: (sellerId: number | null) => void;
   isSellerLoading?: boolean;
-  onSellerSearchChange?: (q: string) => void; // untuk remote search (opsional)
+  onSellerSearchChange?: (q: string) => void;
 
-  /** ====== Tambahan select (opsional) ====== */
+  /** ===== Supplier filter (opsional) ===== */
+  enableSupplierFilter?: boolean;
+  suppliers?: SupplierLite[];
+  selectedSupplierId?: number | null; // null = Semua Supplier
+  onSupplierChange?: (supplierId: number | null) => void;
+  isSupplierLoading?: boolean;
+  onSupplierSearchChange?: (q: string) => void;
+
+  /** ===== Tambahan select (opsional) ===== */
   extraSelects?: ExtraSelect[];
   extraNodes?: ReactNode;
 
-  /** ====== Button tambah (opsional) ====== */
+  /** ===== Button tambah (opsional) ===== */
   addButtonLabel?: string;
 
   /** ===== Excel actions (opsional) ===== */
@@ -80,7 +94,7 @@ type Props = {
   onDateRangeChange?: (from?: Date, to?: Date) => void;
 
   /** ===== Reset (opsional) ===== */
-  onResetAllFilters?: () => void; // jika diset, muncul tombol "Reset Filter"
+  onResetAllFilters?: () => void;
 };
 
 const DEFAULT_STATUS_OPTIONS: Option[] = [
@@ -111,6 +125,14 @@ export function ProdukToolbar({
   onSellerChange,
   isSellerLoading,
   onSellerSearchChange,
+
+  // supplier (opsional)
+  enableSupplierFilter = false,
+  suppliers = [],
+  selectedSupplierId = null,
+  onSupplierChange,
+  isSupplierLoading,
+  onSupplierSearchChange,
 
   // extras
   extraSelects = [],
@@ -188,7 +210,7 @@ export function ProdukToolbar({
             className="w-full sm:max-w-xs h-10"
           />
 
-          {/* ====== Status (opsional) ====== */}
+          {/* Status (opsional) */}
           {enableStatusFilter && (
             <Select
               value={status}
@@ -210,7 +232,7 @@ export function ProdukToolbar({
             </Select>
           )}
 
-          {/* ====== Seller (opsional & hanya superadmin) ====== */}
+          {/* Seller (opsional & hanya superadmin) */}
           {enableSellerFilter && isSuperAdmin && (
             <div className="w-full sm:w-72">
               <Combobox<SellerLite>
@@ -226,7 +248,23 @@ export function ProdukToolbar({
             </div>
           )}
 
-          {/* ====== Extra selects (opsional) ====== */}
+          {/* Supplier (opsional) */}
+          {enableSupplierFilter && (
+            <div className="w-full sm:w-72">
+              <Combobox<SupplierLite>
+                value={selectedSupplierId}
+                onChange={(id) => onSupplierChange?.(id)}
+                onSearchChange={onSupplierSearchChange}
+                data={suppliers}
+                isLoading={isSupplierLoading}
+                placeholder="Semua Supplier"
+                getOptionLabel={(s) => s.name}
+                buttonClassName="h-10"
+              />
+            </div>
+          )}
+
+          {/* Extra selects (opsional) */}
           {extraSelects.map((s) => {
             const currentVal =
               s.value ?? uncontrolledExtraValues[s.id] ?? s.defaultValue ?? "";
@@ -258,7 +296,7 @@ export function ProdukToolbar({
             );
           })}
 
-          {/* ====== Date Range Filter (opsional) ====== */}
+          {/* Date Range (opsional) */}
           {enableDateFilter && (
             <div className="flex flex-col gap-y-1">
               <Popover>
@@ -304,7 +342,6 @@ export function ProdukToolbar({
 
         {/* Kanan: aksi */}
         <div className="shrink-0 flex flex-wrap items-center gap-2">
-          {/* Reset (opsional) */}
           {onResetAllFilters && (
             <Button
               className="h-10"
@@ -315,7 +352,6 @@ export function ProdukToolbar({
             </Button>
           )}
 
-          {/* Import Excel (opsional) */}
           {onImportExcel && (
             <>
               <input
@@ -340,14 +376,12 @@ export function ProdukToolbar({
             </>
           )}
 
-          {/* Export Excel (opsional) */}
           {onExportExcel && (
             <Button onClick={onExportExcel} disabled={exportDisabled}>
               {exportLabel}
             </Button>
           )}
 
-          {/* Tambah data (opsional) */}
           {openModal && (
             <Button
               onClick={openModal}
