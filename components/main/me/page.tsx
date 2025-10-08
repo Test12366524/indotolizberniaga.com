@@ -22,7 +22,6 @@ import {
   CreditCard,
   Truck,
   Download,
-  X,
   Landmark,
   Store,
   UserPlus,
@@ -85,11 +84,8 @@ import {
 } from "./types";
 
 import useUploadPaymentProofMutation from "./use-upload-payment-proof";
-import type { TxnDetailExtra } from "@/types/admin/payment";
+import { ApiTransactionByIdData, isTxnByIdEnvelope } from "./transaction-by-id";
 
-/* -------------------------------------------------------------------------------------------------
- * Page
- * -----------------------------------------------------------------------------------------------*/
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session } = useSession();
@@ -191,8 +187,11 @@ export default function ProfilePage() {
     return orders.find((o) => o.id === selectedOrderId) ?? null;
   }, [selectedOrderId, orders]);
 
-  const selectedDetail: TxnDetailExtra | undefined =
-    (orderDetailResp as TxnDetailExtra | undefined) ?? undefined;
+  const selectedDetail: ApiTransactionByIdData | undefined = useMemo(() => {
+    return isTxnByIdEnvelope(orderDetailResp)
+      ? orderDetailResp.data
+      : undefined;
+  }, [orderDetailResp]);
 
   /** ---------------------------------- Address ---------------------------------- */
   const [addrModalOpen, setAddrModalOpen] = useState(false);
@@ -622,7 +621,7 @@ export default function ProfilePage() {
                           | "seller"
                       )
                     }
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${
+                    className={`w-full flex items-center gap-2 px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${
                       activeTab === (tab.id as typeof activeTab)
                         ? "bg-[#6B6B6B] text-white shadow-lg"
                         : "text-gray-700 hover:bg-[#6B6B6B]/10 hover:text-[#6B6B6B]"

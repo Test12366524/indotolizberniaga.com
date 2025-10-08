@@ -38,6 +38,9 @@ export type TxnDetailExtra = {
   payment?: TxnPayment | null;
   payment_link?: string | null;
   paid_at?: string | null;
-  status?: number | string;               // backend bisa number/string
-  payment_type?: "automatic" | "saldo";   // dari payload create
+  status?: number | string; // backend bisa number/string
+  payment_type?: "automatic" | "saldo"; // dari payload create
+  bank_name: string;
+  account_number: string | number;
+  account_name: string;
 };

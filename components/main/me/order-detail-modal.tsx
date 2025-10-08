@@ -1,266 +1,370 @@
 "use client";
 
 import Image from "next/image";
-import { X, CheckCircle, FileText } from "lucide-react";
-import { getStatusColor, getStatusText, Order } from "./types";
+import { useMemo, useState } from "react";
+import { X, Upload, Truck, CreditCard, QrCode } from "lucide-react";
+import type { Order } from "./types";
+import { getStatusColor, getStatusText } from "./types";
+import { displayDate } from "@/lib/format-utils";
+import type {
+  ApiTransactionByIdData,
+  ShipmentDetail,
+} from "./transaction-by-id";
+import Swal from "sweetalert2";
+import buildPaymentFromDetail from "@/utils/build-payment-detail";
 import { showPaymentInstruction } from "@/lib/show-payment-instructions";
-import type { TxnDetailExtra, TxnPayment } from "@/types/admin/payment";
 
-interface Props {
+type Props = {
   open: boolean;
   onClose: () => void;
-  selectedOrder: Order;
-  orderDetail?: TxnDetailExtra;
-  onOpenPaymentProofModal: () => void;
-}
+  order: Order;
+  detail?: ApiTransactionByIdData;
+  onOpenUploadProof: () => void;
+};
 
 export default function OrderDetailModal({
   open,
   onClose,
-  selectedOrder,
-  orderDetail,
-  onOpenPaymentProofModal,
+  order,
+  detail,
+  onOpenUploadProof,
 }: Props) {
+  // ==== Hooks must be called unconditionally (di atas early return) ====
+  const [qrSrc, setQrSrc] = useState<string | null>(null);
+
+  const firstShop = detail?.shops?.[0];
+  const ship: ShipmentDetail | undefined = useMemo(() => {
+    if (!firstShop?.shipment_detail) return undefined;
+    try {
+      return JSON.parse(firstShop.shipment_detail) as ShipmentDetail;
+    } catch {
+      return undefined;
+    }
+  }, [firstShop?.shipment_detail]);
+
+  // ==== Derived flags ====
+  const canUploadManual =
+    (order.payment_method === "manual" ||
+      order.payment_method === "transfer") &&
+    !order.payment_proof;
+
+  const waitingAndNoMethod =
+    (order.status === "pending" || detail?.status === 0) &&
+    (!order.payment_method ||
+      order.payment_method === "-" ||
+      order.payment_method === "");
+
+  // ==== Early return setelah hooks ====
   if (!open) return null;
 
-  const paymentObj: TxnPayment | undefined = orderDetail?.payment ?? undefined;
-  const paymentLink: string | null = orderDetail?.payment_link ?? null;
+  const handleResumePayment = async () => {
+    const token = detail?.payment?.snap_token;
+    const redirect = detail?.payment?.redirect_url;
 
-  const isPaid: boolean =
-    Boolean(orderDetail?.paid_at) ||
-    (typeof orderDetail?.status === "number"
-      ? orderDetail!.status === 1
-      : typeof orderDetail?.status === "string"
-      ? ["paid", "success", "completed", "settlement"].includes(
-          orderDetail!.status.toLowerCase()
-        )
-      : false);
-
-  const isSaldo = orderDetail?.payment_type === "saldo";
-
-  const handlePayNow = async () => {
-    if (paymentObj) {
-      // Cocokkan tipe parameter showPaymentInstruction TANPA any
-      type ShowArg = Parameters<typeof showPaymentInstruction>[0];
-      await showPaymentInstruction(paymentObj as ShowArg);
+    // 1) Kalau ada Snap token & script sudah ter-load → langsung pay
+    const w = window as unknown as { snap?: { pay: (t: string) => void } };
+    if (token && w.snap?.pay) {
+      w.snap.pay(token);
       return;
     }
-    if (paymentLink) {
-      window.open(paymentLink, "_blank");
+
+    // 2) Kalau ada redirect URL → buka tab baru ke gateway
+    if (redirect) {
+      window.open(redirect, "_blank");
       return;
     }
+
+    // 3) Kalau ada data QR (qr_base64/qr_url) → tampilkan modal instruksi pembayaran (QRIS)
+    const paymentPayload = buildPaymentFromDetail(detail);
+    if (paymentPayload) {
+      await showPaymentInstruction(paymentPayload);
+      return;
+    }
+
+    // 4) Fallback: BELUM ADA payment dari API → tampilkan SweetAlert + daftar produk
+    const items = (detail?.shops ?? [])
+      .flatMap((s) => s.details ?? [])
+      .map((det) => {
+        const p = det.product;
+        const parsedName =
+          !p && det.product_detail
+            ? (() => {
+                try {
+                  return JSON.parse(det.product_detail).name as
+                    | string
+                    | undefined;
+                } catch {
+                  return undefined;
+                }
+              })()
+            : undefined;
+        return {
+          id: det.id,
+          name: p?.name ?? parsedName ?? "Produk",
+          img: p?.image || "",
+          qty: det.quantity ?? 1,
+          price: det.price ?? 0,
+        };
+      });
+
+    const listHtml =
+      items.length === 0
+        ? `<div class="text-gray-500">Tidak ada item produk pada transaksi ini.</div>`
+        : items
+            .map(
+              (it) => `
+            <div style="display:flex;gap:10px;align-items:center;margin:6px 0;">
+              ${
+                it.img
+                  ? `<img src="${it.img}" alt="${it.name}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;border:1px solid #eee;" />`
+                  : `<div style="width:40px;height:40px;border-radius:8px;background:#f3f4f6;border:1px solid #eee;"></div>`
+              }
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${
+                  it.name
+                }</div>
+                <div style="font-size:12px;color:#6b7280;">Qty: ${it.qty}</div>
+              </div>
+              <div style="font-weight:600;color:#111827;white-space:nowrap;">
+                Rp ${(it.price * it.qty).toLocaleString("id-ID")}
+              </div>
+            </div>`
+            )
+            .join("");
+
+    await Swal.fire({
+      icon: "info",
+      title: "Instruksi pembayaran belum siap",
+      html: `
+      <div style="text-align:left">
+        <p style="margin:0 0 6px;color:#374151">Sistem belum menerima <b>token/URL pembayaran</b> dari gateway.</p>
+        <p style="margin:0 0 12px;color:#6b7280">Silakan coba lagi beberapa saat, atau pilih metode lain.</p>
+        <div style="border-top:1px dashed #e5e7eb;margin:10px 0 8px"></div>
+        <div style="font-weight:700;color:#374151;margin-bottom:6px">Produk dalam pesanan</div>
+        ${listHtml}
+      </div>`,
+      confirmButtonText: "Mengerti",
+    });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-bold text-gray-900">
-            Detail Pesanan #{selectedOrder.orderNumber}
-          </h3>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl p-6">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">
+              Detail Pesanan #{order.orderNumber}
+            </h3>
+            <div className="mt-2 flex items-center gap-2">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
+                  order.status
+                )}`}
+              >
+                {getStatusText(order.status)}
+              </span>
+              <span className="text-sm text-gray-500">
+                {displayDate(order.date)}
+              </span>
+            </div>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Tutup"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Informasi Pesanan
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Nomor Pesanan:</span>
-                  <span className="font-medium">
-                    #{selectedOrder.orderNumber}
-                  </span>
+        {/* Items */}
+        <div className="space-y-4">
+          {order.items.map((item) => (
+            <div key={item.id} className="flex items-center gap-4">
+              <div className="w-16 h-16 relative rounded-xl overflow-hidden">
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-gray-900">{item.name}</div>
+                <div className="text-sm text-gray-500">
+                  Qty: {item.quantity}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Tanggal:</span>
-                  <span className="font-medium">
-                    {new Date(selectedOrder.date).toLocaleDateString("id-ID", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </span>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-gray-900">
+                  Rp {(item.price * item.quantity).toLocaleString("id-ID")}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(
-                      selectedOrder.status
-                    )}`}
-                  >
-                    {getStatusText(selectedOrder.status)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Metode Pembayaran:</span>
-                  <span className="font-medium uppercase">
-                    {selectedOrder.payment_method || "N/A"}
-                  </span>
+                <div className="text-sm text-gray-500">
+                  @Rp {item.price.toLocaleString("id-ID")}
                 </div>
               </div>
             </div>
+          ))}
+        </div>
 
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Rincian Pembayaran
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="font-medium">
-                    Rp {selectedOrder.total.toLocaleString("id-ID")}
-                  </span>
-                </div>
+        {/* Divider */}
+        <div className="my-6 border-t border-gray-200" />
 
-                {selectedOrder.shipment_cost && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Ongkos Kirim:</span>
-                    <span className="font-medium">
-                      Rp {selectedOrder.shipment_cost.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                )}
-
-                {selectedOrder.cod && selectedOrder.cod > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fee COD:</span>
-                    <span className="font-medium">
-                      Rp {selectedOrder.cod.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                )}
-
-                {selectedOrder.discount_total &&
-                  selectedOrder.discount_total > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Diskon:</span>
-                      <span className="font-medium text-green-600">
-                        -Rp{" "}
-                        {selectedOrder.discount_total.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  )}
-
-                <div className="border-t pt-2">
-                  <div className="flex justify-between">
-                    <span className="font-semibold text-gray-900">Total:</span>
-                    <span className="font-bold text-[#6B6B6B]">
-                      Rp {selectedOrder.grand_total.toLocaleString("id-ID")}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {!isPaid && !isSaldo && (paymentObj || paymentLink) && (
-                <button
-                  onClick={handlePayNow}
-                  className="mt-4 w-full bg-[#2D5BFF] text-white py-3 rounded-xl font-semibold hover:bg-[#2249cc]"
-                >
-                  {paymentObj
-                    ? paymentObj.payment_type === "qris"
-                      ? "Bayar dengan QRIS"
-                      : `Bayar via ${(
-                          paymentObj.channel || "VA"
-                        ).toUpperCase()}`
-                    : "Lanjut ke Halaman Pembayaran"}
-                </button>
-              )}
+        {/* Payment & Shipping */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-800 font-semibold">
+              <CreditCard className="w-4 h-4" />
+              Metode Pembayaran
             </div>
+            <div className="text-sm text-gray-700 capitalize">
+              {order.payment_method ?? "-"}
+            </div>
+
+            {/* Info bayar manual (jika ada di detail) */}
+            {detail?.bank_name && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm">
+                <div className="font-semibold text-gray-800 mb-1">Bayar ke</div>
+                <div className="text-gray-700">
+                  Bank: <span className="font-medium">{detail.bank_name}</span>
+                </div>
+                {detail.account_number && (
+                  <div className="text-gray-700">
+                    No. Rekening:{" "}
+                    <span className="font-medium">{detail.account_number}</span>
+                  </div>
+                )}
+                {detail.account_name && (
+                  <div className="text-gray-700">
+                    Atas Nama:{" "}
+                    <span className="font-medium">{detail.account_name}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hint jika lagi menunggu & belum ada metode */}
+            {waitingAndNoMethod && (
+              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                Status: <b>Menunggu pembayaran</b>. Klik{" "}
+                <b>Lanjutkan Pembayaran</b> di bawah untuk membuka halaman/QR
+                pembayaran.
+              </div>
+            )}
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Alamat Pengiriman
-              </h4>
-              <div className="text-sm">
-                <p className="text-gray-800">{selectedOrder.address_line_1}</p>
-                <p className="text-gray-600">{selectedOrder.postal_code}</p>
-              </div>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-gray-800 font-semibold">
+              <Truck className="w-4 h-4" />
+              Pengiriman
             </div>
-
-            {selectedOrder.payment_method === "manual" && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-2">
-                  Bukti Pembayaran
-                </h4>
-                {selectedOrder.payment_proof ? (
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm font-medium">
-                        Bukti pembayaran telah diupload
-                      </span>
-                    </div>
-                    <div className="mt-2">
-                      <Image
-                        src={selectedOrder.payment_proof}
-                        alt="Bukti Pembayaran"
-                        width={200}
-                        height={200}
-                        className="rounded-lg object-cover"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                    <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 mb-3">
-                      Belum ada bukti pembayaran
-                    </p>
-                    <button
-                      onClick={onOpenPaymentProofModal}
-                      className="px-4 py-2 bg-[#6B6B6B] text-white rounded-lg font-medium hover:bg-[#6B6B6B]/90 transition-colors"
-                    >
-                      Upload Bukti
-                    </button>
-                  </div>
-                )}
+            {ship?.name && (
+              <div className="text-sm text-gray-700">
+                Kurir: <span className="font-medium">{ship.name}</span>
+                {ship.service ? ` • ${ship.service}` : ""}
+                {ship.etd ? ` • Estimasi ${ship.etd}` : ""}
+              </div>
+            )}
+            {order.address_line_1 && (
+              <div className="text-sm text-gray-700">
+                Alamat:{" "}
+                <span className="font-medium">
+                  {order.address_line_1}
+                  {order.postal_code ? `, ${order.postal_code}` : ""}
+                </span>
               </div>
             )}
           </div>
         </div>
 
-        <div>
-          <h4 className="font-semibold text-gray-900 mb-4">Produk Pesanan</h4>
-          <div className="space-y-4">
-            {selectedOrder.items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center gap-4 p-4 border rounded-lg"
-              >
-                <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="flex-1">
-                  <h5 className="font-semibold text-gray-900">{item.name}</h5>
-                  <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">
-                    Rp {(item.price * item.quantity).toLocaleString("id-ID")}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    @Rp {item.price.toLocaleString("id-ID")}
-                  </div>
-                </div>
+        {/* Divider */}
+        <div className="my-6 border-t border-gray-200" />
+
+        {/* Summary */}
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="text-sm text-gray-600 space-y-1">
+            <div>
+              Subtotal:{" "}
+              <span className="font-semibold text-gray-900">
+                Rp {Math.max(0, order.total).toLocaleString("id-ID")}
+              </span>
+            </div>
+            {typeof order.shipment_cost === "number" && (
+              <div>
+                Ongkir:{" "}
+                <span className="font-semibold text-gray-900">
+                  Rp {order.shipment_cost.toLocaleString("id-ID")}
+                </span>
               </div>
-            ))}
+            )}
+            {typeof order.discount_total === "number" &&
+              order.discount_total > 0 && (
+                <div>
+                  Diskon:{" "}
+                  <span className="font-semibold text-gray-900">
+                    -Rp {order.discount_total.toLocaleString("id-ID")}
+                  </span>
+                </div>
+              )}
           </div>
+
+          <div className="text-right">
+            <div className="text-sm text-gray-600">Grand Total</div>
+            <div className="text-2xl font-bold text-[#6B6B6B]">
+              Rp {order.grand_total.toLocaleString("id-ID")}
+            </div>
+          </div>
+        </div>
+
+        {/* QR Preview (jika ada) */}
+        {qrSrc && (
+          <div className="mt-6 rounded-2xl border border-gray-200 p-4 flex flex-col items-center">
+            <div className="flex items-center gap-2 mb-3 text-gray-800 font-semibold">
+              <QrCode className="w-5 h-5" />
+              QRIS / Kode Pembayaran
+            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrSrc}
+              alt="QR Pembayaran"
+              className="w-56 h-56 object-contain"
+            />
+            <div className="text-xs text-gray-500 mt-2">
+              Scan dengan aplikasi pembayaran Anda.
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 flex flex-col-reverse sm:flex-row gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+          >
+            Tutup
+          </button>
+
+          {canUploadManual && (
+            <button
+              onClick={onOpenUploadProof}
+              className="flex-1 sm:flex-none px-4 py-2 bg-[#6B6B6B] text-white rounded-xl hover:bg-[#5a5a5a] transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Upload Bukti Pembayaran
+            </button>
+          )}
+
+          {waitingAndNoMethod && (
+            <button
+              onClick={handleResumePayment}
+              className="flex-1 sm:flex-none px-4 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <QrCode className="w-4 h-4" />
+              Lanjutkan Pembayaran
+            </button>
+          )}
         </div>
       </div>
     </div>

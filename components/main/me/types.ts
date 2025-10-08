@@ -37,6 +37,7 @@ export interface Order {
   items: OrderItem[];
   trackingNumber?: string;
   payment_method?: string;
+  payment_type?: string | null;
   payment_proof?: string;
   shipment_cost?: number;
   cod?: number;
