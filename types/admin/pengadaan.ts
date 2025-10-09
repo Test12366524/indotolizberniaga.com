@@ -43,7 +43,7 @@ export interface PurchaseOrder {
 export interface CreatePurchaseOrderRequest {
   user_id: number;
   shop_id: number;
-  supplier: string;
+  supplier_id: number;
   date: string;
   notes: string;
   total: number;

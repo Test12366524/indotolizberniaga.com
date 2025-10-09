@@ -291,7 +291,7 @@ export default function PurchaseOrderForm({
     const basePayload = {
       user_id: form.user_id,
       shop_id: form.shop_id,
-      supplier: form.supplier_name || form.supplier, // kompatibel dengan create lama
+      supplier_id: form.supplier_id,
       date: form.date,
       notes: form.notes,
       total: form.total,
