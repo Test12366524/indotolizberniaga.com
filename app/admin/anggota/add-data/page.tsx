@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Swal from "sweetalert2";
 import {
@@ -24,13 +24,21 @@ const makeEmptyDoc = (anggota_id = 0): DocumentsAnggota => ({
   document: null,
   created_at: "",
   updated_at: "",
-  // cast agar [] tidak dibaca never[]
   media: [] as unknown as DocumentsAnggota["media"],
 });
 
 export default function AnggotaAddEditPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Memuat formulir…</div>}>
+      <AnggotaAddEditPageInner />
+    </Suspense>
+  );
+}
+
+function AnggotaAddEditPageInner() {
   const router = useRouter();
   const sp = useSearchParams();
+
   const mode: Mode = (sp.get("mode") as Mode) || "add";
   const idParam = sp.get("id");
   const id = idParam ? Number(idParam) : undefined;
@@ -58,8 +66,7 @@ export default function AnggotaAddEditPage() {
     if ((isEdit || isDetail) && detailData) {
       const docs: DocumentsAnggota[] =
         detailData.documents && detailData.documents.length > 0
-          ? // pastikan hasil map tetap bertipe DocumentsAnggota
-            (detailData.documents.map((d) => ({
+          ? (detailData.documents.map((d) => ({
               ...d,
               document: null,
             })) as DocumentsAnggota[])
