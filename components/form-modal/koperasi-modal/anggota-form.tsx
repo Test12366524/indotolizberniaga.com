@@ -1,37 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import type { AnggotaKoperasi } from "@/types/koperasi-types/anggota";
+import type {
+  AnggotaKoperasi,
+  DocumentsAnggota,
+} from "@/types/koperasi-types/anggota";
+import { formatDateForInput } from "@/lib/format-utils";
+
+// helper dokumen kosong bertipe benar
+const makeEmptyDoc = (anggota_id = 0): DocumentsAnggota => ({
+  id: 0,
+  anggota_id,
+  key: "",
+  document: null,
+  created_at: "",
+  updated_at: "",
+  media: [] as DocumentsAnggota["media"],
+});
 
 interface AnggotaFormProps {
   form: Partial<
-    AnggotaKoperasi & {
-      password?: string;
-      password_confirmation?: string;
-      nip?: string;
-      unit_kerja?: string;
-      jabatan?: string;
-      ktp?: File | null;
-      photo?: File | null;
-      slip_gaji?: File | null;
-    }
+    AnggotaKoperasi & { password?: string; password_confirmation?: string }
   >;
   setForm: (
     data: Partial<
-      AnggotaKoperasi & {
-        password?: string;
-        password_confirmation?: string;
-        nip?: string;
-        unit_kerja?: string;
-        jabatan?: string;
-        ktp?: File | null;
-        photo?: File | null;
-        slip_gaji?: File | null;
-      }
+      AnggotaKoperasi & { password?: string; password_confirmation?: string }
     >
   ) => void;
   onCancel: () => void;
@@ -39,6 +36,8 @@ interface AnggotaFormProps {
   readonly?: boolean;
   isLoading?: boolean;
 }
+
+type MediaItem = DocumentsAnggota["media"][number];
 
 export default function AnggotaForm({
   form,
@@ -48,9 +47,19 @@ export default function AnggotaForm({
   readonly = false,
   isLoading = false,
 }: AnggotaFormProps) {
-  // ---- Semua hooks diletakkan di atas sebelum kemungkinan early return ----
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // pastikan minimal 1 row documents
+  useEffect(() => {
+    if (!form.documents || form.documents.length === 0) {
+      setForm({
+        ...form,
+        documents: [makeEmptyDoc(Number(form.id) || 0)],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const statusOptions: Array<{ value: 0 | 1 | 2; label: string }> = [
     { value: 0, label: "PENDING" },
@@ -58,10 +67,38 @@ export default function AnggotaForm({
     { value: 2, label: "REJECTED" },
   ];
 
-  // ---- Early skeleton (bukan memanggil hooks setelah ini) ----
+  const addDocRow = () => {
+    const docs = (
+      form.documents ? [...form.documents] : []
+    ) as DocumentsAnggota[];
+    docs.push(makeEmptyDoc(Number(form.id) || 0));
+    setForm({ ...form, documents: docs });
+  };
+
+  const removeDocRow = (idx: number) => {
+    const docs = ((form.documents ?? []) as DocumentsAnggota[]).slice();
+    docs.splice(idx, 1);
+    setForm({
+      ...form,
+      documents: docs.length ? docs : [makeEmptyDoc(Number(form.id) || 0)],
+    });
+  };
+
+  const updateDocKey = (idx: number, key: string) => {
+    const docs = ((form.documents ?? []) as DocumentsAnggota[]).slice();
+    docs[idx] = { ...(docs[idx] as DocumentsAnggota), key };
+    setForm({ ...form, documents: docs });
+  };
+
+  const updateDocFile = (idx: number, file: File | null) => {
+    const docs = ((form.documents ?? []) as DocumentsAnggota[]).slice();
+    docs[idx] = { ...(docs[idx] as DocumentsAnggota), document: file };
+    setForm({ ...form, documents: docs });
+  };
+
   if (!mounted) {
     return (
-      <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-zinc-700 flex-shrink-0">
           <h2 className="text-lg font-semibold">Loading...</h2>
           <Button variant="ghost" onClick={onCancel}>
@@ -80,7 +117,7 @@ export default function AnggotaForm({
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
+    <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-zinc-700 flex-shrink-0">
         <h2 className="text-lg font-semibold">
@@ -98,7 +135,6 @@ export default function AnggotaForm({
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
           {/* Nama */}
           <div className="flex flex-col gap-y-1">
             <Label>Nama</Label>
@@ -130,11 +166,11 @@ export default function AnggotaForm({
             />
           </div>
 
-          {/* Password & Confirmation */}
-          {!readonly && (
+          {/* Password (hanya add) */}
+          {!readonly && !form.id && (
             <>
               <div className="flex flex-col gap-y-1">
-                <Label>Password{!form.id && " (wajib saat tambah)"}</Label>
+                <Label>Password (wajib saat tambah)</Label>
                 <Input
                   type="password"
                   value={form.password ?? ""}
@@ -149,10 +185,7 @@ export default function AnggotaForm({
                   type="password"
                   value={form.password_confirmation ?? ""}
                   onChange={(e) =>
-                    setForm({
-                      ...form,
-                      password_confirmation: e.target.value,
-                    })
+                    setForm({ ...form, password_confirmation: e.target.value })
                   }
                 />
               </div>
@@ -176,7 +209,7 @@ export default function AnggotaForm({
             </select>
           </div>
 
-          {/* Tempat Lahir */}
+          {/* Tempat/Tanggal Lahir */}
           <div className="flex flex-col gap-y-1">
             <Label>Tempat Lahir</Label>
             <Input
@@ -187,19 +220,17 @@ export default function AnggotaForm({
               readOnly={readonly}
             />
           </div>
-
-          {/* Tanggal Lahir */}
           <div className="flex flex-col gap-y-1">
             <Label>Tanggal Lahir</Label>
             <Input
               type="date"
-              value={form.birth_date ?? ""}
+              value={formatDateForInput(form.birth_date) ?? ""}
               onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
               readOnly={readonly}
             />
           </div>
 
-          {/* NIK */}
+          {/* NIK / NPWP */}
           <div className="flex flex-col gap-y-1">
             <Label>NIK</Label>
             <Input
@@ -208,8 +239,6 @@ export default function AnggotaForm({
               readOnly={readonly}
             />
           </div>
-
-          {/* NPWP */}
           <div className="flex flex-col gap-y-1">
             <Label>NPWP</Label>
             <Input
@@ -219,7 +248,7 @@ export default function AnggotaForm({
             />
           </div>
 
-          {/* NIP */}
+          {/* NIP / Unit Kerja / Jabatan */}
           <div className="flex flex-col gap-y-1">
             <Label>NIP</Label>
             <Input
@@ -228,8 +257,6 @@ export default function AnggotaForm({
               readOnly={readonly}
             />
           </div>
-
-          {/* Unit Kerja */}
           <div className="flex flex-col gap-y-1">
             <Label>Unit Kerja</Label>
             <Input
@@ -238,8 +265,6 @@ export default function AnggotaForm({
               readOnly={readonly}
             />
           </div>
-
-          {/* Jabatan */}
           <div className="flex flex-col gap-y-1">
             <Label>Jabatan</Label>
             <Input
@@ -249,65 +274,8 @@ export default function AnggotaForm({
             />
           </div>
 
-          {/* KTP Upload */}
+          {/* Alamat (full) */}
           <div className="flex flex-col gap-y-1">
-            <Label>KTP</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setForm({ ...form, ktp: file });
-              }}
-              disabled={readonly}
-            />
-            {form.ktp && (
-              <p className="text-xs text-muted-foreground">
-                File: {form.ktp.name}
-              </p>
-            )}
-          </div>
-
-          {/* Photo Upload */}
-          <div className="flex flex-col gap-y-1">
-            <Label>Photo</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setForm({ ...form, photo: file });
-              }}
-              disabled={readonly}
-            />
-            {form.photo && (
-              <p className="text-xs text-muted-foreground">
-                File: {form.photo.name}
-              </p>
-            )}
-          </div>
-
-          {/* Slip Gaji Upload */}
-          <div className="flex flex-col gap-y-1">
-            <Label>Slip Gaji</Label>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0] || null;
-                setForm({ ...form, slip_gaji: file });
-              }}
-              disabled={readonly}
-            />
-            {form.slip_gaji && (
-              <p className="text-xs text-muted-foreground">
-                File: {form.slip_gaji.name}
-              </p>
-            )}
-          </div>
-
-          {/* Alamat (full width) */}
-          <div className="flex flex-col gap-y-1 sm:col-span-2">
             <Label>Alamat</Label>
             <Textarea
               value={form.address ?? ""}
@@ -317,7 +285,7 @@ export default function AnggotaForm({
           </div>
 
           {/* Status */}
-          <div className="flex flex-col gap-y-1 col-span-2">
+          <div className="flex flex-col gap-y-1 sm:col-span-2">
             <Label>Status</Label>
             <select
               className="border rounded-md px-3 py-2 text-sm bg-white dark:bg-zinc-800 border-gray-300 dark:border-zinc-600"
@@ -341,6 +309,85 @@ export default function AnggotaForm({
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* ===== Dokumen Dinamis ===== */}
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold">Dokumen</h3>
+            {!readonly && (
+              <Button size="sm" onClick={addDocRow}>
+                + Tambah Baris
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            {(form.documents as DocumentsAnggota[] | undefined)?.map(
+              (doc, idx) => {
+                // hindari akses properti yang tidak ada di tipe (mis. 'url')
+                const firstMedia: MediaItem | undefined = doc.media?.[0];
+                const existingUrl = firstMedia?.original_url ?? "";
+
+                return (
+                  <div
+                    key={idx}
+                    className="grid grid-cols-1 sm:grid-cols-12 gap-3 border rounded-lg p-3"
+                  >
+                    {/* Nama File (key) */}
+                    <div className="sm:col-span-5">
+                      <Label>Nama File</Label>
+                      <Input
+                        value={doc.key ?? ""}
+                        readOnly={readonly}
+                        onChange={(e) => updateDocKey(idx, e.target.value)}
+                      />
+                    </div>
+
+                    {/* File */}
+                    <div className="sm:col-span-5">
+                      <Label>File</Label>
+                      <Input
+                        type="file"
+                        disabled={readonly}
+                        onChange={(e) =>
+                          updateDocFile(idx, e.target.files?.[0] || null)
+                        }
+                      />
+                      {existingUrl && (
+                        <a
+                          className="text-xs text-blue-600 mt-1 inline-block"
+                          href={existingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Lihat file lama
+                        </a>
+                      )}
+                      {doc.document && doc.document instanceof File && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          File baru: {doc.document.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Hapus */}
+                    <div className="sm:col-span-2 flex items-end">
+                      {!readonly && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => removeDocRow(idx)}
+                        >
+                          Hapus
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+            )}
           </div>
         </div>
       </div>

@@ -4,11 +4,8 @@ import {
   PinjamanResponse, 
   CreatePinjamanRequest, 
   UpdatePinjamanRequest,
-  PinjamanFilter,
   PaymentHistory,
   PaymentHistoryResponse,
-  CreatePaymentRequest,
-  UpdatePaymentRequest
 } from "@/types/admin/pinjaman";
 
 export const pinjamanApi = apiSlice.injectEndpoints({
@@ -89,7 +86,6 @@ export const pinjamanApi = apiSlice.injectEndpoints({
       status: number;
       created_at: string;
       updated_at: string;
-      media: any[];
       user: {
         id: number;
         name: string;
@@ -146,7 +142,6 @@ export const pinjamanApi = apiSlice.injectEndpoints({
           status: number;
           created_at: string;
           updated_at: string;
-          media: any[];
           user: {
             id: number;
             name: string;

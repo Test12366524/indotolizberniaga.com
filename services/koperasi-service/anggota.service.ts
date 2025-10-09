@@ -94,6 +94,50 @@ export const anggotaApi = apiSlice.injectEndpoints({
         data: null;
       }) => ({ code: response.code, message: response.message }),
     }),
+
+    // ✅ EXPORT Excel (body JSON: { from_date, to_date })
+    exportAnggotaExcel: builder.mutation<
+      { code: number; message: string },
+      { from_date: string; to_date: string }
+    >({
+      query: ({ from_date, to_date }) => ({
+        url: `/anggota/anggotas/export`,
+        method: "POST",
+        body: { from_date, to_date },
+      }),
+      transformResponse: (response: {
+        code: number;
+        message: string;
+        data?: string; // e.g. "Processing export request..."
+      }) => ({
+        code: response.code,
+        message: response.message,
+      }),
+    }),
+
+    // ✅ IMPORT Excel (body FormData: { file })
+    importAnggotaExcel: builder.mutation<
+      { code: number; message: string },
+      { file: File }
+    >({
+      query: ({ file }) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        return {
+          url: `/anggota/anggotas/import`,
+          method: "POST",
+          body: formData,
+        };
+      },
+      transformResponse: (response: {
+        code: number;
+        message: string;
+        data?: unknown;
+      }) => ({
+        code: response.code,
+        message: response.message,
+      }),
+    }),
   }),
   overrideExisting: false,
 });
@@ -104,4 +148,6 @@ export const {
   useCreateAnggotaMutation,
   useUpdateAnggotaMutation,
   useDeleteAnggotaMutation,
+  useExportAnggotaExcelMutation,
+  useImportAnggotaExcelMutation,
 } = anggotaApi;

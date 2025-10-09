@@ -4,16 +4,14 @@ import { useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import useModal from "@/hooks/use-modal";
 import {
   useGetAnggotaListQuery,
-  useCreateAnggotaMutation,
-  useUpdateAnggotaMutation,
   useDeleteAnggotaMutation,
+  useExportAnggotaExcelMutation,
+  useImportAnggotaExcelMutation,
 } from "@/services/koperasi-service/anggota.service";
 import type { AnggotaKoperasi } from "@/types/koperasi-types/anggota";
 import { Badge } from "@/components/ui/badge";
-import AnggotaForm from "@/components/form-modal/koperasi-modal/anggota-form";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import { useRouter } from "next/navigation";
 import ActionsGroup from "@/components/admin-components/actions-group";
@@ -25,32 +23,12 @@ import {
 import { HistoryIcon } from "lucide-react";
 
 export default function AnggotaPage() {
-  const [form, setForm] = useState<
-    Partial<
-      AnggotaKoperasi & {
-        password?: string;
-        password_confirmation?: string;
-        nip?: string;
-        unit_kerja?: string;
-        jabatan?: string;
-        ktp?: File | null;
-        photo?: File | null;
-        slip_gaji?: File | null;
-      }
-    >
-  >({});
-
   const router = useRouter();
-
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [readonly, setReadonly] = useState(false);
-  const { isOpen, openModal, closeModal } = useModal();
 
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
-
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [status, setStatus] = useState<"all" | "0" | "1" | "2">("all");
 
   const { data, isLoading, refetch } = useGetAnggotaListQuery({
     page: currentPage,
@@ -60,117 +38,27 @@ export default function AnggotaPage() {
   const list = useMemo(() => data?.data ?? [], [data]);
 
   const filteredList = useMemo(() => {
-    if (!query.trim()) return list;
+    let arr = list;
+    if (status !== "all")
+      arr = arr.filter((it) => it.status === Number(status));
+    if (!query.trim()) return arr;
     const q = query.toLowerCase();
-    return list.filter((item) => {
-      const fields = [
-        item.name,
-        item.email,
-        item.phone,
-        item.address,
-        item.nik,
-        item.npwp ?? "",
-      ];
-      return fields.some((f) => f?.toLowerCase?.().includes?.(q));
-    });
-  }, [list, query]);
+    return arr.filter((it) =>
+      [it.name, it.email, it.phone, it.address, it.nik, it.npwp ?? ""].some(
+        (f) => f?.toLowerCase?.().includes?.(q)
+      )
+    );
+  }, [list, query, status]);
 
   const lastPage = useMemo(() => data?.last_page ?? 1, [data]);
 
-  const [createAnggota, { isLoading: isCreating }] = useCreateAnggotaMutation();
-  const [updateAnggota, { isLoading: isUpdating }] = useUpdateAnggotaMutation();
   const [deleteAnggota] = useDeleteAnggotaMutation();
 
-  const handleSubmit = async () => {
-    try {
-      // === VALIDASI WAJIB ===
-      if (!form.name || !form.email || !form.phone || !form.nik) {
-        throw new Error("Nama, Email, Telepon, dan NIK wajib diisi");
-      }
-      if (!form.gender || !["M", "F"].includes(form.gender as string)) {
-        throw new Error("Gender wajib diisi (M/F)");
-      }
-      if (form.status === undefined || form.status === null) {
-        throw new Error("Status wajib diisi");
-      }
-
-      // Password hanya wajib saat CREATE
-      if (!editingId) {
-        if (!form.password || form.password.trim().length < 8) {
-          throw new Error("Password minimal 8 karakter");
-        }
-        if (form.password !== form.password_confirmation) {
-          throw new Error("Konfirmasi password tidak cocok");
-        }
-      }
-
-      // Create FormData for file uploads
-      const formData = new FormData();
-      formData.append("name", form.name);
-      formData.append("email", form.email);
-      formData.append("phone", form.phone);
-      formData.append("address", form.address ?? "");
-      formData.append("gender", form.gender as string);
-      formData.append("birth_date", form.birth_date ?? "");
-      formData.append("birth_place", form.birth_place ?? "");
-      formData.append("nik", form.nik);
-      formData.append("npwp", form.npwp ?? "");
-      formData.append("status", String(form.status));
-
-      // Add optional fields
-      if (form.nip) formData.append("nip", form.nip);
-      if (form.unit_kerja) formData.append("unit_kerja", form.unit_kerja);
-      if (form.jabatan) formData.append("jabatan", form.jabatan);
-
-      // Add password fields for create
-      if (!editingId && form.password && form.password_confirmation) {
-        formData.append("password", form.password);
-        formData.append("password_confirmation", form.password_confirmation);
-      }
-
-      // Add file uploads
-      if (form.ktp) formData.append("ktp", form.ktp);
-      if (form.photo) formData.append("photo", form.photo);
-      if (form.slip_gaji) formData.append("slip_gaji", form.slip_gaji);
-
-      if (editingId) {
-        await updateAnggota({ id: editingId, payload: formData }).unwrap();
-        Swal.fire("Sukses", "Anggota diperbarui", "success");
-      } else {
-        await createAnggota(formData).unwrap();
-        Swal.fire("Sukses", "Anggota ditambahkan", "success");
-      }
-
-      setForm({});
-      setEditingId(null);
-      await refetch();
-      closeModal();
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan";
-      Swal.fire("Gagal", msg, "error");
-      console.error(err);
-    }
-  };
-
-  const handleEdit = (item: AnggotaKoperasi) => {
-    setForm({
-      ...item,
-      password: "",
-      password_confirmation: "",
-    });
-    setEditingId(item.id);
-    setReadonly(false);
-    openModal();
-  };
-
-  const handleDetail = (item: AnggotaKoperasi) => {
-    setForm({
-      ...item,
-    });
-    setReadonly(true);
-    openModal();
-  };
+  // export/import hooks
+  const [exportAnggotaExcel, { isLoading: isExporting }] =
+    useExportAnggotaExcelMutation();
+  const [importAnggotaExcel, { isLoading: isImporting }] =
+    useImportAnggotaExcelMutation();
 
   const handleDelete = async (item: AnggotaKoperasi) => {
     const confirm = await Swal.fire({
@@ -180,7 +68,6 @@ export default function AnggotaPage() {
       showCancelButton: true,
       confirmButtonText: "Hapus",
     });
-
     if (confirm.isConfirmed) {
       try {
         await deleteAnggota(item.id).unwrap();
@@ -193,6 +80,155 @@ export default function AnggotaPage() {
     }
   };
 
+  // === Import handler ===
+  const handleImportExcel = async (file?: File) => {
+    try {
+      if (!file) return Swal.fire("Gagal", "File tidak ditemukan", "error");
+      const res = await importAnggotaExcel({ file }).unwrap();
+      Swal.fire(
+        "Import Dikirim",
+        res.message ?? "Berhasil mengunggah file",
+        "success"
+      );
+    } catch (e) {
+      Swal.fire("Gagal", "Import gagal diproses", "error");
+      console.error(e);
+    }
+  };
+
+  // === Export handler (dengan SweetAlert elegan) ===
+  const handleExportExcel = async () => {
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
+    const today = new Date();
+    const last30 = new Date();
+    last30.setDate(today.getDate() - 30);
+    const todayStr = fmt(today),
+      last30Str = fmt(last30);
+
+    const { value: formValues } = await Swal.fire({
+      title: "Export Anggota",
+      html: `
+        <div class="sae-wrap">
+          <div class="sae-field">
+            <label for="from_date" class="sae-label"><span class="sae-icon">📅</span> From date</label>
+            <input id="from_date" type="date" class="sae-input" />
+          </div>
+          <div class="sae-field">
+            <label for="to_date" class="sae-label"><span class="sae-icon">📆</span> To date</label>
+            <input id="to_date" type="date" class="sae-input" />
+          </div>
+          <p class="sae-hint">Pilih rentang tanggal export anggota.</p>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Kirim",
+      cancelButtonText: "Batal",
+      width: 520,
+      color: "#0f172a",
+      background: "rgba(255,255,255,0.9)",
+      backdrop: `rgba(15,23,42,0.4)`,
+      customClass: {
+        popup: "sae-popup",
+        title: "sae-title",
+        confirmButton: "sae-btn-confirm",
+        cancelButton: "sae-btn-cancel",
+      },
+      didOpen: () => {
+        if (!document.getElementById("sae-styles")) {
+          const style = document.createElement("style");
+          style.id = "sae-styles";
+          style.innerHTML = `
+            .sae-popup{border-radius:18px;box-shadow:0 20px 60px rgba(2,6,23,.15),0 2px 8px rgba(2,6,23,.06);backdrop-filter: blur(8px); border:1px solid rgba(2,6,23,.06)}
+            .sae-title{font-weight:700; letter-spacing:.2px}
+            .sae-wrap{display:grid; gap:14px}
+            .sae-field{display:grid; gap:8px}
+            .sae-label{font-size:12px; color:#475569; display:flex; align-items:center; gap:6px}
+            .sae-icon{font-size:14px}
+            .sae-input{appearance:none;width:100%;padding:12px 14px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;font-size:14px;transition:all .15s ease}
+            .sae-input:focus{outline:none;border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+            .sae-hint{margin-top:4px;font-size:12px;color:#64748b}
+            .sae-btn-confirm{background:linear-gradient(90deg,#6366f1,#22d3ee);color:white;border:none;border-radius:10px !important;padding:10px 18px;font-weight:600}
+            .sae-btn-cancel{background:white;color:#0f172a;border:1px solid #e2e8f0;border-radius:10px !important;padding:10px 18px;font-weight:600}
+          `;
+          document.head.appendChild(style);
+        }
+        const fromEl = document.getElementById("from_date") as HTMLInputElement;
+        const toEl = document.getElementById("to_date") as HTMLInputElement;
+        if (fromEl && toEl) {
+          fromEl.value = last30Str;
+          toEl.value = todayStr;
+          fromEl.max = todayStr;
+          toEl.max = todayStr;
+          toEl.min = fromEl.value;
+          fromEl.addEventListener("input", () => {
+            toEl.min = fromEl.value || "";
+            if (toEl.value < fromEl.value) toEl.value = fromEl.value;
+          });
+          toEl.addEventListener("input", () => {
+            fromEl.max = toEl.value || todayStr;
+          });
+        }
+      },
+      preConfirm: () => {
+        const from_date = (
+          document.getElementById("from_date") as HTMLInputElement
+        )?.value;
+        const to_date = (document.getElementById("to_date") as HTMLInputElement)
+          ?.value;
+        if (!from_date || !to_date) {
+          Swal.showValidationMessage("from_date dan to_date wajib diisi");
+          return;
+        }
+        if (to_date < from_date) {
+          Swal.showValidationMessage("to_date tidak boleh < from_date");
+          return;
+        }
+        return { from_date, to_date };
+      },
+    });
+
+    if (!formValues) return;
+
+    try {
+      Swal.fire({
+        title: "Mengirim permintaan…",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+        showConfirmButton: false,
+        customClass: { popup: "sae-popup", title: "sae-title" },
+      });
+      const res = await exportAnggotaExcel(formValues).unwrap();
+      Swal.fire({
+        icon: "success",
+        title: "Export diproses",
+        text: res.message ?? "Permintaan export diterima \n Silahkan cek di notifikasi",
+        confirmButtonText: "Oke",
+        customClass: {
+          popup: "sae-popup",
+          title: "sae-title",
+          confirmButton: "sae-btn-confirm",
+        },
+      });
+    } catch (e) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal",
+        text: "Export gagal diproses",
+        confirmButtonText: "Tutup",
+        customClass: {
+          popup: "sae-popup",
+          title: "sae-title",
+          confirmButton: "sae-btn-cancel",
+        },
+      });
+      console.error(e);
+    }
+  };
+
   const statusBadge = (status: number) => {
     if (status === 1) return <Badge variant="success">APPROVED</Badge>;
     if (status === 2) return <Badge variant="destructive">REJECTED</Badge>;
@@ -202,31 +238,26 @@ export default function AnggotaPage() {
   return (
     <div className="p-6 space-y-6">
       <ProdukToolbar
-        openModal={() => {
-          setForm({});
-          setEditingId(null);
-          setReadonly(false);
-          openModal();
-        }}
-        onSearchChange={(q: string) => setQuery(q)} // bungkus agar tipe = (string)=>void
+        showTemplateCsvButton
+        openModal={() => router.push("/admin/anggota/add-data?mode=add")}
+        onSearchChange={(q: string) => setQuery(q)}
         enableStatusFilter
         statusOptions={[
           { value: "all", label: "Semua Status" },
-          { value: "active", label: "Aktif" },
-          { value: "inactive", label: "Tidak Aktif" },
+          { value: "0", label: "PENDING" },
+          { value: "1", label: "APPROVED" },
+          { value: "2", label: "REJECTED" },
         ]}
         initialStatus={status}
-        onStatusChange={(s: string) =>
-          setStatus(s as "all" | "active" | "inactive")
-        }
+        onStatusChange={(s: string) => setStatus(s as "all" | "0" | "1" | "2")}
         onImportExcel={(file) => {
-          // uploadImportExcel(file)
+          if (!isImporting) void handleImportExcel(file);
         }}
         onExportExcel={() => {
-          // exportProdukExcel({ q: query, status })
+          if (!isExporting) void handleExportExcel();
         }}
-        importLabel="Import Excel"
-        exportLabel="Export Excel"
+        importLabel={isImporting ? "Mengunggah..." : "Import Excel"}
+        exportLabel={isExporting ? "Memproses..." : "Export Excel"}
       />
 
       <Card>
@@ -240,8 +271,6 @@ export default function AnggotaPage() {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Telepon</th>
                 <th className="px-4 py-2">Gender</th>
-                {/* <th className="px-4 py-2">NIK</th> */}
-                {/* <th className="px-4 py-2">NPWP</th> */}
                 <th className="px-4 py-2">Status</th>
               </tr>
             </thead>
@@ -263,28 +292,36 @@ export default function AnggotaPage() {
                   <tr key={item.id} className="border-t">
                     <td className="px-4 py-2">
                       <ActionsGroup
-                        handleDetail={() => handleDetail(item)}
-                        handleEdit={() => handleEdit(item)}
+                        handleDetail={() =>
+                          router.push(
+                            `/admin/anggota/add-data?mode=detail&id=${item.id}`
+                          )
+                        }
+                        handleEdit={() =>
+                          router.push(
+                            `/admin/anggota/add-data?mode=edit&id=${item.id}`
+                          )
+                        }
                         handleDelete={() => handleDelete(item)}
                         additionalActions={
-                          <>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    router.push("/admin/history");
-                                  }}
-                                >
-                                  <HistoryIcon className="size-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>History Anggota</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  router.push(
+                                    `/admin/history?anggota_id=${item.id}`
+                                  )
+                                }
+                              >
+                                <HistoryIcon className="size-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>History Anggota</p>
+                            </TooltipContent>
+                          </Tooltip>
                         }
                       />
                     </td>
@@ -301,10 +338,6 @@ export default function AnggotaPage() {
                     <td className="px-4 py-2 whitespace-nowrap">
                       {item.gender}
                     </td>
-                    {/* <td className="px-4 py-2 whitespace-nowrap">{item.nik}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {item.npwp ?? "-"}
-                    </td> */}
                     <td className="px-4 py-2 whitespace-nowrap">
                       {statusBadge(item.status)}
                     </td>
@@ -338,24 +371,6 @@ export default function AnggotaPage() {
           </div>
         </div>
       </Card>
-
-      {isOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <AnggotaForm
-            form={form}
-            setForm={setForm}
-            onCancel={() => {
-              setForm({});
-              setEditingId(null);
-              setReadonly(false);
-              closeModal();
-            }}
-            onSubmit={handleSubmit}
-            readonly={readonly}
-            isLoading={isCreating || isUpdating}
-          />
-        </div>
-      )}
     </div>
   );
 }

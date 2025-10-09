@@ -87,6 +87,11 @@ type Props = {
   exportLabel?: string;
   exportDisabled?: boolean;
 
+  /** ===== Template CSV (opsional) ===== */
+  showTemplateCsvButton?: boolean;
+  templateCsvUrl?: string;
+  templateCsvLabel?: string;
+
   /** ===== Date filter (opsional) ===== */
   enableDateFilter?: boolean;
   initialDateFrom?: Date;
@@ -146,6 +151,11 @@ export function ProdukToolbar({
   importLabel = "Import Excel",
   exportLabel = "Export Excel",
   exportDisabled,
+
+  // template csv (opsional)
+  showTemplateCsvButton = false,
+  templateCsvUrl = "https://api-koperasi.inovasidigitalpurwokerto.id/template-import-anggota.csv",
+  templateCsvLabel = "Template CSV",
 
   // date
   enableDateFilter = false,
@@ -352,6 +362,20 @@ export function ProdukToolbar({
             </Button>
           )}
 
+          {/* Download Template CSV (opsional) */}
+          {showTemplateCsvButton && (
+            <a
+              href={templateCsvUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+            >
+              <Button variant="green" className="h-10">
+                {templateCsvLabel}
+              </Button>
+            </a>
+          )}
+
           {onImportExcel && (
             <>
               <input
@@ -369,6 +393,7 @@ export function ProdukToolbar({
               />
               <Button
                 variant="default"
+                className="h-10"
                 onClick={() => fileInputRef.current?.click()}
               >
                 {importLabel}
@@ -377,7 +402,11 @@ export function ProdukToolbar({
           )}
 
           {onExportExcel && (
-            <Button onClick={onExportExcel} disabled={exportDisabled}>
+            <Button
+              className="h-10"
+              onClick={onExportExcel}
+              disabled={exportDisabled}
+            >
               {exportLabel}
             </Button>
           )}
@@ -385,7 +414,7 @@ export function ProdukToolbar({
           {openModal && (
             <Button
               onClick={openModal}
-              className="inline-flex items-center gap-2"
+              className="inline-flex items-center gap-2 h-10"
             >
               <Plus className="h-4 w-4" />
               {addButtonLabel}
