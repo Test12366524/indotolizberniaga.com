@@ -1,9 +1,9 @@
-import HistoryModal from "@/components/history";
+import HistoryPage from "@/components/history";
 
 export default function Page() {
   return (
     <div className="w-full">
-      <HistoryModal />
+      <HistoryPage />
     </div>
   );
 }

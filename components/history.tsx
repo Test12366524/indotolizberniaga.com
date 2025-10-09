@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -151,8 +151,15 @@ function TablePagination({
   );
 }
 
-/* =================== Page =================== */
 export default function HistoryPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Memuat riwayat…</div>}>
+      <HistoryPageInner />
+    </Suspense>
+  );
+}
+
+function HistoryPageInner() {
   const router = useRouter();
   const sp = useSearchParams();
   const anggotaIdParam = sp.get("anggota_id");
@@ -190,8 +197,6 @@ export default function HistoryPage() {
   );
 
   /* ====== NORMALISASI SESUAI RESPONSE SAMPLE ====== */
-
-  // Helper ambil array & total dari bentuk: { data: { data: [...], total: n } }
   const takePage = (
     raw: unknown
   ): { list: ReadonlyArray<Record<string, unknown>>; total: number } => {
@@ -283,7 +288,7 @@ export default function HistoryPage() {
   );
 
   const handleTabChange = (v: string) =>
-    setTab(v as typeof tab /* klasik & aman */);
+    setTab(v as "simpanan" | "pinjaman" | "pembayaran");
 
   return (
     <div className="w-full space-y-6">
@@ -291,7 +296,7 @@ export default function HistoryPage() {
       <div className="grid grid-cols-12 gap-6 items-stretch">
         {/* LEFT: ID CARD STYLE */}
         <div className="col-span-12 lg:col-span-5">
-          <Card className="relative overflow-hidden p-0 h-full min-h-[460px] bg-white">
+          <Card className="relative overflow-hidden p-0 h-full min-h[460px] bg-white">
             {/* Strap & slot lanyard */}
             <div className="absolute left-1/2 -translate-x-1/2 -top-4 h-8 w-28 bg-neutral-200 rounded-b-lg shadow" />
             <div className="absolute left-1/2 -translate-x-1/2 top-5 h-6 w-24 rounded-full bg-white/90 shadow" />
@@ -299,14 +304,12 @@ export default function HistoryPage() {
             {/* Top diagonal banner (merah) */}
             <div className="relative h-40">
               <div className="absolute inset-0 -skew-y-6 origin-top-left bg-gradient-to-r from-rose-600 via-red-600 to-rose-700" />
-              {/* potongan putih agar terasa tegas seperti contoh */}
               <div className="absolute -bottom-10 -left-6 right-0 h-24 rotate-[-12deg] bg-white/95" />
             </div>
 
-            {/* Foto bulat dengan ring gradasi */}
+            {/* Foto bulat */}
             <div className="relative -mt-20 flex justify-center">
               <div className="relative">
-                {/* cincin aksen */}
                 <div className="absolute -inset-8 rounded-full bg-gradient-to-tr from-rose-600 to-red-700 opacity-25" />
                 <div className="relative p-1 rounded-full bg-gradient-to-tr from-rose-500 to-red-600">
                   <img
@@ -372,12 +375,12 @@ export default function HistoryPage() {
               </div>
             </div>
 
-            {/* Dekorasi sudut bawah (quarter circle merah) */}
+            {/* Dekorasi */}
             <div className="pointer-events-none absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-gradient-to-tr from-rose-700 via-red-500 to-rose-400 opacity-20" />
           </Card>
         </div>
 
-        {/* RIGHT: BIODATA LENGKAP (TINGGI SAMA) */}
+        {/* RIGHT: BIODATA */}
         <div className="col-span-12 lg:col-span-7">
           <Card className="overflow-hidden bg-white h-full min-h-[460px] flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b">
@@ -490,6 +493,7 @@ export default function HistoryPage() {
           </Card>
         </div>
       </div>
+
       {/* ====== BOTTOM: TAB + TABEL (full width) ====== */}
       <Card className="overflow-hidden bg-white">
         <Tabs value={tab} onValueChange={handleTabChange}>
