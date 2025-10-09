@@ -6,20 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import useModal from "@/hooks/use-modal";
 import {
-  useGetProductCategoryListQuery,
-  useCreateProductCategoryMutation,
-  useUpdateProductCategoryMutation,
-  useDeleteProductCategoryMutation,
-} from "@/services/ppob/category.service";
-import { ProductCategory } from "@/types/ppob/product-category";
-import FormProductCategory from "@/components/form-modal/ppob/category-form";
+  useGetProductListQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
+} from "@/services/ppob/product.service";
+import { Product } from "@/types/ppob/product";
+import FormProduct from "@/components/form-modal/ppob/product-form";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { ProdukToolbar } from "@/components/ui/produk-toolbar";
 import ActionsGroup from "@/components/admin-components/actions-group";
 
-export default function ProductCategoryPage() {
-  const [form, setForm] = useState<Partial<ProductCategory>>({
+export default function ProductPage() {
+  const [form, setForm] = useState<Partial<Product>>({
     status: true,
   });
   const [editingSlug, setEditingSlug] = useState<string | null>(null);
@@ -28,9 +28,9 @@ export default function ProductCategoryPage() {
   const itemsPerPage = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, set] = useState("all");
 
-  const { data, isLoading, refetch } = useGetProductCategoryListQuery({
+  const { data, isLoading, refetch } = useGetProductListQuery({
     page: currentPage,
     paginate: itemsPerPage,
   });
@@ -38,20 +38,21 @@ export default function ProductCategoryPage() {
   const categoryList = useMemo(() => data?.data || [], [data]);
   const lastPage = useMemo(() => data?.last_page || 1, [data]);
 
-  const [createCategory, { isLoading: isCreating }] =
-    useCreateProductCategoryMutation();
-  const [updateCategory, { isLoading: isUpdating }] =
-    useUpdateProductCategoryMutation();
-  const [deleteCategory] = useDeleteProductCategoryMutation();
+  const [create, { isLoading: isCreating }] =
+    useCreateProductMutation();
+  const [update, { isLoading: isUpdating }] =
+    useUpdateProductMutation();
+  const [deleteProduct] = useDeleteProductMutation();
 
   const handleSubmit = async () => {
     try {
       const payload = new FormData();
-      if (form.parent_id) payload.append("parent_id", form.parent_id.toString());
-      if (form.title) payload.append("title", form.title);
-      if (form.sub_title) payload.append("sub_title", form.sub_title);
+      if (form.ppob_category_id) payload.append("ppob_category_id", form.ppob_category_id.toString());
+      if (form.name) payload.append("name", form.name);
+      if (form.sku) payload.append("sku", form.sku);
       if (form.description) payload.append("description", form.description);
-      if (form.digiflazz_code) payload.append("digiflazz_code", form.digiflazz_code);
+      if (form.buy_price) payload.append("buy_price", form.buy_price.toString());
+      if (form.sell_price) payload.append("sell_price", form.sell_price.toString());
       if (typeof form.status === "boolean") {
         payload.append("status", form.status ? "1" : "0");
       }
@@ -60,11 +61,11 @@ export default function ProductCategoryPage() {
       }
 
       if (editingSlug) {
-        await updateCategory({ slug: editingSlug, payload }).unwrap();
-        Swal.fire("Sukses", "Kategori diperbarui", "success");
+        await update({ slug: editingSlug, payload }).unwrap();
+        Swal.fire("Sukses", "Produk diperbarui", "success");
       } else {
-        await createCategory(payload).unwrap();
-        Swal.fire("Sukses", "Kategori ditambahkan", "success");
+        await create(payload).unwrap();
+        Swal.fire("Sukses", "Produk ditambahkan", "success");
       }
 
       setForm({ status: true });
@@ -77,23 +78,23 @@ export default function ProductCategoryPage() {
     }
   };
 
-  const handleEdit = (item: ProductCategory) => {
+  const handleEdit = (item: Product) => {
     setForm({ ...item, status: item.status === true || item.status === 1 });
     setEditingSlug(item.slug ? item.slug.toString() : "");
     setReadonly(false);
     openModal();
   };
 
-  const handleDetail = (item: ProductCategory) => {
+  const handleDetail = (item: Product) => {
     setForm(item);
     setReadonly(true);
     openModal();
   };
 
-  const handleDelete = async (item: ProductCategory) => {
+  const handleDelete = async (item: Product) => {
     const confirm = await Swal.fire({
-      title: "Yakin hapus kategori?",
-      text: item.title ?? "",
+      title: "Yakin hapus produk?",
+      text: item.name ?? "",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Hapus",
@@ -105,9 +106,9 @@ export default function ProductCategoryPage() {
         return;
       }
       try {
-        await deleteCategory(item.slug.toString()).unwrap();
+        await deleteProduct(item.slug.toString()).unwrap();
         await refetch();
-        Swal.fire("Berhasil", "Kategori dihapus", "success");
+        Swal.fire("Berhasil", "Produk dihapus", "success");
       } catch (error) {
         Swal.fire("Gagal", "Gagal menghapus kategori", "error");
         console.error(error);
@@ -127,7 +128,7 @@ export default function ProductCategoryPage() {
           { value: "0", label: "Nonaktif" },
         ]}
         initialStatus={category}
-        onStatusChange={(status: string) => setCategory(status)}
+        onStatusChange={(status: string) => set(status)}
       />
 
       <Card>
@@ -137,8 +138,11 @@ export default function ProductCategoryPage() {
               <tr>
                 <th className="px-4 py-2">Aksi</th>
                 <th className="px-4 py-2">Parent</th>
-                <th className="px-4 py-2">Judul</th>
+                <th className="px-4 py-2">Kategori</th>
+                <th className="px-4 py-2">Nama</th>
                 <th className="px-4 py-2">Deskripsi</th>
+                <th className="px-4 py-2">Harga Beli</th>
+                <th className="px-4 py-2">Harga Jual</th>
                 <th className="px-4 py-2">Status</th>
               </tr>
             </thead>
@@ -165,9 +169,12 @@ export default function ProductCategoryPage() {
                         handleDelete={() => handleDelete(item)}
                       />
                     </td>
-                    <td className="px-4 py-2">{item.parent_title}</td>
-                    <td className="px-4 py-2">{item.title}</td>
+                    <td className="px-4 py-2">{item.parent_category_title}</td>
+                    <td className="px-4 py-2">{item.category_title}</td>
+                    <td className="px-4 py-2">{item.name}</td>
                     <td className="px-4 py-2">{item.description}</td>
+                    <td className="px-4 py-2">{item.buy_price}</td>
+                    <td className="px-4 py-2">{item.sell_price}</td>
                     <td className="px-4 py-2">
                       <Badge variant={item.status ? "success" : "destructive"}>
                         {item.status ? "Aktif" : "Nonaktif"}
@@ -206,7 +213,7 @@ export default function ProductCategoryPage() {
 
       {isOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <FormProductCategory
+          <FormProduct
             form={form}
             setForm={setForm}
             onCancel={() => {

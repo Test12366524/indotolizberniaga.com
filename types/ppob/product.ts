@@ -1,6 +1,8 @@
 export interface Product {
   id: number;
   ppob_category_id: number;
+  category_title?: string | null;
+  parent_category_title?: string | null;
   name: string;
   sku: string;
   description: string;

@@ -1,27 +1,25 @@
 import { apiSlice } from "../base-query";
-import { ProductCategory } from "@/types/ppob/product-category"; 
+import { Product } from "@/types/ppob/product"; 
 
 export const productCategoryApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     // 🔍 Get All Product Categories (with pagination)
-    getProductCategoryList: builder.query<
+    getProductList: builder.query<
       {
-        data: ProductCategory[];
+        data: Product[];
         last_page: number;
         current_page: number;
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number; is_parent?: number; parent_id?: number }
+      { page: number; paginate: number; }
     >({
-      query: ({ page, paginate, is_parent, parent_id }) => ({
-        url: `/master/ppob-categories`,
+      query: ({ page, paginate }) => ({
+        url: `/master/ppob-products`,
         method: "GET",
         params: {
           page,
           paginate,
-          is_parent,
-          parent_id
         },
       }),
       transformResponse: (response: {
@@ -29,7 +27,7 @@ export const productCategoryApi = apiSlice.injectEndpoints({
         message: string;
         data: {
           current_page: number;
-          data: ProductCategory[];
+          data: Product[];
           last_page: number;
           total: number;
           per_page: number;
@@ -44,56 +42,56 @@ export const productCategoryApi = apiSlice.injectEndpoints({
     }),
 
     // 🔍 Get Product Category by Slug
-    getProductCategoryBySlug: builder.query<ProductCategory, string>({
+    getProductBySlug: builder.query<Product, string>({
       query: (slug) => ({
-        url: `/master/ppob-categories/${slug}`,
+        url: `/master/ppob-products/${slug}`,
         method: "GET",
       }),
       transformResponse: (response: {
         code: number;
         message: string;
-        data: ProductCategory;
+        data: Product;
       }) => response.data,
     }),
 
     // ➕ Create Product Category
-    createProductCategory: builder.mutation<ProductCategory, FormData>({
+    createProduct: builder.mutation<Product, FormData>({
       query: (payload) => ({
-        url: `/master/ppob-categories`,
+        url: `/master/ppob-products`,
         method: "POST",
         body: payload,
       }),
       transformResponse: (response: {
         code: number;
         message: string;
-        data: ProductCategory;
+        data: Product;
       }) => response.data,
     }),
 
     // ✏️ Update Product Category by Slug
-    updateProductCategory: builder.mutation<
-      ProductCategory,
+    updateProduct: builder.mutation<
+      Product,
       { slug: string; payload: FormData }
     >({
       query: ({ slug, payload }) => ({
-        url: `/master/ppob-categories/${slug}?_method=PUT`,
+        url: `/master/ppob-products/${slug}?_method=PUT`,
         method: "POST",
         body: payload,
       }),
       transformResponse: (response: {
         code: number;
         message: string;
-        data: ProductCategory;
+        data: Product;
       }) => response.data,
     }),
 
     // ❌ Delete Product Category by Slug
-    deleteProductCategory: builder.mutation<
+    deleteProduct: builder.mutation<
       { code: number; message: string },
       string
     >({
       query: (slug) => ({
-        url: `/master/ppob-categories/${slug}`,
+        url: `/master/ppob-products/${slug}`,
         method: "DELETE",
       }),
       transformResponse: (response: {
@@ -107,9 +105,9 @@ export const productCategoryApi = apiSlice.injectEndpoints({
 });
 
 export const {
-  useGetProductCategoryListQuery,
-  useGetProductCategoryBySlugQuery,
-  useCreateProductCategoryMutation,
-  useUpdateProductCategoryMutation,
-  useDeleteProductCategoryMutation,
+  useGetProductListQuery,
+  useGetProductBySlugQuery,
+  useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
 } = productCategoryApi;

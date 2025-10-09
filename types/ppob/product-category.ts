@@ -1,6 +1,7 @@
 export interface ProductCategory {
   id: number;
   parent_id?: number | string | null;
+  parent_title?: string | null;
   title: string;
   sub_title: string;
   slug?: string;

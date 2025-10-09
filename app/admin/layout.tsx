@@ -301,9 +301,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           href: "/admin/ppob/deposit",
         },
         {
-          id: "ppob/produk",
+          id: "ppob/product",
           label: "Produk PPOB",
-          href: "/admin/ppob/produk",
+          href: "/admin/ppob/product",
         },
         {
           id: "ppob/category",
