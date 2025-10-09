@@ -11,10 +11,16 @@ export const voucherApi = apiSlice.injectEndpoints({
         pageTotal: number;
         currentPage: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number; search?: string }
     >({
-      query: ({ page, paginate }) =>
-        `/voucher?page=${page}&paginate=${paginate}`,
+      query: ({ page, paginate, search }) => {
+        const params = new URLSearchParams({
+          page: String(page),
+          paginate: String(paginate),
+        });
+        if (search && search.trim()) params.set("search", search.trim());
+        return `/voucher?${params.toString()}`;
+      },
       transformResponse: (response: {
         code: number;
         message: string;

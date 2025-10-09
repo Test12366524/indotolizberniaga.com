@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { CreditCard, User, Wallet, Clock, CheckCircle } from "lucide-react";
 import type { PaymentChannel, PaymentMethod } from "@/types/admin/pos-kasir";
+import VoucherCombobox from "../ui/voucher-combobox";
 
 type Anggota = {
   user_id: number;
@@ -82,7 +83,7 @@ export default function PaymentForm(props: {
             <Label className="text-sm font-medium text-gray-700 mb-2 block">
               Tipe Pembayaran
             </Label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant={
                   formData.payment_type === "manual" ? "default" : "outline"
@@ -112,7 +113,7 @@ export default function PaymentForm(props: {
               >
                 <CreditCard className="h-4 w-4" /> Auto
               </Button>
-              <Button
+              {/* <Button
                 variant={
                   formData.payment_type === "saldo" ? "default" : "outline"
                 }
@@ -128,7 +129,7 @@ export default function PaymentForm(props: {
                 className="flex items-center gap-2"
               >
                 <Wallet className="h-4 w-4" /> Saldo
-              </Button>
+              </Button> */}
             </div>
           </div>
 
@@ -326,19 +327,10 @@ export default function PaymentForm(props: {
             <Label className="text-sm font-medium text-gray-700">
               Voucher (Opsional)
             </Label>
-            <Input
-              placeholder="ID voucher (pisahkan dengan koma)"
-              value={formData.voucher.join(", ")}
-              onChange={(e) => {
-                const ids = e.target.value
-                  .split(",")
-                  .map((s) => parseInt(s.trim()))
-                  .filter((n) => !Number.isNaN(n));
-                setFormData((p) => ({ ...p, voucher: ids }));
-              }}
-              className="h-10"
+            <VoucherCombobox
+              value={formData.voucher}
+              onChange={(ids) => setFormData((p) => ({ ...p, voucher: ids }))}
             />
-            <p className="text-xs text-gray-500 mt-1">Contoh: 1, 2, 3</p>
           </div>
 
           {/* Submit */}
