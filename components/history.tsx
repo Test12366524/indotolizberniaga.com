@@ -13,15 +13,14 @@ import { useGetSimpananListQuery } from "@/services/admin/simpanan.service";
 import { useGetPinjamanListQuery } from "@/services/admin/pinjaman.service";
 import { useGetTransactionListQuery } from "@/services/admin/transaction.service";
 
-/* =================== View Types =================== */
 type SimpananRow = {
   id: number;
   tanggal: string;
   reference: string;
   kategori: string;
   nominal: number;
-  status: number; // 0 pending, 1 success, 2 failed (sesuai sample)
-  pembayaran: string; // ringkas (payment_type / channel / QR)
+  status: number;
+  pembayaran: string;
 };
 
 type PinjamanRow = {
