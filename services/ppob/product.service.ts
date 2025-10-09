@@ -12,14 +12,15 @@ export const productCategoryApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number; }
+      { page: number; paginate: number; ppob_category_id?: number }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, ppob_category_id }) => ({
         url: `/master/ppob-products`,
         method: "GET",
         params: {
           page,
           paginate,
+          ppob_category_id,
         },
       }),
       transformResponse: (response: {

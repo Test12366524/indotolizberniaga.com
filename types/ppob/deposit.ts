@@ -4,9 +4,8 @@ export interface Deposit {
   owner_name: string;
   amount: number;
   payment_method?: string | null;
-  account_number?: number | null;
+  account_number?: number;
   notes?: string | null;
-  status: number;
   created_at: string;
   updated_at: string;
 }
@@ -41,9 +40,8 @@ export interface CreateDepositRequest {
   owner_name: string;
   amount: number;
   payment_method?: string | null;
-  account_number?: number | null;
+  account_number?: number;
   notes?: string | null;
-  status: number;
 }
 
 export interface UpdateDepositRequest {
@@ -51,7 +49,6 @@ export interface UpdateDepositRequest {
   owner_name?: string;
   amount?: number;
   payment_method?: string | null;
-  account_number?: number | null;
+  account_number?: number;
   notes?: string | null;
-  status?: number;
 }
