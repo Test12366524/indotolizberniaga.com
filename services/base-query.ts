@@ -14,8 +14,22 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
+const TAGS = [
+  "PosTransaction",
+  "PosAnggota",
+  "Installment",
+  "AnggotaMeninggal",
+  "KodeTransaksi",
+  "COA",
+  "FinancialBill",
+  "Seller",
+  "Journal",
+  "ChatList",
+  "ChatMessages",
+] as const;
+
 export const apiSlice = createApi({
   baseQuery: baseQuery,
-  tagTypes: ["PosTransaction", "PosAnggota", "Installment", "AnggotaMeninggal", "KodeTransaksi", "COA", "FinancialBill", "Seller", "Journal"],
+  tagTypes: TAGS,
   endpoints: () => ({}),
 });

@@ -12,12 +12,19 @@ export const anggotaApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number; status?: number }
+      { page: number; paginate: number; status?: number; search?: string } // ← tambah search
     >({
-      query: ({ page, paginate, status }) => ({
+      query: ({ page, paginate, status, search }) => ({
         url: `/anggota/anggotas`,
         method: "GET",
-        params: { page, paginate, ...(status && { status }) },
+        params: {
+          page,
+          paginate,
+          ...(typeof status === "number" ? { status } : {}),
+          ...(typeof search === "string" && search.trim() !== ""
+            ? { search }
+            : {}), // ← kirim hanya jika ada
+        },
       }),
       transformResponse: (response: {
         code: number;
