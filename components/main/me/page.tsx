@@ -89,7 +89,6 @@ import {
   ApiTransactionByIdData,
   isApiEnvelope,
   isTxnByIdData,
-  isTxnByIdEnvelope,
 } from "./transaction-by-id";
 
 export default function ProfilePage() {
@@ -381,7 +380,45 @@ export default function ProfilePage() {
   }, [transactions]);
 
   const { data: currentUserResp, refetch: refetchCurrentUser } =
-    useGetCurrentUserQuery();
+    useGetCurrentUserQuery(undefined, {
+      refetchOnMountOrArgChange: true, // saat mount / arg berubah
+      refetchOnFocus: true, // saat tab kembali fokus
+      refetchOnReconnect: true, // saat koneksi balik lagi
+    });
+
+  // ---- Derive anggota status (0=PENDING, 1=APPROVED, 2=REJECTED) ----
+  type CurrentUserWithAnggota = {
+    anggota?: {
+      status?: number | null;
+      reference?: string | null;
+    } | null;
+  };
+
+  useEffect(() => {
+    if (activeTab === "anggota" || activeTab === "seller") {
+      refetchCurrentUser();
+    }
+  }, [activeTab, refetchCurrentUser]);
+
+  const anggotaStatus = useMemo<number | null>(() => {
+    const u = currentUserResp as CurrentUserWithAnggota | undefined;
+    return u?.anggota?.status ?? null;
+  }, [currentUserResp]);
+
+  const isAnggotaApproved = anggotaStatus === 1;
+
+  const anggotaStatusText = useMemo(() => {
+    switch (anggotaStatus) {
+      case 0:
+        return "PENDING";
+      case 1:
+        return "APPROVED";
+      case 2:
+        return "REJECTED";
+      default:
+        return "TIDAK TERDAFTAR";
+    }
+  }, [anggotaStatus]);
 
   const handleModalSuccess = async () => {
     await refetchCurrentUser();
@@ -620,30 +657,53 @@ export default function ProfilePage() {
                     label: "Seller",
                     icon: <Store className="w-5 h-5" />,
                   },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() =>
-                      setActiveTab(
-                        tab.id as
-                          | "dashboard"
-                          | "profile"
-                          | "addresses"
-                          | "orders"
-                          | "anggota"
-                          | "seller"
-                      )
-                    }
-                    className={`w-full flex items-center gap-2 px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${
-                      activeTab === (tab.id as typeof activeTab)
-                        ? "bg-[#6B6B6B] text-white shadow-lg"
-                        : "text-gray-700 hover:bg-[#6B6B6B]/10 hover:text-[#6B6B6B]"
-                    }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
-                ))}
+                ].map((tab) => {
+                  const disabled = tab.id === "seller" && !isAnggotaApproved;
+                  return (
+                    <button
+                      key={tab.id}
+                      disabled={disabled}
+                      onClick={() => {
+                        if (tab.id === "seller" && !isAnggotaApproved) {
+                          Swal.fire({
+                            icon: "info",
+                            title: "Akses Seller Terkunci",
+                            text:
+                              `Menu Seller hanya bisa diakses jika status anggota Anda APPROVED. ` +
+                              `Status saat ini: ${anggotaStatusText}. ` +
+                              `Silakan selesaikan pendaftaran atau menunggu persetujuan admin.`,
+                            confirmButtonText: "Mengerti",
+                          });
+                          return;
+                        }
+                        setActiveTab(
+                          tab.id as
+                            | "dashboard"
+                            | "profile"
+                            | "addresses"
+                            | "orders"
+                            | "anggota"
+                            | "seller"
+                        );
+                      }}
+                      title={
+                        disabled
+                          ? `Menu Seller terkunci. Status anggota: ${anggotaStatusText}`
+                          : tab.label
+                      }
+                      className={`w-full flex items-center gap-2 px-4 py-3 rounded-2xl font-medium transition-all duration-300
+        ${
+          activeTab === (tab.id as typeof activeTab)
+            ? "bg-[#6B6B6B] text-white shadow-lg"
+            : "text-gray-700 hover:bg-[#6B6B6B]/10 hover:text-[#6B6B6B]"
+        }
+        ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                    </button>
+                  );
+                })}
               </nav>
 
               <button
@@ -1407,17 +1467,46 @@ export default function ProfilePage() {
                         <h2 className="text-3xl font-bold text-gray-900">
                           Anggota Koperasi
                         </h2>
-                        <p className="text-gray-600 mt-1">
-                          Anda telah terdaftar sebagai anggota koperasi.
-                        </p>
+                        {/* Di header Anggota */}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span
+                            className={`px-2 py-0.5 text-xs font-semibold rounded-full
+      ${
+        isAnggotaApproved
+          ? "bg-green-100 text-green-700"
+          : "bg-yellow-100 text-yellow-700"
+      }`}
+                          >
+                            Status: {anggotaStatusText}
+                          </span>
+                        </div>
+                        {isAnggotaApproved && (
+                          <p className="text-gray-600 mt-1">
+                            Anda telah terdaftar sebagai anggota koperasi.
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6 flex flex-col items-center">
                       <div className="flex items-center gap-2 mb-2">
-                        <ShieldCheck className="w-6 h-6 text-green-600" />
-                        <span className="font-semibold text-green-700">
-                          Status: Aktif
-                        </span>
+                        {isAnggotaApproved ? (
+                          <>
+                            <ShieldCheck className="w-6 h-6 text-green-600" />
+                            <span className="font-semibold text-green-700">
+                              Status: Aktif
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-6 h-6 text-yellow-600" />
+                            <span className="font-semibold text-yellow-700">
+                              Status:{" "}
+                              {anggotaStatusText === "PENDING"
+                                ? "Pending"
+                                : anggotaStatusText}
+                            </span>
+                          </>
+                        )}
                       </div>
                       <div className="text-gray-700 mb-4">
                         Nomor Anggota:{" "}
@@ -1426,7 +1515,9 @@ export default function ProfilePage() {
                         </span>
                       </div>
                       <button
-                        onClick={() => (window.location.href = "/admin")}
+                        onClick={() =>
+                          (window.location.href = "/admin/anggota")
+                        }
                         className="flex items-center gap-2 px-6 py-3 bg-[#6B6B6B] text-white rounded-xl font-semibold hover:bg-[#5a5a5a] transition-transform hover:scale-105"
                       >
                         <Landmark className="w-5 h-5" />

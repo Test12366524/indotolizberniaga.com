@@ -30,10 +30,17 @@ export default function AnggotaPage() {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | "0" | "1" | "2">("all");
 
-  const { data, isLoading, refetch } = useGetAnggotaListQuery({
-    page: currentPage,
-    paginate: itemsPerPage,
-  });
+  const { data, isLoading, refetch } = useGetAnggotaListQuery(
+    {
+      page: currentPage,
+      paginate: itemsPerPage,
+    },
+    {
+      refetchOnMountOrArgChange: true, // ⬅️ refetch saat halaman dimount kembali
+      refetchOnFocus: true, // ⬅️ bonus: refetch saat tab kembali fokus
+      refetchOnReconnect: true, // ⬅️ bonus: refetch saat jaringan balik
+    }
+  );
 
   const list = useMemo(() => data?.data ?? [], [data]);
 
@@ -205,7 +212,9 @@ export default function AnggotaPage() {
       Swal.fire({
         icon: "success",
         title: "Export diproses",
-        text: res.message ?? "Permintaan export diterima \n Silahkan cek di notifikasi",
+        text:
+          res.message ??
+          "Permintaan export diterima \n Silahkan cek di notifikasi",
         confirmButtonText: "Oke",
         customClass: {
           popup: "sae-popup",

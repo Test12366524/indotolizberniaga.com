@@ -148,7 +148,7 @@ export default function AnggotaForm({
     const errs: FieldErrors = {};
     const docErrs: string[] = [];
 
-    const isAddMode = !form.id; // password only required on Add
+    const isAddMode = !form.id; // add: password wajib, edit: opsional
 
     // Nama
     if (!form.name || !form.name.trim()) {
@@ -171,8 +171,9 @@ export default function AnggotaForm({
       errs.phone = "Nomor telepon harus 10–14 digit dan diawali 08.";
     }
 
-    // Password (tambah saja)
+    // Password
     if (isAddMode) {
+      // wajib saat tambah
       if (!form.password) {
         errs.password = "Password wajib diisi.";
       } else if (!isValidPassword(form.password)) {
@@ -183,6 +184,23 @@ export default function AnggotaForm({
         errs.password_confirmation = "Konfirmasi password wajib diisi.";
       } else if (form.password_confirmation !== form.password) {
         errs.password_confirmation = "Konfirmasi password tidak cocok.";
+      }
+    } else {
+      // opsional saat edit — jika diisi salah satu, terapkan aturan & wajib cocok
+      const filledAny =
+        (form.password && form.password.trim() !== "") ||
+        (form.password_confirmation &&
+          form.password_confirmation.trim() !== "");
+      if (filledAny) {
+        if (!form.password || !isValidPassword(form.password)) {
+          errs.password =
+            "Minimal 8 karakter dan mengandung huruf serta angka.";
+        }
+        if (!form.password_confirmation) {
+          errs.password_confirmation = "Konfirmasi password wajib diisi.";
+        } else if (form.password_confirmation !== form.password) {
+          errs.password_confirmation = "Konfirmasi password tidak cocok.";
+        }
       }
     }
 
@@ -352,11 +370,13 @@ export default function AnggotaForm({
             )}
           </div>
 
-          {/* Password (hanya add) */}
-          {!readonly && !form.id && (
+          {/* Password (wajib saat tambah, opsional saat edit) */}
+          {!readonly && (
             <>
               <div className="flex flex-col gap-y-1">
-                <Label>Password (wajib saat tambah)</Label>
+                <Label>
+                  {form.id ? "Password Baru (opsional)" : "Password (wajib)"}
+                </Label>
                 <Input
                   type="password"
                   value={form.password ?? ""}
@@ -364,13 +384,20 @@ export default function AnggotaForm({
                     setForm({ ...form, password: e.target.value })
                   }
                   aria-invalid={!!fieldErrors.password}
+                  placeholder={
+                    form.id
+                      ? "Kosongkan jika tidak ingin mengganti"
+                      : "Minimal 8 karakter, ada huruf & angka"
+                  }
                 />
                 {fieldErrors.password && (
                   <p className="text-xs text-red-600">{fieldErrors.password}</p>
                 )}
               </div>
               <div className="flex flex-col gap-y-1">
-                <Label>Konfirmasi Password</Label>
+                <Label>
+                  {form.id ? "Konfirmasi Password Baru" : "Konfirmasi Password"}
+                </Label>
                 <Input
                   type="password"
                   value={form.password_confirmation ?? ""}
@@ -381,6 +408,11 @@ export default function AnggotaForm({
                     })
                   }
                   aria-invalid={!!fieldErrors.password_confirmation}
+                  placeholder={
+                    form.id
+                      ? "Wajib jika mengisi password baru"
+                      : "Ulangi password"
+                  }
                 />
                 {fieldErrors.password_confirmation && (
                   <p className="text-xs text-red-600">

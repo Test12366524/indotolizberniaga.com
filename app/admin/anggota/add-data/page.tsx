@@ -47,9 +47,21 @@ function AnggotaAddEditPageInner() {
   const isEdit = mode === "edit";
   const isAdd = mode === "add";
 
-  const { data: detailData, isFetching } = useGetAnggotaByIdQuery(id!, {
+  const {
+    data: detailData,
+    isFetching,
+    refetch: refetchDetail,
+  } = useGetAnggotaByIdQuery(id!, {
     skip: !(isEdit || isDetail) || !id,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   });
+
+  useEffect(() => {
+    if ((isEdit || isDetail) && id) refetchDetail();
+  }, [isEdit, isDetail, id, refetchDetail]);
+
   const [createAnggota, { isLoading: isCreating }] = useCreateAnggotaMutation();
   const [updateAnggota, { isLoading: isUpdating }] = useUpdateAnggotaMutation();
 
@@ -61,7 +73,6 @@ function AnggotaAddEditPageInner() {
     documents: [makeEmptyDoc()],
   });
 
-  // isi form saat edit/detail
   useEffect(() => {
     if ((isEdit || isDetail) && detailData) {
       const docs: DocumentsAnggota[] =
@@ -81,7 +92,6 @@ function AnggotaAddEditPageInner() {
 
   const handleSubmit = async () => {
     try {
-      // validasi minimal
       if (!form.name || !form.email || !form.phone || !form.nik)
         throw new Error("Nama, Email, Telepon, dan NIK wajib diisi");
       if (!form.gender || !["M", "F"].includes(form.gender as string))
@@ -111,18 +121,19 @@ function AnggotaAddEditPageInner() {
       fd.append("unit_kerja", form.unit_kerja ?? "");
       fd.append("jabatan", form.jabatan ?? "");
 
-      if (isAdd && form.password && form.password_confirmation) {
+      if (form.password && form.password_confirmation) {
         fd.append("password", form.password);
         fd.append("password_confirmation", form.password_confirmation);
       }
 
-      // documents[index][key] & documents[index][file]
       const docs = (form.documents ?? []) as DocumentsAnggota[];
-      docs.forEach((d, i) => {
+      const docsToUpload = docs.filter(
+        (d) => d?.document instanceof File
+      ) as Array<DocumentsAnggota & { document: File }>;
+
+      docsToUpload.forEach((d, i) => {
         fd.append(`documents[${i}][key]`, d.key ?? "");
-        if (d.document && d.document instanceof File) {
-          fd.append(`documents[${i}][file]`, d.document);
-        }
+        fd.append(`documents[${i}][file]`, d.document);
       });
 
       if (isEdit && id) {
@@ -132,6 +143,7 @@ function AnggotaAddEditPageInner() {
         await createAnggota(fd).unwrap();
         Swal.fire("Sukses", "Anggota ditambahkan", "success");
       }
+
       router.push("/admin/anggota");
     } catch (err) {
       const msg =
