@@ -142,7 +142,7 @@ function AnggotaAddEditPageInner() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <AnggotaForm
         form={form}
         setForm={setForm}

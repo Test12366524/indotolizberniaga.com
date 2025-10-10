@@ -98,7 +98,7 @@ export default function AnggotaForm({
 
   if (!mounted) {
     return (
-      <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-zinc-700 flex-shrink-0">
           <h2 className="text-lg font-semibold">Loading...</h2>
           <Button variant="ghost" onClick={onCancel}>
@@ -117,7 +117,7 @@ export default function AnggotaForm({
   }
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-lg w-full max-w-3xl max-h-[90vh] flex flex-col">
+    <div className="bg-white dark:bg-zinc-900 rounded-lg w-full  max-h-[90vh] flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-zinc-700 flex-shrink-0">
         <h2 className="text-lg font-semibold">

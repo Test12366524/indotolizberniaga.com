@@ -21,7 +21,6 @@ import {
   Building,
   Webhook,
   FileStack,
-  Smartphone,
   SmartphoneNfc,
 } from "lucide-react";
 import Header from "@/components/admin-components/header";
@@ -44,15 +43,15 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         setSidebarOpen(false);
       }
     };
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  let menuItems: MenuItem[] = [];
-
-  // Menu items untuk superadmin (semua menu)
+  // ============
+  // SOURCE OF TRUTH: Semua menu lengkap (superadmin)
+  // ============
   const superadminMenuItems: MenuItem[] = [
+    // --- Koperasi ---
     {
       id: "dashboard",
       label: "Dashboard",
@@ -129,28 +128,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Anggota Meninggal",
       icon: <ClipboardList className="h-5 w-5" />,
       href: "/admin/anggota-meninggal",
-      // children: [
-      //   {
-      //     id: "anggota-meninggal/main",
-      //     label: "Data Anggota Meninggal",
-      //     href: "/admin/anggota-meninggal",
-      //   },
-      //   // {
-      //   //   id: "anggota-meninggal/status-anggota",
-      //   //   label: "Status Anggota",
-      //   //   href: "/admin/anggota-meninggal/status-anggota",
-      //   // },
-      //   // {
-      //   //   id: "anggota-meninggal/status-pinjaman",
-      //   //   label: "Status Pinjaman",
-      //   //   href: "/admin/anggota-meninggal/status-pinjaman",
-      //   // },
-      //   // {
-      //   //   id: "anggota-meninggal/pembayaran-anggota",
-      //   //   label: "Pembayaran Anggota",
-      //   //   href: "/admin/anggota-meninggal/pembayaran-anggota",
-      //   // },
-      // ],
     },
     {
       id: "akuntansi",
@@ -254,6 +231,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
         },
       ],
     },
+
+    // --- Marketplace ---
     {
       id: "pemisah-marketplace",
       label: "Marketplace",
@@ -383,6 +362,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Building className="h-5 w-5" />,
       href: "/admin/profile-toko",
     },
+
+    // --- Konten Website ---
     {
       id: "pemisah-konten-website",
       label: "Konten Website",
@@ -415,63 +396,170 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
     },
   ];
 
-  // Menu items untuk admin (terbatas)
-  const adminMenuItems: MenuItem[] = [
-    {
-      id: "dashboard-admin",
-      label: "Dashboard",
-      icon: <BookDashed className="h-5 w-5" />,
-      href: "/admin/dashboard",
-    },
-    {
-      id: "pemisah-marketplace-admin",
-      label: "Marketplace",
-      isSeparator: true,
-      href: "#",
-    },
-    {
-      id: "master-admin",
-      label: "Master",
-      icon: <Database className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "master-product-category-admin",
-          label: "Kategori Produk",
-          href: "/admin/product-category",
-        },
-        {
-          id: "master-product-merk-admin",
-          label: "Tipe Produk",
-          href: "/admin/product-merk",
-        },
-      ],
-    },
-    {
-      id: "product-admin",
-      label: "Produk",
-      icon: <Package className="h-5 w-5" />,
-      href: "/admin/product-list",
-    },
-    {
-      id: "transaction-admin",
-      label: "Transaksi",
-      icon: <ShoppingCart className="h-5 w-5" />,
-      href: "/admin/transaction",
-    },
-    {
-      id: "customer-admin",
-      label: "Data Customer",
-      icon: <Users className="h-5 w-5" />,
-      href: "/admin/customer",
-    },
-  ];
+  // ============
+  // Helpers filtering
+  // ============
+  const byId = new Map<string, MenuItem>(
+    superadminMenuItems.map((i) => [i.id, i])
+  );
 
-  // Tentukan menu items berdasarkan role pengguna
-  if (!user || user?.roles[0].name === "superadmin") {
-    menuItems = superadminMenuItems;
-  } else if (user?.roles[0].name === "admin") {
-    menuItems = adminMenuItems;
+  const cloneWithFilteredChildren = (
+    item: MenuItem,
+    excludeChildIds: Set<string>
+  ): MenuItem => {
+    const cloned: MenuItem = { ...item };
+    if (item.children && item.children.length) {
+      cloned.children = item.children.filter((c) => !excludeChildIds.has(c.id));
+    }
+    return cloned;
+  };
+
+  const filterByExclude = (
+    excludeRootIds: Set<string>,
+    excludeChildIds: Set<string>
+  ): MenuItem[] => {
+    return superadminMenuItems
+      .filter((it) => !excludeRootIds.has(it.id))
+      .map((it) => cloneWithFilteredChildren(it, excludeChildIds));
+  };
+
+  const pickByInclude = (
+    includeRootIds: string[],
+    excludeChildIds: Set<string>
+  ): MenuItem[] => {
+    const result: MenuItem[] = [];
+    for (const id of includeRootIds) {
+      const base = byId.get(id);
+      if (!base) continue;
+      result.push(cloneWithFilteredChildren(base, excludeChildIds));
+    }
+    return result;
+  };
+
+  // Child "master-ish" yang harus disembunyikan untuk role tertentu
+  const MASTERISH_CHILD_IDS = new Set<string>([
+    "simpanan/kategori",
+    "pinjaman/kategori",
+    // tambahkan child lain yang kamu anggap master-ish bila perlu
+  ]);
+
+  // ============
+  // Role resolving
+  // ============
+  const roleNames =
+    (user?.roles ?? []).map((r) => r.name?.toLowerCase?.()) ?? [];
+  const hasRole = (name: string) => roleNames.includes(name);
+
+  // Prioritas role (ambil yang paling kuat)
+  let effectiveRole:
+    | "superadmin"
+    | "ketua"
+    | "sekretaris"
+    | "bendahara"
+    | "staff"
+    | "anggota_seller"
+    | "anggota"
+    | "user"
+    | "none" = "none";
+
+  if (hasRole("superadmin")) effectiveRole = "superadmin";
+  else if (hasRole("ketua")) effectiveRole = "ketua";
+  else if (hasRole("sekretaris")) effectiveRole = "sekretaris";
+  else if (hasRole("bendahara")) effectiveRole = "bendahara";
+  else if (hasRole("staff")) effectiveRole = "staff"; // Admin Input
+  else if (hasRole("anggota_seller")) effectiveRole = "anggota_seller";
+  else if (hasRole("anggota")) effectiveRole = "anggota";
+  else if (hasRole("user")) effectiveRole = "user";
+  else effectiveRole = user ? "user" : "none";
+
+  // ============
+  // Build menu per role
+  // ============
+  let menuItems: MenuItem[] = [];
+
+  switch (effectiveRole) {
+    case "superadmin": {
+      menuItems = superadminMenuItems;
+      break;
+    }
+
+    // Ketua / Sekretaris / Bendahara: semua akses kecuali master & konfigurasi
+    case "ketua":
+    case "sekretaris":
+    case "bendahara": {
+      const excludeRoot = new Set<string>([
+        "konfigurasi",
+        "master",
+        "master-marketplace",
+      ]);
+      menuItems = filterByExclude(excludeRoot, MASTERISH_CHILD_IDS);
+      break;
+    }
+
+    // Admin Input (staff): semua akses kecuali master/konfigurasi + tidak bisa lihat akuntansi & laporan
+    case "staff": {
+      const excludeRoot = new Set<string>([
+        "konfigurasi",
+        "master",
+        "master-marketplace",
+        "akuntansi",
+        "laporan",
+      ]);
+      menuItems = filterByExclude(excludeRoot, MASTERISH_CHILD_IDS);
+      break;
+    }
+
+    // Anggota: semua akses koperasi (lihat data), tidak bisa lihat marketplace
+    case "anggota":
+    case "user": {
+      menuItems = pickByInclude(
+        [
+          "dashboard",
+          "anggota",
+          "simpanan",
+          "pinjaman",
+          "data-keuangan",
+          "anggota-meninggal",
+          "akuntansi",
+          "laporan",
+        ],
+        MASTERISH_CHILD_IDS
+      );
+      break;
+    }
+
+    // Anggota + Seller: koperasi (lihat data) + marketplace terbatas (toko sendiri)
+    case "anggota_seller": {
+      menuItems = pickByInclude(
+        [
+          // koperasi
+          "dashboard",
+          "anggota",
+          "simpanan",
+          "pinjaman",
+          "data-keuangan",
+          "anggota-meninggal",
+          "akuntansi",
+          "laporan",
+
+          // marketplace terbatas
+          "pemisah-marketplace",
+          "dashboard-marketplace",
+          "product-marketplace",
+          "transaction-marketplace",
+          "profile-toko",
+        ],
+        MASTERISH_CHILD_IDS
+      );
+      break;
+    }
+
+    // Tidak ada user: kosongin menu
+    case "none":
+    default: {
+      menuItems = [];
+      break;
+    }
   }
 
   return (
