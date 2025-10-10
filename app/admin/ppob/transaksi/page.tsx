@@ -12,19 +12,14 @@ import {
   useDeleteTransaksiMutation,
 } from "@/services/ppob/transaksi.service";
 // HAPUS: Type Transaksi lama tidak lagi digunakan untuk invoice
-import { Transaksi, ProductDetails } from "@/types/ppob/transaksi";
-// Pastikan tidak ada import Transaksi dari "@/types/ppob/transaksi" di file ini!
+import { Transaksi } from "@/types/ppob/transaksi";
 import FormTransaksi from "@/components/form-modal/ppob/transaksi-form";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import ActionsGroup from "@/components/admin-components/actions-group";
 import { Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { displayDate } from "@/lib/format-utils";
 
-// =================================================================
-// 1. DEFINISI TYPE BARU SESUAI API RESPONSE
-// =================================================================
-
-// Type untuk nested object 'payment' dari API response
 interface ApiPayment {
   id: number;
   channel: string; // e.g., 'bca'
@@ -61,175 +56,278 @@ interface ApiResponse {
   data: Transaksi;
 }
 
-
-// =================================================================
-// 2. MOCK: PaymentInvoice Component (SUDAH DISESUAIKAN)
-// =================================================================
 type DetailItemProps = {
-    label: string;
-    value: string | number;
-    large?: boolean;
-    copyable?: boolean;
+  label: string;
+  value: string | number;
+  large?: boolean;
+  copyable?: boolean;
 };
 
-const DetailItem = ({ label, value, large = false, copyable = false }: DetailItemProps) => {
-    const [copied, setCopied] = useState(false);
-    
-    const handleCopy = () => {
-        navigator.clipboard.writeText(String(value));
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
+const DetailItem = ({
+  label,
+  value,
+  large = false,
+  copyable = false,
+}: DetailItemProps) => {
+  const [copied, setCopied] = useState(false);
 
-    return (
-        <div className={`flex flex-col ${large ? 'py-2' : 'py-1'}`}>
-            <p className={`font-medium ${large ? 'text-lg text-gray-800 dark:text-gray-200' : 'text-sm text-gray-500 dark:text-gray-400'}`}>
-                {label}
-            </p>
-            <div className="flex items-center justify-between">
-                <p className={`font-extrabold truncate ${large ? 'text-3xl text-blue-600 dark:text-blue-400' : 'text-base text-gray-900 dark:text-white'}`}>
-                    {value}
-                </p>
-                {copyable && (
-                    <button 
-                        onClick={handleCopy}
-                        className={`ml-4 px-3 py-1 text-xl font-semibold rounded-full transition-colors ${copied ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-zinc-700 dark:text-blue-300'}`}
-                        disabled={copied}
-                    >
-                        {copied ? 'Tersalin!' : 'Salin'}
-                    </button>
-                )}
-            </div>
-            {large && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Pastikan transfer tepat hingga digit terakhir.</p>}
-        </div>
-    );
+  const handleCopy = () => {
+    navigator.clipboard.writeText(String(value));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className={`flex flex-col ${large ? "py-2" : "py-1"}`}>
+      <p
+        className={`font-medium ${
+          large
+            ? "text-lg text-gray-800 dark:text-gray-200"
+            : "text-sm text-gray-500 dark:text-gray-400"
+        }`}
+      >
+        {label}
+      </p>
+      <div className="flex items-center justify-between">
+        <p
+          className={`font-extrabold truncate ${
+            large
+              ? "text-3xl text-blue-600 dark:text-blue-400"
+              : "text-base text-gray-900 dark:text-white"
+          }`}
+        >
+          {value}
+        </p>
+        {copyable && (
+          <button
+            onClick={handleCopy}
+            className={`ml-4 px-3 py-1 text-xl font-semibold rounded-full transition-colors ${
+              copied
+                ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                : "bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-zinc-700 dark:text-blue-300"
+            }`}
+            disabled={copied}
+          >
+            {copied ? "Tersalin!" : "Salin"}
+          </button>
+        )}
+      </div>
+      {large && (
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          Pastikan transfer tepat hingga digit terakhir.
+        </p>
+      )}
+    </div>
+  );
 };
 
 // Ubah prop 'data' menjadi type 'ApiTransaksiData'
-const PaymentInvoice = ({ data, onDone, onCancel }: { data: ApiTransaksiData, onDone: () => void, onCancel: () => void }) => {
-    // Gunakan expiration date langsung dari API jika ada
-    const expirationDate = new Date(data.payment.expired_at);
-    const formattedExpiry = new Intl.DateTimeFormat('id-ID', {
-        dateStyle: 'full',
-        timeStyle: 'short',
-    }).format(expirationDate);
-    
-    // Konversi amount dari string ke number untuk kalkulasi dan formatting
-    const numericAmount = parseFloat(data.amount);
-    const uniqueCode = String(numericAmount).slice(-3);
+const PaymentInvoice = ({
+  data,
+  onDone,
+  onCancel,
+}: {
+  data: ApiTransaksiData;
+  onDone: () => void;
+  onCancel: () => void;
+}) => {
+  // Gunakan expiration date langsung dari API jika ada
+  const expirationDate = new Date(data.payment.expired_at);
+  const formattedExpiry = new Intl.DateTimeFormat("id-ID", {
+    dateStyle: "full",
+    timeStyle: "short",
+  }).format(expirationDate);
 
-    // Fungsi untuk memformat nama channel bank agar lebih rapi
-    const formatBankChannel = (channel: string) => {
-        if (!channel) return 'N/A';
-        return channel.toUpperCase();
-    }
+  // Konversi amount dari string ke number untuk kalkulasi dan formatting
+  const numericAmount = parseFloat(data.amount);
+  const uniqueCode = String(numericAmount).slice(-3);
 
-    // Fungsi untuk memformat tipe pembayaran
-    const formatPaymentType = (type: string) => {
-        if (!type) return 'N/A';
-        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()); // bank_transfer -> Bank Transfer
-    }
+  // Fungsi untuk memformat nama channel bank agar lebih rapi
+  const formatBankChannel = (channel: string) => {
+    if (!channel) return "N/A";
+    return channel.toUpperCase();
+  };
 
-    return (
-        <div className="flex justify-center items-center p-4 sm:p-8 w-full h-full bg-black/50">
-            <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden w-full max-w-2xl border border-gray-100 dark:border-zinc-800 transition-all duration-300">
-                <div className="p-6 sm:p-8 space-y-6">
-                    
-                    <div className="text-center">
-                        <h1 className="text-3xl font-extrabold text-gray-800 dark:text-gray-100">Invoice Pembayaran</h1>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">Selesaikan pembayaran sebelum batas waktu.</p>
-                    </div>
+  // Fungsi untuk memformat tipe pembayaran
+  const formatPaymentType = (type: string) => {
+    if (!type) return "N/A";
+    return type.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()); // bank_transfer -> Bank Transfer
+  };
 
-                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border-l-4 border-yellow-500 rounded-lg shadow-sm">
-                        <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
-                            Batas Akhir Pembayaran:
-                        </p>
-                        <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">
-                            {formattedExpiry}
-                        </p>
-                    </div>
+  return (
+    <div className="flex justify-center items-center p-4 sm:p-8 w-full h-full bg-black/50">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl overflow-hidden w-full max-w-2xl border border-gray-100 dark:border-zinc-800 transition-all duration-300">
+        <div className="p-6 sm:p-8 space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-extrabold text-gray-800 dark:text-gray-100">
+              Invoice Pembayaran
+            </h1>
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">
+              Selesaikan pembayaran sebelum batas waktu.
+            </p>
+          </div>
 
-                    <div className="bg-blue-50 dark:bg-blue-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800 shadow-inner">
-                        <div className="flex justify-between items-end">
-                            <p className="text-base font-semibold text-blue-800 dark:text-blue-300">
-                                Total Pembayaran
-                            </p>
-                             <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                                (Termasuk Kode Unik)
-                            </p>
-                        </div>
-                        <p className="text-5xl font-black text-blue-700 dark:text-blue-300 mt-2 tracking-tighter">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(numericAmount)}
-                        </p>
-                        <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                            Kode Unik: <span className="font-bold text-blue-800 dark:text-blue-200">{uniqueCode}</span>
-                        </p>
-                    </div>
-                    
-                    {/* Mapping data dari struktur API baru */}
-                    <div className="space-y-4">
-                        {data.payment.channel.toLowerCase() === "qris" ? (
-                            <div className="flex flex-col items-center space-y-3">
-                                <p className="font-semibold text-lg text-center text-blue-700 dark:text-blue-300">
-                                    Scan QRIS untuk Membayar<br></br>Produk: {data.product_details.name}
-                                </p>
-                                <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 shadow">
-                                    <img
-                                        src={data.payment.account_number}
-                                        alt="QRIS"
-                                        className="w-56 h-56 object-contain mx-auto"
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            <>
-                                <DetailItem 
-                                    label={`Transfer Melalui: ${formatBankChannel(data.payment.channel)}`}
-                                    value={data.payment.account_number ?? ""}
-                                    large={true}
-                                    copyable={true}
-                                />
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border-l-4 border-yellow-500 rounded-lg shadow-sm">
+            <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+              Batas Akhir Pembayaran:
+            </p>
+            <p className="text-lg font-bold text-yellow-900 dark:text-yellow-100">
+              {formattedExpiry}
+            </p>
+          </div>
 
-                                <div className="grid grid-cols-2 gap-4 border-t pt-4 border-gray-100 dark:border-zinc-800">
-                                    <DetailItem 
-                                        label="Produk"
-                                        value={data.product_details.name || 'N/A'}
-                                    />
-                                    <DetailItem 
-                                        label="Metode Pembayaran"
-                                        value={formatPaymentType(data.payment.payment_type)}
-                                    />
-                                    <DetailItem 
-                                        label="Nomor Transaksi (Reference)"
-                                        value={data.reference || 'N/A'}
-                                        copyable={true}
-                                    />
-                                    <DetailItem 
-                                        label="Tanggal Dibuat"
-                                        value={new Date(data.created_at).toLocaleDateString('id-ID')}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-
-                <div className="p-6 sm:p-8 bg-gray-50 dark:bg-zinc-950 border-t border-gray-200 dark:border-zinc-800 grid grid-cols-2 gap-3">
-                    <Button variant="outline" onClick={onCancel} className="w-full">
-                        Kembali
-                    </Button>
-                    <Button onClick={onDone} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold">
-                        Saya Sudah Bayar
-                    </Button>
-                </div>
+          <div className="bg-blue-50 dark:bg-blue-950 p-6 rounded-xl border border-blue-200 dark:border-blue-800 shadow-inner">
+            <div className="flex justify-between items-end">
+              <p className="text-base font-semibold text-blue-800 dark:text-blue-300">
+                Total Pembayaran
+              </p>
+              <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                (Termasuk Kode Unik)
+              </p>
             </div>
-        </div>
-    );
-}
+            <p className="text-5xl font-black text-blue-700 dark:text-blue-300 mt-2 tracking-tighter">
+              {new Intl.NumberFormat("id-ID", {
+                style: "currency",
+                currency: "IDR",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(numericAmount)}
+            </p>
+            <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+              Kode Unik:{" "}
+              <span className="font-bold text-blue-800 dark:text-blue-200">
+                {uniqueCode}
+              </span>
+            </p>
+          </div>
 
-// =================================================================
-// 3. HALAMAN UTAMA (TRANSAKSIPAGE)
-// =================================================================
+          {/* Mapping data dari struktur API baru */}
+          <div className="space-y-4">
+            {data.payment.channel.toLowerCase() === "qris" ? (
+              <div className="flex flex-col items-center space-y-3">
+                <p className="font-semibold text-lg text-center text-blue-700 dark:text-blue-300">
+                  Scan QRIS untuk Membayar<br></br>Produk:{" "}
+                  {data.product_details.name}
+                </p>
+                <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 border border-gray-200 dark:border-zinc-700 shadow">
+                  <img
+                    src={data.payment.account_number}
+                    alt="QRIS"
+                    className="w-56 h-56 object-contain mx-auto"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <DetailItem
+                  label={`Transfer Melalui: ${formatBankChannel(
+                    data.payment.channel
+                  )}`}
+                  value={data.payment.account_number ?? ""}
+                  large={true}
+                  copyable={true}
+                />
+
+                <div className="grid grid-cols-2 gap-4 border-t pt-4 border-gray-100 dark:border-zinc-800">
+                  <DetailItem
+                    label="Produk"
+                    value={data.product_details.name || "N/A"}
+                  />
+                  <DetailItem
+                    label="Metode Pembayaran"
+                    value={formatPaymentType(data.payment.payment_type)}
+                  />
+                  <DetailItem
+                    label="Nomor Transaksi (Reference)"
+                    value={data.reference || "N/A"}
+                    copyable={true}
+                  />
+                  <DetailItem
+                    label="Tanggal Dibuat"
+                    value={new Date(data.created_at).toLocaleDateString(
+                      "id-ID"
+                    )}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 sm:p-8 bg-gray-50 dark:bg-zinc-950 border-t border-gray-200 dark:border-zinc-800 grid grid-cols-2 gap-3">
+          <Button variant="outline" onClick={onCancel} className="w-full">
+            Kembali
+          </Button>
+          <Button
+            onClick={onDone}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold"
+          >
+            Saya Sudah Bayar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+type StatusKey = -3 | -2 | -1 | 0 | 1 | 2;
+
+const STATUS_INFO: Record<
+  StatusKey,
+  { label: string; desc: string; badgeClass: string }
+> = {
+  0: {
+    label: "PENDING",
+    desc: "Menunggu pembayaran",
+    badgeClass: "bg-gray-200 text-gray-800 dark:bg-zinc-700 dark:text-zinc-100",
+  },
+  1: {
+    label: "CAPTURED",
+    desc: "Instruksi/VA dibuat, menunggu settlement",
+    badgeClass:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200",
+  },
+  2: {
+    label: "SETTLEMENT",
+    desc: "Pembayaran selesai",
+    badgeClass:
+      "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+  },
+  [-1]: {
+    label: "DENY",
+    desc: "Pembayaran ditolak",
+    badgeClass: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200",
+  },
+  [-2]: {
+    label: "EXPIRED",
+    desc: "Pembayaran kedaluwarsa",
+    badgeClass:
+      "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+  },
+  [-3]: {
+    label: "CANCEL",
+    desc: "Transaksi dibatalkan",
+    badgeClass:
+      "bg-gray-100 text-gray-700 dark:bg-zinc-800/60 dark:text-zinc-200",
+  },
+};
+
+const renderStatus = (val: number) => {
+  const info = STATUS_INFO[val as StatusKey];
+  if (!info) return <span className="text-xs">Unknown ({val})</span>;
+  return (
+    <div className="whitespace-nowrap">
+      <Badge
+        className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${info.badgeClass}`}
+      >
+        {info.label}
+      </Badge>
+      <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        {info.desc}
+      </div>
+    </div>
+  );
+};
+
 export default function TransaksiPage() {
   // form state tetap menggunakan Partial<Transaksi> untuk form tambah/edit
   const [form, setForm] = useState<Partial<Transaksi>>({
@@ -250,9 +348,9 @@ export default function TransaksiPage() {
     page: currentPage,
     paginate: itemsPerPage,
   });
-  
+
   // State untuk invoice sekarang menggunakan type ApiTransaksiData
-  const [invoiceData, setInvoiceData] = useState<ApiTransaksiData | null>(null); 
+  const [invoiceData, setInvoiceData] = useState<ApiTransaksiData | null>(null);
 
   // data list dari `useGetTransaksiListQuery` tetap menggunakan type `Transaksi`
   const categoryList: Transaksi[] = useMemo(() => data?.data || [], [data]);
@@ -278,7 +376,7 @@ export default function TransaksiPage() {
         await updateTransaksi({ id: editingId, payload }).unwrap();
         Swal.fire("Sukses", "Transaksi diperbarui", "success");
         // Jika mode edit, tutup modal setelah submit
-        closeModal(); 
+        closeModal();
       } else {
         // Panggil API create dan dapatkan response lengkapnya
         const response = await createTransaksi(payload).unwrap();
@@ -289,11 +387,15 @@ export default function TransaksiPage() {
 
       // Reset form dan state edit hanya jika tidak menampilkan invoice
       if (!invoiceData) {
-          setForm({ ppob_product_id: 0, customer_no: "", payment_method: "", payment_channel: "" });
-          setEditingId(null);
+        setForm({
+          ppob_product_id: 0,
+          customer_no: "",
+          payment_method: "",
+          payment_channel: "",
+        });
+        setEditingId(null);
       }
       await refetch();
-    
     } catch (error) {
       console.error(error);
       Swal.fire("Gagal", "Gagal menyimpan data", "error");
@@ -301,21 +403,33 @@ export default function TransaksiPage() {
   };
 
   const handleCloseModal = () => {
-    setForm({ user_id: 1, ppob_product_id: 0, customer_no: "", payment_method: "", payment_channel: "" });
+    setForm({
+      user_id: 1,
+      ppob_product_id: 0,
+      customer_no: "",
+      payment_method: "",
+      payment_channel: "",
+    });
     setEditingId(null);
     setReadonly(false);
     setInvoiceData(null); // RESET data invoice saat modal ditutup
     closeModal();
   };
-  
+
   // Handler untuk tombol tambah data
   const handleAdd = () => {
-    setForm({ user_id: 1, ppob_product_id: 0, customer_no: "", payment_method: "", payment_channel: "" });
+    setForm({
+      user_id: 1,
+      ppob_product_id: 0,
+      customer_no: "",
+      payment_method: "",
+      payment_channel: "",
+    });
     setEditingId(null);
     setReadonly(false);
     setInvoiceData(null);
     openModal();
-  }
+  };
 
   const handleEdit = (item: Transaksi) => {
     setForm({ ...item });
@@ -326,7 +440,7 @@ export default function TransaksiPage() {
   };
 
   const handleDetail = (item: Transaksi) => {
-    setEditingId(null); 
+    setEditingId(null);
     setReadonly(true);
     setForm({});
 
@@ -335,29 +449,33 @@ export default function TransaksiPage() {
     // yang diharapkan oleh `PaymentInvoice`.
     // Ini adalah "mock" data transformation.
     const transformedData: ApiTransaksiData = {
-        id: item.id,
-        user_id: 0, // Mock data
-        customer_no: '', // Mock data
-        reference: item.reference ?? '', // Use 'reference' or fallback to empty string
-        amount: String(item.amount),
-        created_at: item.created_at,
-        product_details: { // Mock data
-            id: 0,
-            name: 'Lihat Detail Transaksi',
-            sku: '',
-            sell_price: String(item.amount),
-        },
-        payment: { // Mock data
-            id: 0,
-            channel: item.payment_channel ?? '', // Use 'payment_channel' or fallback to empty string
-            account_number: item.payment.account_number ?? '', // Use 'virtual_account' or fallback to empty string
-            payment_type: item.payment_method ?? '', // Use 'payment_method' or fallback to empty string
-            expired_at: new Date(new Date(item.created_at).getTime() + 24 * 60 * 60 * 1000).toISOString(),
-            amount: item.amount,
-        }
+      id: item.id,
+      user_id: 0, // Mock data
+      customer_no: "", // Mock data
+      reference: item.reference ?? "", // Use 'reference' or fallback to empty string
+      amount: String(item.amount),
+      created_at: item.created_at,
+      product_details: {
+        // Mock data
+        id: 0,
+        name: "Lihat Detail Transaksi",
+        sku: "",
+        sell_price: String(item.amount),
+      },
+      payment: {
+        // Mock data
+        id: 0,
+        channel: item.payment_channel ?? "", // Use 'payment_channel' or fallback to empty string
+        account_number: item.payment.account_number ?? "", // Use 'virtual_account' or fallback to empty string
+        payment_type: item.payment_method ?? "", // Use 'payment_method' or fallback to empty string
+        expired_at: new Date(
+          new Date(item.created_at).getTime() + 24 * 60 * 60 * 1000
+        ).toISOString(),
+        amount: item.amount,
+      },
     };
-    
-    setInvoiceData(transformedData); 
+
+    setInvoiceData(transformedData);
     openModal();
   };
 
@@ -365,12 +483,12 @@ export default function TransaksiPage() {
     Swal.fire({
       title: "Pemberitahuan",
       text: "Permintaan Anda untuk memeriksa pembayaran telah diterima. Harap tunggu konfirmasi.",
-      icon: "info"
+      icon: "info",
     });
     await refetch();
     handleCloseModal();
   };
-  
+
   const handleDelete = async (item: Transaksi) => {
     const confirm = await Swal.fire({
       title: "Yakin hapus Transaksi?",
@@ -394,9 +512,8 @@ export default function TransaksiPage() {
 
   const filteredData = useMemo(() => {
     if (!query) return categoryList;
-    return categoryList.filter(
-      (item) =>
-        item.reference?.toLowerCase().includes(query.toLowerCase())
+    return categoryList.filter((item) =>
+      item.reference?.toLowerCase().includes(query.toLowerCase())
     );
   }, [categoryList, query]);
 
@@ -413,7 +530,9 @@ export default function TransaksiPage() {
             />
           </div>
           <div className="shrink-0 flex flex-wrap items-center gap-2">
-            <Button onClick={handleAdd}><Plus /> Transaksi</Button>
+            <Button onClick={handleAdd}>
+              <Plus /> Transaksi
+            </Button>
           </div>
         </div>
       </div>
@@ -458,16 +577,28 @@ export default function TransaksiPage() {
                         />
                       </div>
                     </td>
-                    <td className="px-4 py-2 font-mono text-sm">{item.reference}</td>
-                    <td className="px-4 py-2 font-medium">{item.order_id}</td>
-                    <td className="px-4 py-2 font-medium">{item.customer_no}</td>
-                    <td className="px-4 py-2 font-medium">{item.product.name}</td>
-                    <td className="px-4 py-2">{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.amount)}</td>
-                    <td className="px-4 py-2 text-gray-600 max-w-xs truncate">
-                      {item.status}
+                    <td className="px-4 py-2 font-mono text-sm">
+                      {item.reference}
                     </td>
-                    <td className="px-4 py-2 text-sm text-gray-500">
-                      {new Date(item.created_at).toLocaleDateString("id-ID")}
+                    <td className="px-4 py-2 font-medium">{item.order_id}</td>
+                    <td className="px-4 py-2 font-medium">
+                      {item.customer_no}
+                    </td>
+                    <td className="px-4 py-2 font-medium">
+                      {item.product.name}
+                    </td>
+                    <td className="px-4 py-2">
+                      {new Intl.NumberFormat("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                      }).format(item.amount)}
+                    </td>
+                    <td className="px-4 py-2">
+                      {renderStatus(item.status)}
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-500 whitespace-nowrap">
+                      {displayDate(item.created_at)}
                     </td>
                   </tr>
                 ))
@@ -515,7 +646,7 @@ export default function TransaksiPage() {
               onCancel={handleCloseModal}
               onSubmit={handleSubmit}
               readonly={readonly}
-              isLoading={editingId ? isUpdating : isCreating} 
+              isLoading={editingId ? isUpdating : isCreating}
             />
           )}
         </div>

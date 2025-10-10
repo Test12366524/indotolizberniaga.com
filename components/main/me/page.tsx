@@ -90,6 +90,7 @@ import {
   isApiEnvelope,
   isTxnByIdData,
 } from "./transaction-by-id";
+import PPOBOrdersTab from "./ppob/ppob-orders-tab";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -126,7 +127,7 @@ export default function ProfilePage() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "profile" | "addresses" | "orders" | "anggota" | "seller"
+    "dashboard" | "profile" | "addresses" | "orders" | "anggota" | "seller" | "orders_ppob"
   >("dashboard");
 
   // Session basics
@@ -597,7 +598,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-[#DFF19D]/10 pt-24">
-      <div className="container mx-auto px-6 lg:px-12 pb-12">
+      <div className="container mx-auto px-6 lg:px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
@@ -646,6 +647,11 @@ export default function ProfilePage() {
                     id: "orders",
                     label: "Pesanan",
                     icon: <Package className="w-5 h-5" />,
+                  },
+                  {
+                    id: "orders_ppob",
+                    label: "Riwayat PPOB",
+                    icon: <CreditCard className="w-5 h-5" />,
                   },
                   {
                     id: "anggota",
@@ -1453,6 +1459,10 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {activeTab === "orders_ppob" && (
+                <PPOBOrdersTab userId={sessionId} />
               )}
 
               {/* Anggota Koperasi */}

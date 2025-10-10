@@ -10,10 +10,6 @@ export interface Media {
     disk: string;
     conversions_disk: string;
     size: number;
-    manipulations: any[]; // Sesuaikan tipe jika perlu
-    custom_properties: any[]; // Sesuaikan tipe jika perlu
-    generated_conversions: any[]; // Sesuaikan tipe jika perlu
-    responsive_images: any[]; // Sesuaikan tipe jika perlu
     order_column: number;
     created_at: string;
     updated_at: string;
