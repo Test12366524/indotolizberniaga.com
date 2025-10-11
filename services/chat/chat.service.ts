@@ -41,7 +41,7 @@ export const chatApi = apiSlice.injectEndpoints({
     >({
       query: ({ chatId, paginate, cursor }) => ({
         url: `/chat/${chatId}`,
-        params: { paginate, ...(cursor ? { cursor } : {}) },
+        params: { paginate, ...(cursor ? { cursor } : {}) }, // kirim cursor jika ada
       }),
       transformResponse: (
         r: ChatDetailCursorApiResponse
@@ -49,8 +49,8 @@ export const chatApi = apiSlice.injectEndpoints({
         data: r.data.data,
         perPage: r.data.per_page,
         path: r.data.path,
-        nextCursor: r.data.next_cursor,
-        prevCursor: r.data.prev_cursor,
+        nextCursor: r.data.next_cursor, // map cursor next
+        prevCursor: r.data.prev_cursor, // map cursor prev
         nextPageUrl: r.data.next_page_url,
         prevPageUrl: r.data.prev_page_url,
       }),

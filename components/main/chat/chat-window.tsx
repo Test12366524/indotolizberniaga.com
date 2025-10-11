@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, RefObject, useEffect, useState } from "react";
+import { memo, RefObject, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,11 @@ type Props = {
   onSendMessage: (text: string, file: File | null) => void;
   setSidebarOpen: (v: boolean) => void;
   currentUserId: number;
+
+  /** reverse pagination ala WhatsApp */
+  onReachTop?: () => void;
+  canLoadMore?: boolean;
+  loadingMoreOlder?: boolean;
 };
 
 function ChatWindowInner({
@@ -35,16 +40,41 @@ function ChatWindowInner({
   onSendMessage,
   setSidebarOpen,
   currentUserId,
+  onReachTop,
+  canLoadMore,
+  loadingMoreOlder,
 }: Props) {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
+
+  const topSentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setText("");
     setFile(null);
     setPreview("");
   }, [selectedChat?.id]);
+
+  // IntersectionObserver untuk sentinel di atas
+  useEffect(() => {
+    const root = messagesContainerRef.current ?? undefined;
+    const target = topSentinelRef.current;
+    if (!root || !target || !onReachTop) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && canLoadMore && !loadingMoreOlder) {
+          onReachTop();
+        }
+      },
+      { root, threshold: 1 }
+    );
+
+    io.observe(target);
+    return () => io.disconnect();
+  }, [messagesContainerRef, canLoadMore, loadingMoreOlder, onReachTop]);
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -93,6 +123,15 @@ function ChatWindowInner({
             ref={messagesContainerRef}
             className="flex-1 overflow-y-auto p-4 space-y-4"
           >
+            {/* TOP SENTINEL untuk reverse pagination */}
+            {canLoadMore && <div ref={topSentinelRef} className="h-1 w-full" />}
+
+            {loadingMoreOlder && (
+              <div className="flex items-center justify-center py-2">
+                <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full" />
+              </div>
+            )}
+
             {messagesLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />

@@ -11,7 +11,7 @@ import { apiSlice } from "@/services/base-query";
 import {
   useGetChatListQuery,
   useGetChatMessagesByIdQuery,
-  useCreateChatOrMessageMutation, // POST /chat (multipart)
+  useCreateChatOrMessageMutation,
 } from "@/services/chat/chat.service";
 
 import { type ChatListItem, type ChatMessage } from "@/types/chat/core";
@@ -42,7 +42,6 @@ type SendResult = {
   reads?: ChatMessage["reads"];
 };
 
-// tipe minimal untuk debug pusher tanpa any
 type PusherConnection = {
   bind: (event: string, cb: (d: unknown) => void) => void;
 };
@@ -79,13 +78,22 @@ export default function ChatPage() {
     refetch: refetchList,
   } = useGetChatListQuery({ page: 1, paginate: 10 });
 
+  // ===== Reverse pagination state (ala WhatsApp) =====
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [oldCursor, setOldCursor] = useState<string | null>(null);
+  const [fetchCount, setFetchCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const prevScrollHeightRef = useRef<number>(0);
+  const lastUsedCursorRef = useRef<string | undefined>(undefined);
+
   const {
     data: messagesPage,
     isLoading: messagesLoading,
     error: messagesError,
     refetch: refetchMessages,
   } = useGetChatMessagesByIdQuery(
-    { chatId: selectedChat?.id ?? 0, paginate: 10 },
+    { chatId: selectedChat?.id ?? 0, paginate: 15, cursor },
     { skip: !selectedChat?.id, refetchOnFocus: true, refetchOnReconnect: true }
   );
 
@@ -104,17 +112,58 @@ export default function ChatPage() {
     return typeof fromUsers === "number" ? fromUsers : null;
   };
 
+  // gabungkan pesan dari hook (prepend untuk halaman lama, urut naik)
   useEffect(() => {
     if (!messagesPage) return;
+
+    setNextCursor(messagesPage.nextCursor ?? null);
+
     setConversations((prev) => {
       const map = new Map<number, ChatMessage>();
-      [...prev, ...messagesPage.data].forEach((m) => map.set(m.id, m));
+      // kalau loadMore (cursor aktif), data dari server adalah batch lebih lama → sisipkan di depan
+      const merged = cursor
+        ? [...messagesPage.data, ...prev]
+        : [...prev, ...messagesPage.data];
+      merged.forEach((m) => map.set(m.id, m));
       return Array.from(map.values()).sort(
         (a, b) =>
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
     });
+
+    // menjaga posisi scroll saat prepend (loadMore)
+    if (loadingMore && messagesContainerRef.current) {
+      const el = messagesContainerRef.current;
+      const before = prevScrollHeightRef.current || 0;
+      requestAnimationFrame(() => {
+        const after = el.scrollHeight;
+        const delta = after - before;
+        // tetap di posisi yang sama relatif terhadap konten
+        el.scrollTop = el.scrollTop + delta;
+        setLoadingMore(false);
+      });
+      setFetchCount((c) => c + 1);
+      setOldCursor(lastUsedCursorRef.current ?? null);
+    } else {
+      // initial load → scroll ke bawah
+      requestAnimationFrame(() => {
+        if (!messagesContainerRef.current) return;
+        const main = messagesContainerRef.current;
+        main.scrollTop = main.scrollHeight;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messagesPage]);
+
+  // reset saat ganti chat
+  useEffect(() => {
+    setConversations([]);
+    setCursor(undefined);
+    setNextCursor(null);
+    setOldCursor(null);
+    setFetchCount(0);
+    setLoadingMore(false);
+  }, [selectedChat?.id]);
 
   // helper scroll — fokus ke container chat
   const scrollChatToBottom = () => {
@@ -123,7 +172,7 @@ export default function ChatPage() {
     el.scrollTop = el.scrollHeight;
   };
 
-  // Realtime listener — gunakan latest_message (sesuai contoh Astro/backend)
+  // Realtime listener — gunakan latest_message
   useEffect(() => {
     (window as unknown as { Pusher: typeof Pusher }).Pusher = Pusher;
 
@@ -148,7 +197,6 @@ export default function ChatPage() {
     });
     echoRef.current = echo;
 
-    // optional: debug koneksi
     const pusher = (echo as unknown as EchoWithPusher).connector?.pusher;
     pusher?.connection.bind("state_change", (s) =>
       console.log("[WS state]", s)
@@ -176,32 +224,26 @@ export default function ChatPage() {
       };
 
       chan.listen<MessageSendEvent>("MessageSend", (ev) => {
-        // update sidebar (unread/last message)
         dispatch(
           apiSlice.util.invalidateTags([{ type: "ChatList", id: "LIST" }])
         );
 
-        // pastikan payload sesuai
         const m = ev.chat.latest_message;
         if (!m) return;
-
-        // kalau bukan chat yang sedang dibuka → biarkan untuk badge/unread di sidebar
         if (!selectedChat?.id || ev.chat.id !== selectedChat.id) return;
-
-        // hanya tambahkan jika pesan dari lawan (seperti Astro)
         if (m.user_id === currentUserId) return;
 
-        // dedupe
         setConversations((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
+          const now = new Date().toISOString();
           const appended: ChatMessage = {
             id: m.id,
             chat_id: ev.chat.id,
             user_id: m.user_id,
             message: m.message ?? "",
             file: m.file ?? null,
-            created_at: m.created_at ?? new Date().toISOString(),
-            updated_at: m.updated_at ?? new Date().toISOString(),
+            created_at: m.created_at ?? now,
+            updated_at: m.updated_at ?? now,
             media: [],
             user: {
               id: m.user_id,
@@ -209,8 +251,8 @@ export default function ChatPage() {
               phone: "",
               email: "",
               email_verified_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+              created_at: now,
+              updated_at: now,
             },
             reads: [],
           };
@@ -238,7 +280,7 @@ export default function ChatPage() {
     setSidebarOpen(false);
   };
 
-  // Optimistic send → push dulu, kirim ke server, lalu replace ID
+  // Optimistic send
   const handleSendMessage = async (text: string, file: File | null) => {
     if (!selectedChat?.id) return;
     if (!text.trim() && !file) return;
@@ -363,6 +405,20 @@ export default function ChatPage() {
     }
   };
 
+  // ===== Fungsi load lebih lama saat mencapai atas =====
+  const loadMoreOlder = () => {
+    if (!nextCursor) return;
+    if (nextCursor === oldCursor && fetchCount !== 0) return; // cegah double fetch
+    if (loadingMore) return;
+
+    const el = messagesContainerRef.current;
+    if (el) prevScrollHeightRef.current = el.scrollHeight;
+
+    lastUsedCursorRef.current = nextCursor;
+    setLoadingMore(true);
+    setCursor(nextCursor); // trigger refetch via arg hook
+  };
+
   const filteredItems = useMemo(() => {
     const q = searchQuery.toLowerCase();
     const list = chatList?.data ?? [];
@@ -394,12 +450,14 @@ export default function ChatPage() {
         messagesLoading={messagesLoading}
         messagesError={messagesError}
         refetchMessages={refetchMessages}
-        // ⬇️ kirim ref kontainer ke child agar scroll-nya tepat
         messagesContainerRef={messagesContainerRef}
         sendingMessage={sendingMessage}
         onSendMessage={handleSendMessage}
         setSidebarOpen={setSidebarOpen}
         currentUserId={currentUserId}
+        onReachTop={loadMoreOlder}
+        canLoadMore={Boolean(nextCursor)}
+        loadingMoreOlder={loadingMore}
       />
 
       <PickUserModal
