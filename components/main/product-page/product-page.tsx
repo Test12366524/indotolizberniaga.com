@@ -28,6 +28,7 @@ import { useGetSellerListQuery } from "@/services/admin/seller.service";
 import { Combobox } from "@/components/ui/combo-box";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type ViewMode = "grid" | "list";
 
@@ -45,6 +46,8 @@ export default function ProductsPage() {
     sort: "featured",
     sellerId: null as number | null,
   });
+
+  const router = useRouter();
 
   const { data: session } = useSession();
   const userRole = session?.user?.roles[0]?.name ?? "";
@@ -547,6 +550,7 @@ export default function ProductsPage() {
                         </button>
 
                         <button
+                          onClick={() => router.push("/chat?to=1")} // sementara hardcode id=1
                           aria-label="Chat penjual"
                           className="h-12 w-12 rounded-2xl border border-[#E53935]/60 bg-white text-[#E53935] hover:bg-[#E53935]/10 inline-flex items-center justify-center shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E53935]"
                           title="Chat penjual"

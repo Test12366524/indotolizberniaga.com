@@ -1,7 +1,8 @@
 "use client";
 
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Pusher from "pusher-js";
 import Echo from "laravel-echo";
 import Swal from "sweetalert2";
@@ -20,6 +21,25 @@ import PickUserModal from "./pick-user-modal";
 import ChatSidebar from "./chat-sidebar";
 import ChatWindow from "./chat-window";
 
+/** ===== Shell: bungkus dengan Suspense supaya useSearchParams aman ===== */
+export default function ChatPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-[calc(100vh-120px)] grid place-items-center">
+          <div className="flex items-center gap-3 text-gray-600">
+            <span className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full" />
+            <span>Memuat chat…</span>
+          </div>
+        </div>
+      }
+    >
+      <ChatPageInner />
+    </Suspense>
+  );
+}
+
+/** ===== Inner: seluruh logic chat, termasuk useSearchParams ===== */
 type EchoCtor = new (opts: unknown) => {
   channel(name: string): {
     listen<T>(ev: string, cb: (data: T) => void): unknown;
@@ -48,9 +68,14 @@ type PusherConnection = {
 type PusherInstanceLite = { connection: PusherConnection };
 type EchoWithPusher = { connector?: { pusher?: PusherInstanceLite } };
 
-export default function ChatPage() {
+function ChatPageInner() {
   const { data: session } = useSession();
   const dispatch = useDispatch();
+
+  // baca query param untuk auto open chat (?to= / ?user_id=)
+  const sp = useSearchParams();
+  const toParam = sp?.get("to") || sp?.get("user_id");
+  const alreadyTriedRef = useRef(false);
 
   const currentUserId = useMemo<number>(() => {
     const u = (session?.user ?? {}) as Record<string, unknown>;
@@ -120,9 +145,8 @@ export default function ChatPage() {
 
     setConversations((prev) => {
       const map = new Map<number, ChatMessage>();
-      // kalau loadMore (cursor aktif), data dari server adalah batch lebih lama → sisipkan di depan
       const merged = cursor
-        ? [...messagesPage.data, ...prev]
+        ? [...messagesPage.data, ...prev] // prepend batch lama
         : [...prev, ...messagesPage.data];
       merged.forEach((m) => map.set(m.id, m));
       return Array.from(map.values()).sort(
@@ -131,14 +155,13 @@ export default function ChatPage() {
       );
     });
 
-    // menjaga posisi scroll saat prepend (loadMore)
+    // menjaga posisi scroll saat prepend
     if (loadingMore && messagesContainerRef.current) {
       const el = messagesContainerRef.current;
       const before = prevScrollHeightRef.current || 0;
       requestAnimationFrame(() => {
         const after = el.scrollHeight;
         const delta = after - before;
-        // tetap di posisi yang sama relatif terhadap konten
         el.scrollTop = el.scrollTop + delta;
         setLoadingMore(false);
       });
@@ -405,10 +428,20 @@ export default function ChatPage() {
     }
   };
 
-  // ===== Fungsi load lebih lama saat mencapai atas =====
+  // auto-create/open chat dari query ?to= / ?user_id=
+  useEffect(() => {
+    if (!toParam || alreadyTriedRef.current) return;
+    const id = Number(toParam);
+    if (!Number.isFinite(id) || id <= 0) return;
+    alreadyTriedRef.current = true;
+    void handleCreatePersonalChat(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toParam]);
+
+  // load older saat reach top
   const loadMoreOlder = () => {
     if (!nextCursor) return;
-    if (nextCursor === oldCursor && fetchCount !== 0) return; // cegah double fetch
+    if (nextCursor === oldCursor && fetchCount !== 0) return;
     if (loadingMore) return;
 
     const el = messagesContainerRef.current;
@@ -416,7 +449,7 @@ export default function ChatPage() {
 
     lastUsedCursorRef.current = nextCursor;
     setLoadingMore(true);
-    setCursor(nextCursor); // trigger refetch via arg hook
+    setCursor(nextCursor);
   };
 
   const filteredItems = useMemo(() => {
