@@ -11,6 +11,7 @@ import {
   List,
   Sparkles,
   Package,
+  MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { Product } from "@/types/admin/product";
@@ -536,13 +537,21 @@ export default function ProductsPage() {
                         </span>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         <button
                           onClick={() => addToCart(product)}
-                          className="flex-1 bg-[#E53935] text-white py-3 rounded-2xl font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                          className="group flex-1 h-12 rounded-2xl bg-[#E53935] hover:bg-[#c62828] text-white font-semibold shadow-sm transition-colors inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E53935]"
                         >
                           <ShoppingCart className="w-5 h-5" />
-                          Tambah ke Keranjang
+                          <span>Tambah ke Keranjang</span>
+                        </button>
+
+                        <button
+                          aria-label="Chat penjual"
+                          className="h-12 w-12 rounded-2xl border border-[#E53935]/60 bg-white text-[#E53935] hover:bg-[#E53935]/10 inline-flex items-center justify-center shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E53935]"
+                          title="Chat penjual"
+                        >
+                          <MessageCircle className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
