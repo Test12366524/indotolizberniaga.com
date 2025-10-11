@@ -29,6 +29,8 @@ import {
   TrendingUp,
   Briefcase,
   Users,
+  LandmarkIcon,
+  UsersRound,
 } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
@@ -91,6 +93,7 @@ import {
   isTxnByIdData,
 } from "./transaction-by-id";
 import PPOBOrdersTab from "./ppob/ppob-orders-tab";
+import BankAccountsTab from "./user-bank/bank-accounts-tab";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -127,7 +130,14 @@ export default function ProfilePage() {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "profile" | "addresses" | "orders" | "anggota" | "seller" | "orders_ppob"
+    | "dashboard"
+    | "profile"
+    | "addresses"
+    | "bank_accounts"
+    | "orders"
+    | "anggota"
+    | "seller"
+    | "orders_ppob"
   >("dashboard");
 
   // Session basics
@@ -644,6 +654,11 @@ export default function ProfilePage() {
                     icon: <MapPin className="w-5 h-5" />,
                   },
                   {
+                    id: "bank_accounts",
+                    label: "Rekening Bank",
+                    icon: <LandmarkIcon className="w-5 h-5" />,
+                  },
+                  {
                     id: "orders",
                     label: "Pesanan",
                     icon: <Package className="w-5 h-5" />,
@@ -656,7 +671,7 @@ export default function ProfilePage() {
                   {
                     id: "anggota",
                     label: "Anggota Koperasi",
-                    icon: <Landmark className="w-5 h-5" />,
+                    icon: <UsersRound className="w-5 h-5" />,
                   },
                   {
                     id: "seller",
@@ -1318,6 +1333,14 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
+              )}
+
+              {activeTab === "bank_accounts" && (
+                <BankAccountsTab
+                  userId={sessionId}
+                  userName={userProfile.fullName}
+                  userEmail={userProfile.email}
+                />
               )}
 
               {/* Orders */}

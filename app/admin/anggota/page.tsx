@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HistoryIcon } from "lucide-react";
+import { HistoryIcon, LandmarkIcon } from "lucide-react";
 
 export default function AnggotaPage() {
   const router = useRouter();
@@ -313,24 +313,48 @@ export default function AnggotaPage() {
                         }
                         handleDelete={() => handleDelete(item)}
                         additionalActions={
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() =>
-                                  router.push(
-                                    `/admin/history?anggota_id=${item.id}`
-                                  )
-                                }
-                              >
-                                <HistoryIcon className="size-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>History Anggota</p>
-                            </TooltipContent>
-                          </Tooltip>
+                          <div className="flex items-center gap-2">
+                            {/* History Anggota */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/history?anggota_id=${item.id}`
+                                    )
+                                  }
+                                >
+                                  <HistoryIcon className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>History Anggota</p>
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() =>
+                                    router.push(
+                                      `/admin/anggota/user-bank?user_id=${
+                                        item.user_id ?? item.id
+                                      }`
+                                    )
+                                  }
+                                >
+                                  <LandmarkIcon className="size-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>User Bank</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
                         }
                       />
                     </td>
