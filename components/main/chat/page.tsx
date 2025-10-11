@@ -11,7 +11,7 @@ import { apiSlice } from "@/services/base-query";
 import {
   useGetChatListQuery,
   useGetChatMessagesByIdQuery,
-  useCreateChatOrMessageMutation, // ⬅️ pakai /chat (multipart)
+  useCreateChatOrMessageMutation, // POST /chat (multipart)
 } from "@/services/chat/chat.service";
 
 import { type ChatListItem, type ChatMessage } from "@/types/chat/core";
@@ -30,6 +30,25 @@ type EchoCtor = new (opts: unknown) => {
   disconnect(): void;
 };
 
+type SendResult = {
+  id: number;
+  chat_id: number;
+  user_id: number;
+  message?: string;
+  file?: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: ChatMessage["user"];
+  reads?: ChatMessage["reads"];
+};
+
+// tipe minimal untuk debug pusher tanpa any
+type PusherConnection = {
+  bind: (event: string, cb: (d: unknown) => void) => void;
+};
+type PusherInstanceLite = { connection: PusherConnection };
+type EchoWithPusher = { connector?: { pusher?: PusherInstanceLite } };
+
 export default function ChatPage() {
   const { data: session } = useSession();
   const dispatch = useDispatch();
@@ -37,12 +56,11 @@ export default function ChatPage() {
   const currentUserId = useMemo<number>(() => {
     const u = (session?.user ?? {}) as Record<string, unknown>;
     const raw =
-      (u.id as unknown) ??
-      (u.user_id as unknown) ??
-      (u.uid as unknown) ??
-      (u.sub as unknown) ??
+      u.id ??
+      (u as { user_id?: unknown }).user_id ??
+      (u as { uid?: unknown }).uid ??
+      (u as { sub?: unknown }).sub ??
       (u["payload"] as Record<string, unknown> | undefined)?.id;
-
     const n = Number(raw);
     return Number.isFinite(n) ? n : 0;
   }, [session]);
@@ -52,14 +70,15 @@ export default function ChatPage() {
   const [selectedChat, setSelectedChat] = useState<ChatListItem | null>(null);
   const [showPickModal, setShowPickModal] = useState(false);
 
-  // list sidebar
+  // kontainer scroll khusus area pesan (bukan page)
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const {
     data: chatList,
     isLoading: listLoading,
     refetch: refetchList,
   } = useGetChatListQuery({ page: 1, paginate: 10 });
 
-  // messages (cursor/limit di service)
   const {
     data: messagesPage,
     isLoading: messagesLoading,
@@ -70,32 +89,21 @@ export default function ChatPage() {
     { skip: !selectedChat?.id, refetchOnFocus: true, refetchOnReconnect: true }
   );
 
-  // kirim pesan / buat chat via POST /chat
   const [createChatOrMessage, { isLoading: sendingMessage }] =
     useCreateChatOrMessageMutation();
 
-  // state realtime
   const [conversations, setConversations] = useState<ChatMessage[]>([]);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const echoRef = useRef<InstanceType<EchoCtor> | null>(null);
 
-  // === helper: ambil user_id lawan bicara untuk chat personal ===
   const getCounterpartUserId = (chat: ChatListItem | null): number | null => {
     if (!chat) return null;
-
-    // prioritas: talk_to dari response sidebar
     const fromTalkTo = chat.talk_to?.find((u) => u.id !== currentUserId)?.id;
     if (typeof fromTalkTo === "number") return fromTalkTo;
-
-    // fallback: beberapa response punya "users"
-    const users = (chat as unknown as { users?: Array<{ id: number }> }).users;
+    const users = (chat as { users?: Array<{ id: number }> }).users;
     const fromUsers = users?.find((u) => u.id !== currentUserId)?.id;
-    if (typeof fromUsers === "number") return fromUsers;
-
-    return null;
+    return typeof fromUsers === "number" ? fromUsers : null;
   };
 
-  // merge API → state
   useEffect(() => {
     if (!messagesPage) return;
     setConversations((prev) => {
@@ -108,7 +116,14 @@ export default function ChatPage() {
     });
   }, [messagesPage]);
 
-  // realtime listener
+  // helper scroll — fokus ke container chat
+  const scrollChatToBottom = () => {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  };
+
+  // Realtime listener — gunakan latest_message (sesuai contoh Astro/backend)
   useEffect(() => {
     (window as unknown as { Pusher: typeof Pusher }).Pusher = Pusher;
 
@@ -133,14 +148,22 @@ export default function ChatPage() {
     });
     echoRef.current = echo;
 
+    // optional: debug koneksi
+    const pusher = (echo as unknown as EchoWithPusher).connector?.pusher;
+    pusher?.connection.bind("state_change", (s) =>
+      console.log("[WS state]", s)
+    );
+    pusher?.connection.bind("error", (e) => console.error("[WS error]", e));
+
     if (currentUserId) {
       const chan =
         echo.channel?.(`chat.${currentUserId}`) ??
         echo.private(`chat.${currentUserId}`);
+
       type MessageSendEvent = {
         chat: {
           id: number;
-          latest_send: {
+          latest_message?: {
             id: number;
             chat_id: number;
             user_id: number;
@@ -153,20 +176,22 @@ export default function ChatPage() {
       };
 
       chan.listen<MessageSendEvent>("MessageSend", (ev) => {
+        // update sidebar (unread/last message)
         dispatch(
           apiSlice.util.invalidateTags([{ type: "ChatList", id: "LIST" }])
         );
 
-        if (!selectedChat?.id || ev.chat.id !== selectedChat.id) return;
-        dispatch(
-          apiSlice.util.invalidateTags([
-            { type: "ChatMessages", id: ev.chat.id },
-          ])
-        );
-
-        const m = ev.chat.latest_send;
+        // pastikan payload sesuai
+        const m = ev.chat.latest_message;
         if (!m) return;
 
+        // kalau bukan chat yang sedang dibuka → biarkan untuk badge/unread di sidebar
+        if (!selectedChat?.id || ev.chat.id !== selectedChat.id) return;
+
+        // hanya tambahkan jika pesan dari lawan (seperti Astro)
+        if (m.user_id === currentUserId) return;
+
+        // dedupe
         setConversations((prev) => {
           if (prev.some((x) => x.id === m.id)) return prev;
           const appended: ChatMessage = {
@@ -189,8 +214,7 @@ export default function ChatPage() {
             },
             reads: [],
           };
-          const arr = [...prev, appended];
-          arr.sort(
+          const arr = [...prev, appended].sort(
             (a, b) =>
               new Date(a.created_at).getTime() -
               new Date(b.created_at).getTime()
@@ -198,9 +222,7 @@ export default function ChatPage() {
           return arr;
         });
 
-        requestAnimationFrame(() =>
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-        );
+        requestAnimationFrame(scrollChatToBottom);
       });
     }
 
@@ -210,17 +232,13 @@ export default function ChatPage() {
     };
   }, [currentUserId, selectedChat?.id, dispatch]);
 
-  // pilih item sidebar
   const handleSelectChat = (chat: ChatListItem) => {
     setSelectedChat(chat);
-    setConversations([]); // reset lalu diisi oleh API + realtime
-    dispatch(
-      apiSlice.util.invalidateTags([{ type: "ChatMessages", id: chat.id }])
-    );
+    setConversations([]);
     setSidebarOpen(false);
   };
 
-  // kirim pesan → POST /chat (pakai chat_id) + user_id (WAJIB untuk personal)
+  // Optimistic send → push dulu, kirim ke server, lalu replace ID
   const handleSendMessage = async (text: string, file: File | null) => {
     if (!selectedChat?.id) return;
     if (!text.trim() && !file) return;
@@ -232,33 +250,90 @@ export default function ChatPage() {
       Swal.fire({
         icon: "error",
         title: "Gagal mengirim",
-        text: "Penerima tidak ditemukan pada chat ini.",
+        text: "Penerima tidak ditemukan.",
       });
       return;
     }
 
+    const tempId = -Date.now();
+    const nowIso = new Date().toISOString();
+    const optimisticMsg: ChatMessage = {
+      id: tempId,
+      chat_id: selectedChat.id,
+      user_id: currentUserId,
+      message: text.trim(),
+      file: file ? "" : null,
+      created_at: nowIso,
+      updated_at: nowIso,
+      media: [],
+      user: {
+        id: currentUserId,
+        name: "Saya",
+        phone: "",
+        email: "",
+        email_verified_at: null,
+        created_at: nowIso,
+        updated_at: nowIso,
+      },
+      reads: [],
+    };
+
+    setConversations((prev) =>
+      [...prev, optimisticMsg].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+    );
+    requestAnimationFrame(scrollChatToBottom);
+
     try {
-      await createChatOrMessage({
+      const result: SendResult = await createChatOrMessage({
         chat_id: selectedChat.id,
         type: selectedChat.type ?? "personal",
         ...(isPersonal && receiverId ? { user_id: receiverId } : {}),
         message: text.trim() || undefined,
         file: file ?? undefined,
       }).unwrap();
-      // realtime akan mengisi UI / invalidate
+
+      setConversations((prev) => {
+        const replaced = prev.map((m) =>
+          m.id === tempId
+            ? {
+                ...m,
+                id: result.id,
+                chat_id: result.chat_id,
+                user_id: result.user_id,
+                message: result.message ?? "",
+                file: result.file ?? null,
+                created_at: result.created_at,
+                updated_at: result.updated_at,
+              }
+            : m
+        );
+        replaced.sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        return replaced;
+      });
+
+      dispatch(
+        apiSlice.util.invalidateTags([{ type: "ChatList", id: "LIST" }])
+      );
+      requestAnimationFrame(scrollChatToBottom);
     } catch {
+      setConversations((prev) => prev.filter((m) => m.id !== tempId));
       Swal.fire({ icon: "error", title: "Gagal mengirim pesan" });
     }
   };
 
-  // buat chat personal baru (penerima dari useGetAnggotaListQuery) → POST /chat tanpa chat_id
   const handleCreatePersonalChat = async (
     userId: number,
     userName?: string
   ) => {
     try {
-      const first = await createChatOrMessage({
-        user_id: userId, // ⬅️ WAJIB
+      const first: SendResult = await createChatOrMessage({
+        user_id: userId,
         type: "personal",
         message: "Permisi",
       }).unwrap();
@@ -266,28 +341,28 @@ export default function ChatPage() {
       await refetchList();
       const list = (await refetchList()).data?.data ?? chatList?.data ?? [];
       const just = list.find((x) => x.id === first.chat_id);
-      handleSelectChat(
-        just ??
-          ({
-            id: first.chat_id,
-            title: userName ? `Chat with ${userName}` : "Personal Chat",
-            description: userName
-              ? `Personal chat with ${userName}`
-              : "Personal chat",
-            type: "personal",
-            status: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            latest_message: null,
-            talk_to: [],
-          } as ChatListItem)
+      setSelectedChat(
+        just ?? {
+          id: first.chat_id,
+          title: userName ? `Chat with ${userName}` : "Personal Chat",
+          description: userName
+            ? `Personal chat with ${userName}`
+            : "Personal chat",
+          type: "personal",
+          status: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          latest_message: null,
+          talk_to: [],
+        }
       );
+      setConversations([]);
+      requestAnimationFrame(scrollChatToBottom);
     } catch {
       Swal.fire({ icon: "error", title: "Gagal membuat chat" });
     }
   };
 
-  // filter untuk sidebar
   const filteredItems = useMemo(() => {
     const q = searchQuery.toLowerCase();
     const list = chatList?.data ?? [];
@@ -319,7 +394,8 @@ export default function ChatPage() {
         messagesLoading={messagesLoading}
         messagesError={messagesError}
         refetchMessages={refetchMessages}
-        messagesEndRef={messagesEndRef}
+        // ⬇️ kirim ref kontainer ke child agar scroll-nya tepat
+        messagesContainerRef={messagesContainerRef}
         sendingMessage={sendingMessage}
         onSendMessage={handleSendMessage}
         setSidebarOpen={setSidebarOpen}

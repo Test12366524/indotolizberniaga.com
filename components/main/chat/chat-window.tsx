@@ -1,4 +1,3 @@
-// app/.../chat/chat-window.tsx
 "use client";
 
 import { memo, RefObject, useEffect, useState } from "react";
@@ -15,12 +14,13 @@ type Props = {
   messagesLoading: boolean;
   messagesError: unknown;
   refetchMessages: () => void;
-  messagesEndRef: RefObject<HTMLDivElement | null>;
+
+  /** ref ke kontainer scroll area pesan (bukan page) */
+  messagesContainerRef: RefObject<HTMLDivElement | null>;
+
   sendingMessage: boolean;
   onSendMessage: (text: string, file: File | null) => void;
   setSidebarOpen: (v: boolean) => void;
-
-  /** ← kirim dari parent, dipakai untuk tentukan bubble kiri/kanan */
   currentUserId: number;
 };
 
@@ -30,7 +30,7 @@ function ChatWindowInner({
   messagesLoading,
   messagesError,
   refetchMessages,
-  messagesEndRef,
+  messagesContainerRef,
   sendingMessage,
   onSendMessage,
   setSidebarOpen,
@@ -89,7 +89,10 @@ function ChatWindowInner({
           </div>
 
           {/* messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+          >
             {messagesLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full" />
@@ -109,10 +112,8 @@ function ChatWindowInner({
               </div>
             ) : conversations.length > 0 ? (
               conversations.map((m) => {
-                // tanpa any: gunakan id dari relasi user jika ada, kalau tidak pakai m.user_id
                 const senderId: number = m.user?.id ?? m.user_id ?? 0;
                 const mine = senderId === currentUserId;
-
                 return (
                   <div
                     key={m.id}
@@ -159,8 +160,6 @@ function ChatWindowInner({
                 <p className="text-gray-500">Belum ada pesan.</p>
               </div>
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {/* composer */}
