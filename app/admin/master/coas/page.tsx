@@ -34,6 +34,8 @@ export default function CoaPage() {
   const { data, isLoading, refetch } = useGetCoaListQuery({
     page: currentPage,
     paginate: itemsPerPage,
+    orderBy: "coas.code",
+    order: "asc",
   });
 
   const list = useMemo(() => data?.data ?? [], [data]);

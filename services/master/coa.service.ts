@@ -37,12 +37,12 @@ export const coaApi = apiSlice.injectEndpoints({
         total: number;
         per_page: number;
       },
-      { page: number; paginate: number }
+      { page: number; paginate: number; orderBy?: string; order?: "asc" | "desc" }
     >({
-      query: ({ page, paginate }) => ({
+      query: ({ page, paginate, orderBy, order }) => ({
         url: `/master/coas`,
         method: "GET",
-        params: { page, paginate },
+        params: { page, paginate, orderBy, order },
       }),
       transformResponse: (response: CoaListApiResponse) => ({
         data: response.data.data,
