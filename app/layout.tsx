@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Indotoliz Berniaga",
-  description: "Mewujudkan kemandirian dan kesejahteraan anggota melalui unit usaha simpan pinjam dan marketplace yang terintegrasi.",
+  description: "Solusi E-commerce B2B Terdepan di Toli-Toli dan Sekitarnya",
   icons: {
-    icon: "/logo-koperasi-merah-putih-online.webp",
+    icon: "/logo-only-indotoliz.png",
   },
 };
 
