@@ -660,7 +660,7 @@ export default function LoginPage() {
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center">
                 {/* Asumsi Anda memiliki logo Indotoliz Berniaga yang didominasi warna Biru/Jingga */}
                 <Image
-                  src="/logo-indotoliz-berniaga.webp" 
+                  src="/logo-only-indotoliz.png" 
                   alt="Indotoliz Berniaga"
                   width={50}
                   height={50}

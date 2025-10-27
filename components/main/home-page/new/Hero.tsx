@@ -39,7 +39,7 @@ export default function Hero() {
           {/* CTA Buttons */}
           <div className="flex gap-4">
             <Link
-              href="/category/gadget" // Ubah link ke kategori populer (misal: Gadget)
+              href="/product" // Ubah link ke kategori populer (misal: Gadget)
               style={{ backgroundColor: ACCENT_COLOR }} // Menggunakan Jingga Energi
               className="px-6 py-3 text-white font-medium rounded-xl shadow-md hover:opacity-90 transition flex items-center gap-x-1.5"
             >
@@ -47,7 +47,7 @@ export default function Hero() {
               Jelajahi Produk
             </Link>
             <Link
-              href="/seller-center" // Ubah link ke informasi Penjual
+              href="/me" // Ubah link ke informasi Penjual
               className="px-6 py-3 bg-gray-200 text-gray-800 font-medium rounded-xl shadow-md hover:bg-gray-300 transition flex items-center gap-x-1.5"
             >
               <Zap className="size-5" />
