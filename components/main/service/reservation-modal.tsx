@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, Phone, User } from "lucide-react";
+import { Calendar, Clock, Phone, User, MapPin } from "lucide-react"; // Menambahkan MapPin
 import Image from "next/image";
 import Swal from "sweetalert2";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-// Import from cart/page.tsx
+// Import dari cart/page.tsx
 import { Combobox } from "@/components/ui/combo-box";
 import {
   Select,
@@ -53,6 +53,12 @@ export default function ReservationModal({
   const router = useRouter();
   const { data: session } = useSession();
   const sessionName = useMemo(() => session?.user?.name ?? "", [session]);
+
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
 
   // state internal untuk image preview
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -162,140 +168,7 @@ export default function ReservationModal({
     setShippingInfo((prev) => ({ ...prev, [field]: value }));
   };
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   if (!service) return;
-
-  //   // Validation
-  //   if (
-  //     !formData.fullName ||
-  //     !formData.phone ||
-  //     !formData.reservationDate ||
-  //     !formData.reservationTime ||
-  //     !isPhoneValid ||
-  //     !shippingInfo.address_line_1 ||
-  //     !shippingInfo.postal_code ||
-  //     !shippingInfo.rajaongkir_province_id ||
-  //     !shippingInfo.rajaongkir_city_id ||
-  //     !shippingInfo.rajaongkir_district_id
-  //   ) {
-  //     await Swal.fire({
-  //       icon: "warning",
-  //       title: "Lengkapi Data",
-  //       text: "Harap lengkapi semua informasi yang diperlukan untuk melanjutkan reservasi.",
-  //     });
-  //     return;
-  //   }
-
-  //   setIsSubmitting(true);
-
-  //   try {
-  //     // Create payload matching CreateTransactionRequest type
-  //     const payload = {
-  //       address_line_1: shippingInfo.address_line_1,
-  //       postal_code: shippingInfo.postal_code,
-  //       date: formData.reservationDate,
-  //       hour: formData.reservationTime,
-  //       transactions: [
-  //         {
-  //           shop_id: 1,
-  //           details: [
-  //             {
-  //               product_id: service.id, // For service instead of product_id
-  //               quantity: 1,
-  //             },
-  //           ],
-  //           customer_info: {
-  //             name: formData.fullName,
-  //             phone: formData.phone,
-  //             address_line_1: shippingInfo.address_line_1,
-  //             postal_code: shippingInfo.postal_code,
-  //             province_id: shippingInfo.rajaongkir_province_id,
-  //             city_id: shippingInfo.rajaongkir_city_id,
-  //             district_id: shippingInfo.rajaongkir_district_id,
-  //           },
-  //           payment_method: paymentMethod || "cod", // Default to COD if not selected
-  //         },
-  //       ],
-  //     };
-
-  //     const result = await createTransaction(payload).unwrap();
-
-  //     if (
-  //       result &&
-  //       result.data &&
-  //       typeof result.data === "object" &&
-  //       "payment_link" in result.data
-  //     ) {
-  //       await Swal.fire({
-  //         icon: "success",
-  //         title: "Jasa Berhasil Dibuat",
-  //         text: "Silakan lanjutkan ke halaman pembayaran.",
-  //         confirmButtonText: "Lanjut ke Pembayaran",
-  //       });
-
-  //       window.open(
-  //         (result.data as { payment_link: string }).payment_link,
-  //         "_blank"
-  //       );
-
-  //       onClose(); // Close modal
-  //       setTimeout(() => {
-  //         router.push("/me");
-  //       }, 2000);
-  //     } else {
-  //       console.warn("Unexpected response format:", result);
-  //       await Swal.fire({
-  //         icon: "success",
-  //         title: "Jasa Berhasil",
-  //         text: "Jasa berhasil dibuat! Kami akan menghubungi Anda segera.",
-  //       });
-  //       onClose();
-  //     }
-  //   } catch (err: unknown) {
-  //     console.error("Error creating reservation:", err);
-
-  //     let serverMessage =
-  //       "Terjadi kesalahan saat membuat reservasi. Silakan coba lagi.";
-  //     let fieldErrors = "";
-
-  //     if (typeof err === "object" && err !== null) {
-  //       const apiErr = err as {
-  //         data?: { message?: string; errors?: ErrorBag };
-  //       };
-  //       const genericErr = err as { message?: string };
-
-  //       if (apiErr.data?.message) {
-  //         serverMessage = apiErr.data.message;
-  //       } else if (genericErr.message) {
-  //         serverMessage = genericErr.message;
-  //       }
-
-  //       const rawErrors: ErrorBag | undefined = apiErr.data?.errors;
-  //       if (rawErrors) {
-  //         fieldErrors = Object.entries(rawErrors)
-  //           .map(([field, msgs]) => {
-  //             const list = Array.isArray(msgs) ? msgs : [msgs];
-  //             return `${field}: ${list.join(", ")}`;
-  //           })
-  //           .join("\n");
-  //       }
-  //     }
-
-  //     await Swal.fire({
-  //       icon: "error",
-  //       title: "Gagal Membuat Jasa",
-  //       html:
-  //         `<p style="text-align:left">${serverMessage}</p>` +
-  //         (fieldErrors
-  //           ? `<pre style="text-align:left;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:8px;margin-top:8px">${fieldErrors}</pre>`
-  //           : ""),
-  //     });
-  //   } finally {
-  //     setIsSubmitting(false);
-  //   }
-  // };
+  // Logika handleSubmit (dihilangkan dari contoh untuk fokus pada styling)
 
   if (!isOpen || !service) return null;
 
@@ -309,12 +182,13 @@ export default function ReservationModal({
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-6 bg-white z-10">
-          <h3 className="w-full text-xl md:text-left font-bold text-[#000000]">
-            Layanan Jasa Koperasi Merah Putih
+          <h3 className="w-full text-xl md:text-left font-bold" style={{ color: TEXT_COLOR }}>
+            Reservasi Jasa Purna Jual Indotoliz
           </h3>
           <button
             onClick={onClose}
-            className="px-3 py-1 rounded-lg hover:bg-[#6B6B6B]/10 transition-colors"
+            className="px-3 py-1 rounded-lg transition-colors"
+            style={{ color: TEXT_COLOR }}
           >
             ✕
           </button>
@@ -343,7 +217,7 @@ export default function ReservationModal({
                   onClick={() => setSelectedImage(item.image)}
                   className={`border-2 rounded-xl overflow-hidden ${
                     selectedImage === item.image
-                      ? "border-[#E53935]"
+                      ? "border-[#0077B6]" // Border Biru Stabil
                       : "border-transparent"
                   }`}
                 >
@@ -357,37 +231,37 @@ export default function ReservationModal({
                 </button>
               ))}
             </div>
-
-            {/* Service Info */}
           </div>
 
           {/* Right: Form */}
           <div className="lg:col-span-2">
-            {/* <form onSubmit={handleSubmit} className="space-y-6"> */}
             <form className="space-y-6">
-              {/* Personal Info */}
-              <div className="p-4 bg-[#6B6B6B]/10 rounded-2xl">
+              {/* Service Info */}
+              <div className="p-4 rounded-2xl" style={{ backgroundColor: `${PRIMARY_COLOR}10` }}>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs bg-[#E53935]/10 text-[#E53935] px-2 py-1 rounded-full">
+                  <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: `${ACCENT_COLOR}10`, color: ACCENT_COLOR }}>
                     {service.category_name}
                   </span>
-                  <span className="text-xs bg-[#6B6B6B]/10 text-[#6B6B6B] px-2 py-1 rounded-full">
+                  <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: `${SECONDARY_TEXT}10`, color: SECONDARY_TEXT }}>
                     {service.merk_name}
                   </span>
                 </div>
-                <p className="font-semibold text-[#000000]">{service.name}</p>
-                <p className="text-sm text-[#6B6B6B]">{service.duration}</p>
-                <p className="text-[#E53935] font-bold">
+                <p className="font-semibold" style={{ color: TEXT_COLOR }}>{service.name}</p>
+                <p className="text-sm" style={{ color: SECONDARY_TEXT }}>{service.duration}</p>
+                <p className="font-bold text-2xl" style={{ color: ACCENT_COLOR }}>
                   Rp {service.price.toLocaleString("id-ID")}
                 </p>
               </div>
-              <div className="bg-[#6B6B6B]/5 p-4 rounded-2xl">
-                <h4 className="font-semibold text-[#000000] mb-4">
-                  Informasi Pribadi
+
+              {/* Personal Info */}
+              <div className="p-4 rounded-2xl" style={{ backgroundColor: `${SECONDARY_TEXT}05` }}>
+                <h4 className="font-semibold mb-4" style={{ color: TEXT_COLOR }}>
+                  Informasi Kontak
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 border border-[#6B6B6B]/30 rounded-2xl px-3">
-                    <User className="w-5 h-5 text-[#6B6B6B]" />
+                  {/* Nama */}
+                  <div className="flex items-center gap-2 border rounded-2xl px-3" style={{ borderColor: `${SECONDARY_TEXT}30` }}>
+                    <User className="w-5 h-5" style={{ color: SECONDARY_TEXT }} />
                     <input
                       type="text"
                       placeholder="Nama Lengkap"
@@ -395,13 +269,15 @@ export default function ReservationModal({
                       onChange={(e) =>
                         handleInputChange("fullName", e.target.value)
                       }
-                      className="w-full py-3 bg-transparent outline-none text-[#000000]"
+                      className="w-full py-3 bg-transparent outline-none"
+                      style={{ color: TEXT_COLOR }}
                       required
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 border border-[#6B6B6B]/30 rounded-2xl px-3">
-                    <Phone className="w-5 h-5 text-[#6B6B6B]" />
+                  {/* Telepon */}
+                  <div className="flex items-center gap-2 border rounded-2xl px-3" style={{ borderColor: `${SECONDARY_TEXT}30` }}>
+                    <Phone className="w-5 h-5" style={{ color: SECONDARY_TEXT }} />
                     <input
                       type="text"
                       placeholder="No. WhatsApp"
@@ -409,12 +285,13 @@ export default function ReservationModal({
                       onChange={(e) =>
                         handleInputChange("phone", e.target.value)
                       }
-                      className="w-full py-3 bg-transparent outline-none text-[#000000]"
+                      className="w-full py-3 bg-transparent outline-none"
+                      style={{ color: TEXT_COLOR }}
                       required
                     />
                   </div>
                   {!isPhoneValid && formData.phone && (
-                    <p className="text-sm text-red-500 col-span-2">
+                    <p className="text-sm col-span-2" style={{ color: ACCENT_COLOR }}>
                       Nomor telepon tidak valid
                     </p>
                   )}
@@ -422,57 +299,65 @@ export default function ReservationModal({
               </div>
 
               {/* Reservation Date & Time */}
-              <div className="bg-[#6B6B6B]/5 p-4 rounded-2xl">
-                <h4 className="font-semibold text-[#000000] mb-4">
-                  Jadwalkan Meeting
+              <div className="p-4 rounded-2xl" style={{ backgroundColor: `${PRIMARY_COLOR}05` }}>
+                <h4 className="font-semibold mb-4" style={{ color: PRIMARY_COLOR }}>
+                  Jadwalkan Layanan Teknis
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 border border-[#6B6B6B]/30 rounded-2xl px-3">
-                    <Calendar className="w-5 h-5 text-[#6B6B6B]" />
+                  {/* Tanggal */}
+                  <div className="flex items-center gap-2 border rounded-2xl px-3" style={{ borderColor: `${PRIMARY_COLOR}30` }}>
+                    <Calendar className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                     <input
                       type="date"
                       value={formData.reservationDate}
                       onChange={(e) =>
                         handleInputChange("reservationDate", e.target.value)
                       }
-                      className="w-full py-3 bg-transparent outline-none text-[#000000]"
+                      className="w-full py-3 bg-transparent outline-none"
+                      style={{ color: TEXT_COLOR }}
                       required
                     />
                   </div>
 
-                  <div className="flex items-center gap-2 border border-[#6B6B6B]/30 rounded-2xl px-3">
-                    <Clock className="w-5 h-5 text-[#6B6B6B]" />
+                  {/* Waktu */}
+                  <div className="flex items-center gap-2 border rounded-2xl px-3" style={{ borderColor: `${PRIMARY_COLOR}30` }}>
+                    <Clock className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                     <input
                       type="time"
                       value={formData.reservationTime}
                       onChange={(e) =>
                         handleInputChange("reservationTime", e.target.value)
                       }
-                      className="w-full py-3 bg-transparent outline-none text-[#000000]"
+                      className="w-full py-3 bg-transparent outline-none"
+                      style={{ color: TEXT_COLOR }}
                       required
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Address Info */}
-              <div className="bg-[#6B6B6B]/5 p-4 rounded-2xl hidden">
-                <h4 className="font-semibold text-[#000000] mb-4">Alamat</h4>
+              {/* Address Info (Mengaktifkan kembali alamat untuk jasa yang butuh lokasi) */}
+              <div className="p-4 rounded-2xl" style={{ backgroundColor: `${SECONDARY_TEXT}05` }}>
+                <h4 className="font-semibold mb-4" style={{ color: TEXT_COLOR }}>Alamat Lokasi Layanan</h4>
                 <div className="space-y-4">
-                  <textarea
-                    value={shippingInfo.address_line_1}
-                    onChange={(e) =>
-                      handleShippingChange("address_line_1", e.target.value)
-                    }
-                    rows={3}
-                    placeholder="Alamat lengkap (Nama jalan, RT/RW, Kelurahan)"
-                    className="w-full px-4 py-3 border border-[#6B6B6B]/30 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
-                    required
-                  />
-
+                  <div className="flex items-start gap-2 border rounded-2xl px-3 pt-2" style={{ borderColor: `${SECONDARY_TEXT}30` }}>
+                    <MapPin className="w-5 h-5 mt-2" style={{ color: SECONDARY_TEXT }} />
+                    <textarea
+                        value={shippingInfo.address_line_1}
+                        onChange={(e) =>
+                            handleShippingChange("address_line_1", e.target.value)
+                        }
+                        rows={3}
+                        placeholder="Alamat lengkap (Nama jalan, RT/RW, Kelurahan)"
+                        className="w-full px-1 py-1 bg-transparent outline-none resize-none"
+                        style={{ color: TEXT_COLOR }}
+                        required
+                    />
+                  </div>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium mb-2" style={{ color: SECONDARY_TEXT }}>
                         Provinsi
                       </label>
                       <Combobox
@@ -488,11 +373,12 @@ export default function ReservationModal({
                         data={provinces}
                         isLoading={loadingProvince}
                         getOptionLabel={(item) => item.name}
+                        buttonClassName={`border-2 border-[${SECONDARY_TEXT}30]`}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium mb-2" style={{ color: SECONDARY_TEXT }}>
                         Kota / Kabupaten
                       </label>
                       <Combobox
@@ -508,11 +394,12 @@ export default function ReservationModal({
                         isLoading={loadingCity}
                         getOptionLabel={(item) => item.name}
                         disabled={!shippingInfo.rajaongkir_province_id}
+                        buttonClassName={`border-2 border-[${SECONDARY_TEXT}30]`}
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium mb-2" style={{ color: SECONDARY_TEXT }}>
                         Kecamatan
                       </label>
                       <Combobox
@@ -527,6 +414,7 @@ export default function ReservationModal({
                         isLoading={loadingDistrict}
                         getOptionLabel={(item) => item.name}
                         disabled={!shippingInfo.rajaongkir_city_id}
+                        buttonClassName={`border-2 border-[${SECONDARY_TEXT}30]`}
                       />
                     </div>
                   </div>
@@ -538,15 +426,21 @@ export default function ReservationModal({
                       handleShippingChange("postal_code", e.target.value)
                     }
                     placeholder="Kode Pos"
-                    className="w-full px-4 py-3 border border-[#6B6B6B]/30 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#6B6B6B] focus:border-transparent"
+                    className="w-full px-4 py-3 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
+                    style={{ 
+                        borderColor: `${SECONDARY_TEXT}30`, 
+                        color: TEXT_COLOR
+                    }}
                     required
                   />
                 </div>
               </div>
+              
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-[#E53935] text-white py-4 rounded-2xl font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full text-white py-4 rounded-2xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: ACCENT_COLOR }} // CTA Utama: Jingga Energi
               >
                 {isSubmitting ? (
                   <>
@@ -554,7 +448,7 @@ export default function ReservationModal({
                     Memproses Jasa...
                   </>
                 ) : (
-                  "Order Jasa"
+                  "Ajukan Reservasi Jasa"
                 )}
               </button>
             </form>

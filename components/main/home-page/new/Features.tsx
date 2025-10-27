@@ -5,35 +5,42 @@ import en from "@/translations/home/en";
 import id from "@/translations/home/id";
 import { motion } from "framer-motion";
 import {
-  Handshake,
-  Store,
-  AppWindow,
-  BadgeDollarSign
+  ShieldCheck, // Keamanan
+  Package, // Pengiriman
+  Zap, // Produk Terbaru / Kecepatan
+  BarChart3 // Pertumbuhan Bisnis Seller
 } from "lucide-react";
 
 export default function Features() {
   const t = useTranslation({ id, en });
 
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi (Untuk penekanan tertentu jika ada)
+  
+  // Menggunakan warna Biru Stabil untuk ikon
+  const ICON_COLOR_STYLE = { color: PRIMARY_COLOR }; 
+
   const features = [
     {
-      icon: <Handshake className="w-10 h-10 text-[#E53935]" />,
-      title: "Unit Usaha Simpan Pinjam",
-      desc: "Layanan keuangan yang aman dan terpercaya untuk seluruh anggota. Proses pengajuan pinjaman cepat, syarat ringan, dan bunga kompetitif untuk mendukung kebutuhan finansial Anda.",
+      icon: <ShieldCheck className="w-10 h-10" style={ICON_COLOR_STYLE} />,
+      title: "Jaminan Keamanan Transaksi",
+      desc: "Nikmati pengalaman belanja bebas cemas dengan sistem pembayaran yang aman dan perlindungan pembeli. Dana Anda terjamin hingga barang elektronik diterima dengan baik.",
     },
     {
-      icon: <Store className="w-10 h-10 text-[#E53935]" />,
-      title: "Marketplace UMKM",
-      desc: "Jelajahi beragam produk berkualitas dari UMKM anggota koperasi. Anggota dapat dengan mudah mendaftar sebagai seller untuk menjangkau pasar yang lebih luas tanpa biaya tersembunyi.",
+      icon: <Zap className="w-10 h-10" style={ICON_COLOR_STYLE} />,
+      title: "Pilihan Produk Terlengkap",
+      desc: "Temukan semua kebutuhan elektronik dan gadget, mulai dari komponen kecil, smartphone, laptop, hingga peralatan smart home terbaru. Selalu update dengan teknologi terkini.",
     },
     {
-      icon: <AppWindow className="w-10 h-10 text-[#E53935]" />,
-      title: "Aplikasi Internal Anggota",
-      desc: "Kelola semua aktivitas koperasi dalam satu platform. Anggota dan seller dapat memantau status pinjaman, transaksi, dan performa penjualan secara real-time dari mana saja.",
+      icon: <Package className="w-10 h-10" style={ICON_COLOR_STYLE} />,
+      title: "Pengiriman Cepat & Terpercaya",
+      desc: "Kami bekerja sama dengan mitra logistik terbaik untuk memastikan produk elektronik Anda tiba dengan selamat dan tepat waktu ke seluruh wilayah Indonesia.",
     },
     {
-      icon: <BadgeDollarSign className="w-10 h-10 text-[#E53935]" />,
-      title: "Pendapatan Pasif",
-      desc: "Setiap anggota yang berbelanja di marketplace akan mendapatkan Sisa Hasil Usaha (SHU) setiap tahunnya. Semua terintegrasi dan aman.",
+      icon: <BarChart3 className="w-10 h-10" style={ICON_COLOR_STYLE} />,
+      title: "Ekosistem Pertumbuhan Seller",
+      desc: "Bagi penjual, platform kami menawarkan biaya rendah, fitur analisis penjualan yang canggih, dan akses ke pasar digital yang luas untuk mendorong pertumbuhan bisnis Anda.",
     },
   ];
 
@@ -46,8 +53,8 @@ export default function Features() {
           transition={{ duration: 0.6 }}
           className="text-3xl md:text-4xl font-bold text-gray-800 mb-12"
         >
-          Mengapa Bergabung dengan{" "}
-          <span className="text-[#E53935]">Koperasi Merah Putih</span>?
+          Mengapa Memilih{" "}
+          <span style={{ color: PRIMARY_COLOR }}>Indotoliz Berniaga</span>?
         </motion.h2>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">

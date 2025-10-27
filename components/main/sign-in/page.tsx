@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  Sparkles,
+  Zap, // Mengganti Sparkles
   Shield,
   Heart,
   Leaf,
@@ -18,9 +18,9 @@ import {
   User,
   Phone,
   ArrowLeft,
-  Landmark, // New icon for Koperasi
-  Store, // New icon for Marketplace
-  Users, // New icon for members
+  ShoppingBag, // New icon for Marketplace
+  Truck, // New icon for Logistik
+  BarChart3, // New icon for Seller Growth
 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { useRegisterMutation } from "@/services/auth.service";
@@ -62,43 +62,50 @@ interface OtpFormData {
   confirmPassword: string;
 }
 
+// Definisi Warna Brand
+const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+const TEXT_COLOR = "#343A40"; // Warna teks profesional
+
+// Konten Syarat & Ketentuan yang disesuaikan
 const TERMS_CONTENT = {
-  title: "Syarat & Ketentuan",
+  title: "Syarat & Ketentuan Indotoliz Berniaga",
   content: (
     <>
       <h3>1. Penerimaan Persyaratan</h3>
       <p>
-        Dengan mendaftar dan menggunakan layanan Koperasi Merah Putih (Layanan), Anda setuju untuk terikat oleh Syarat dan Ketentuan ini (Syarat). Jika Anda tidak setuju dengan Syarat ini, Anda tidak boleh menggunakan Layanan.
+        Dengan mendaftar dan menggunakan layanan *marketplace* Indotoliz Berniaga (Layanan), Anda setuju untuk terikat oleh Syarat dan Ketentuan ini (Syarat). Jika Anda tidak setuju dengan Syarat ini, Anda tidak boleh menggunakan Layanan.
       </p>
 
-      <h3>2. Layanan Koperasi</h3>
+      <h3>2. Layanan Platform</h3>
       <p>
-        Layanan kami meliputi fasilitas simpan pinjam bagi anggota, platform marketplace untuk UMKM, serta program pemberdayaan anggota lainnya. Semua layanan tunduk pada peraturan internal Koperasi dan hukum yang berlaku di Indonesia.
+        Layanan kami meliputi fasilitas jual beli produk elektronik dan teknologi, serta program kemitraan penjual (*seller*) untuk mendorong pertumbuhan bisnis digital. Semua layanan tunduk pada peraturan platform dan hukum yang berlaku di Indonesia.
       </p>
 
-      <h3>3. Kewajiban Anggota</h3>
+      <h3>3. Kewajiban Pengguna</h3>
       <ul>
         <li>Memberikan informasi yang akurat dan terkini saat pendaftaran.</li>
-        <li>Menjaga kerahasiaan password dan keamanan akun.</li>
-        <li>Bertanggung jawab atas semua aktivitas yang terjadi di bawah akun Anda.</li>
-        <li>Mematuhi semua anggaran dasar dan anggaran rumah tangga (AD/ART) Koperasi.</li>
+        <li>Menjaga kerahasiaan *password* dan keamanan akun Anda.</li>
+        <li>Bertanggung jawab atas semua transaksi jual beli yang terjadi di bawah akun Anda.</li>
+        <li>Mematuhi semua kebijakan *marketplace*, terutama terkait keaslian dan pengiriman produk.</li>
       </ul>
 
       <h3>4. Larangan</h3>
       <p>
-        Anda dilarang menggunakan Layanan untuk tujuan ilegal, penipuan, atau aktivitas yang dapat merugikan Koperasi dan anggotanya.
+        Anda dilarang menggunakan Layanan untuk tujuan ilegal, penipuan, menjual produk terlarang/palsu, atau aktivitas yang dapat merugikan platform dan pengguna lainnya.
       </p>
     </>
   ),
 };
 
+// Kebijakan Privasi yang disesuaikan
 const PRIVACY_POLICY_CONTENT = {
-  title: "Kebijakan Privasi",
+  title: "Kebijakan Privasi Indotoliz Berniaga",
   content: (
     <>
       <h3>1. Informasi yang Kami Kumpulkan</h3>
       <p>
-        Kami mengumpulkan informasi yang Anda berikan secara langsung saat pendaftaran, seperti nama lengkap, alamat email, nomor telepon, dan data lain yang diperlukan untuk keanggotaan. Kami juga dapat mengumpulkan data transaksi saat Anda menggunakan layanan simpan pinjam atau marketplace.
+        Kami mengumpulkan informasi yang Anda berikan secara langsung saat pendaftaran, seperti nama lengkap, alamat email, nomor telepon, dan data lain yang diperlukan untuk akun pengguna. Kami juga mengumpulkan data transaksi saat Anda menggunakan *marketplace*.
       </p>
 
       <h3>2. Bagaimana Kami Menggunakan Informasi Anda</h3>
@@ -106,15 +113,15 @@ const PRIVACY_POLICY_CONTENT = {
         Informasi Anda digunakan untuk:
       </p>
       <ul>
-        <li>Memverifikasi identitas Anda dan mengelola keanggotaan Anda.</li>
-        <li>Memproses transaksi simpan pinjam dan jual beli di marketplace.</li>
-        <li>Mengirimkan informasi penting terkait layanan Koperasi.</li>
-        <li>Meningkatkan kualitas layanan kami.</li>
+        <li>Memverifikasi identitas Anda dan mengelola akun *e-commerce*.</li>
+        <li>Memproses transaksi jual beli produk elektronik di *marketplace*.</li>
+        <li>Mengirimkan notifikasi penting terkait pesanan dan produk.</li>
+        <li>Meningkatkan kualitas dan keamanan platform kami.</li>
       </ul>
 
       <h3>3. Keamanan Data</h3>
       <p>
-        Kami menerapkan langkah-langkah keamanan yang wajar untuk melindungi informasi pribadi Anda dari akses, penggunaan, atau pengungkapan yang tidak sah. Data Anda dienkripsi dan disimpan di server yang aman.
+        Kami menerapkan langkah-langkah keamanan digital yang ketat (SSL dan enkripsi data) untuk melindungi informasi pribadi Anda dari akses, penggunaan, atau pengungkapan yang tidak sah.
       </p>
     </>
   ),
@@ -180,7 +187,7 @@ export default function LoginPage() {
 
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
 
-  // ===== Handlers
+  // ===== Handlers (Logika handlers tidak diubah, hanya di-style)
   const handleLoginSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors([]);
@@ -257,7 +264,6 @@ export default function LoginPage() {
     }
   };
 
-  // Corrected handler for forgot password
   const handleForgotPassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors([]);
@@ -307,7 +313,6 @@ export default function LoginPage() {
     }
   };
 
-  // New handler for OTP form submission
   const handleOtpSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors([]);
@@ -371,18 +376,17 @@ export default function LoginPage() {
   // Conditional rendering for the new forms
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#DFF19D]/20 via-[#BFF0F5]/20 to-[#F6CCD0]/20 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-white via-[#0077B6]/05 to-[#FF6B35]/05 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#e84741] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: PRIMARY_COLOR }}>
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: TEXT_COLOR }}>
               Lupa Password?
             </h2>
             <p className="text-gray-600">
-              Masukkan email Anda dan kami akan mengirimkan link untuk reset
-              password
+              Masukkan email Anda dan kami akan mengirimkan kode verifikasi.
             </p>
           </div>
 
@@ -412,7 +416,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleForgotPassword} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                 Email Address
               </label>
               <div className="relative">
@@ -423,7 +427,7 @@ export default function LoginPage() {
                   onChange={(e) =>
                     setForgotPasswordData({ email: e.target.value })
                   }
-                  className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                   placeholder="Masukkan email Anda"
                   required
                 />
@@ -445,7 +449,8 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSendingResetLink}
-                className="flex-1 bg-[#e84741] text-white py-4 rounded-2xl font-semibold hover:bg-[#e84741]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 text-white py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: ACCENT_COLOR }} // CTA: Jingga Energi
               >
                 {isSendingResetLink ? (
                   <>
@@ -453,7 +458,7 @@ export default function LoginPage() {
                     Mengirim...
                   </>
                 ) : (
-                  "Kirim Link"
+                  "Kirim Kode"
                 )}
               </button>
             </div>
@@ -464,13 +469,13 @@ export default function LoginPage() {
   } else if (showOtpForm) {
     // New condition for OTP form
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#DFF19D]/20 via-[#BFF0F5]/20 to-[#F6CCD0]/20 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-br from-white via-[#0077B6]/05 to-[#FF6B35]/05 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#e84741] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: PRIMARY_COLOR }}>
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-2xl font-bold mb-2" style={{ color: TEXT_COLOR }}>
               Verifikasi & Atur Ulang Password
             </h2>
             <p className="text-gray-600">
@@ -505,7 +510,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleOtpSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                 Kode OTP
               </label>
               <div className="relative">
@@ -515,7 +520,7 @@ export default function LoginPage() {
                   onChange={(e) =>
                     setOtpFormData((prev) => ({ ...prev, otp: e.target.value }))
                   }
-                  className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent text-center font-bold text-lg tracking-[0.25em]"
+                  className="w-full px-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent text-center font-bold text-lg tracking-[0.25em]"
                   placeholder="------"
                   required
                 />
@@ -523,7 +528,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                 Password Baru
               </label>
               <div className="relative">
@@ -537,7 +542,7 @@ export default function LoginPage() {
                       password: e.target.value,
                     }))
                   }
-                  className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                  className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                   placeholder="Minimal 8 karakter"
                   required
                 />
@@ -556,7 +561,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-2">
+              <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                 Konfirmasi Password Baru
               </label>
               <div className="relative">
@@ -570,7 +575,7 @@ export default function LoginPage() {
                       confirmPassword: e.target.value,
                     }))
                   }
-                  className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                  className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                   placeholder="Ulangi password baru"
                   required
                 />
@@ -604,7 +609,8 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isVerifyingOtp}
-                className="flex-1 bg-[#e84741] text-white py-4 rounded-2xl font-semibold hover:bg-[#e84741]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 text-white py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: ACCENT_COLOR }} // CTA: Jingga Energi
               >
                 {isVerifyingOtp ? (
                   <>
@@ -624,16 +630,18 @@ export default function LoginPage() {
 
   // Rest of the login/register UI remains unchanged
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#DFF19D]/20 via-[#BFF0F5]/20 to-[#F6CCD0]/20 flex items-center justify-center p-6">
-      <div className="absolute top-20 left-10 w-20 h-20 bg-[#6B6B6B]/50 rounded-full opacity-60 animate-pulse" />
-      <div className="absolute bottom-32 right-16 w-16 h-16 bg-[#e84741]/50 rounded-full opacity-60 animate-pulse delay-1000" />
-      <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-[#000000]/50 rounded-full opacity-40 animate-pulse delay-500" />
+    <div className="min-h-screen bg-gradient-to-br from-white via-[#0077B6]/05 to-[#FF6B35]/05 flex items-center justify-center p-6">
+      {/* Decorative Elements - Menggunakan Biru Stabil dan Jingga Energi */}
+      <div className="absolute top-20 left-10 w-20 h-20 rounded-full opacity-60 animate-pulse" style={{ backgroundColor: PRIMARY_COLOR, opacity: 0.3 }} />
+      <div className="absolute bottom-32 right-16 w-16 h-16 rounded-full opacity-60 animate-pulse delay-1000" style={{ backgroundColor: ACCENT_COLOR, opacity: 0.3 }} />
+      <div className="absolute top-1/2 left-1/4 w-12 h-12 rounded-full opacity-40 animate-pulse delay-500" style={{ backgroundColor: PRIMARY_COLOR, opacity: 0.2 }} />
       <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className="bg-[#e84741] p-8 lg:p-12 flex flex-col justify-center text-white relative overflow-hidden">
+        {/* Left Panel - Biru Stabil */}
+        <div className="p-8 lg:p-12 flex flex-col justify-center text-white relative overflow-hidden" style={{ backgroundColor: PRIMARY_COLOR }}>
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-10 right-10 w-32 h-32 bg-[#e84741] rounded-full" />
-            <div className="absolute bottom-20 left-10 w-24 h-24 bg-[#e84741] rounded-full" />
-            <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-[#e84741] rounded-full" />
+            <div className="absolute top-10 right-10 w-32 h-32 rounded-full" style={{ backgroundColor: 'white' }} />
+            <div className="absolute bottom-20 left-10 w-24 h-24 rounded-full" style={{ backgroundColor: 'white' }} />
+            <div className="absolute top-1/2 right-1/4 w-16 h-16 rounded-full" style={{ backgroundColor: 'white' }} />
           </div>
 
           <div className="relative z-10">
@@ -641,7 +649,8 @@ export default function LoginPage() {
               variant="outline"
               size="sm"
               onClick={() => router.push("/")}
-              className="text-[#e84741] cursor-pointer shadow-lg border-white/20 hover:bg-[#e84741]/20 hover:text-[#FFFFFF] bg-white transition-colors mb-6"
+              className="cursor-pointer shadow-lg border-white/20 hover:bg-white/20 hover:text-white bg-white/10 transition-colors mb-6"
+              style={{ color: 'white' }}
             >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Kembali
@@ -649,19 +658,20 @@ export default function LoginPage() {
 
             <div className="flex items-center gap-3 mb-8">
               <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center">
+                {/* Asumsi Anda memiliki logo Indotoliz Berniaga yang didominasi warna Biru/Jingga */}
                 <Image
-                  src="/logo-koperasi-merah-putih-online.webp"
-                  alt="Koperasi Merah Putih"
+                  src="/logo-indotoliz-berniaga.webp" 
+                  alt="Indotoliz Berniaga"
                   width={50}
                   height={50}
                 />
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
-                  Koperasi Merah Putih
+                  Indotoliz Berniaga
                 </h1>
                 <p className="text-white/80 text-sm">
-                  Mandiri, Sejahtera, & Berdaya
+                  Teknologi Terbaik, Transaksi Terpercaya
                 </p>
               </div>
             </div>
@@ -670,65 +680,66 @@ export default function LoginPage() {
               <h2 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight text-white">
                 {isLogin
                   ? "Selamat Datang Kembali!"
-                  : "Bergabung dengan Koperasi Merah Putih"}
+                  : "Bergabung dengan Ekosistem Digital Kami"}
               </h2>
               <p className="text-white/80 text-lg">
                 {isLogin
-                  ? "Masuk untuk mengelola keuangan Anda atau bertransaksi di marketplace."
-                  : "Daftar sekarang dan nikmati layanan simpan pinjam serta jadi seller di marketplace kami."}
+                  ? "Masuk untuk mengelola akun dan mulai belanja elektronik."
+                  : "Daftar sekarang dan nikmati penawaran terbaik serta peluang menjadi seller terverifikasi."}
               </p>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <Landmark className="w-6 h-6 text-white" />
-                <span className="text-white/80">Layanan Simpan Pinjam</span>
+                <ShoppingBag className="w-6 h-6 text-white" />
+                <span className="text-white/80">Marketplace Elektronik Lengkap</span>
               </div>
               <div className="flex items-center gap-3">
-                <Store className="w-6 h-6 text-white" />
-                <span className="text-white/80">Marketplace UMKM Lokal</span>
+                <Truck className="w-6 h-6 text-white" />
+                <span className="text-white/80">Pengiriman Aman & Cepat</span>
               </div>
               <div className="flex items-center gap-3">
-                <Users className="w-6 h-6 text-white" />
+                <BarChart3 className="w-6 h-6 text-white" />
                 <span className="text-white/80">
-                  Komunitas Anggota yang Kuat
+                  Peluang Pertumbuhan Seller
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/20">
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">2.5K+</div>
-                <div className="text-white/50 text-sm">Anggota Aktif</div>
+                <div className="text-2xl font-bold text-white">10K+</div>
+                <div className="text-white/50 text-sm">Pelanggan Aktif</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">100+</div>
-                <div className="text-white/50 text-sm">UMKM Terdaftar</div>
+                <div className="text-2xl font-bold text-white">5K+</div>
+                <div className="text-white/50 text-sm">Produk Tersedia</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-white">4.9</div>
-                <div className="text-white/50 text-sm">Rating Layanan</div>
+                <div className="text-2xl font-bold text-white">4.8</div>
+                <div className="text-white/50 text-sm">Rating Toko</div>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Right Panel - Form */}
         <div className="p-8 lg:p-12">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 bg-[#e84741]/10 px-4 py-2 rounded-full mb-4">
-                <Sparkles className="w-4 h-4 text-[#e84741]" />
-                <span className="text-sm font-medium text-[#e84741]">
-                  {isLogin ? "Masuk Anggota" : "Daftar Anggota"}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+                <Zap className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+                <span className="text-sm font-medium" style={{ color: TEXT_COLOR }}>
+                  {isLogin ? "Masuk ke Akun" : "Buat Akun Baru"}
                 </span>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                {isLogin ? "Masuk ke Akun Anda" : "Buat Akun Anggota Baru"}
+              <h3 className="text-2xl font-bold mb-2" style={{ color: TEXT_COLOR }}>
+                {isLogin ? "Akses Akun Anda" : "Daftar Akun Marketplace"}
               </h3>
               <p className="text-gray-600">
                 {isLogin
-                  ? "Masukkan email dan password untuk melanjutkan"
-                  : "Lengkapi data di bawah untuk menjadi anggota"}
+                  ? "Masukkan email dan password untuk mengakses platform"
+                  : "Lengkapi data di bawah untuk mulai belanja"}
               </p>
             </div>
 
@@ -759,7 +770,7 @@ export default function LoginPage() {
             {isLogin ? (
               <form onSubmit={handleLoginSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     Email Address
                   </label>
                   <div className="relative">
@@ -773,14 +784,14 @@ export default function LoginPage() {
                           email: e.target.value,
                         }))
                       }
-                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                       placeholder="nama@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     Password
                   </label>
                   <div className="relative">
@@ -794,7 +805,7 @@ export default function LoginPage() {
                           password: e.target.value,
                         }))
                       }
-                      className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                      className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                       placeholder="••••••••"
                     />
                     <button
@@ -815,7 +826,8 @@ export default function LoginPage() {
                   <label className="flex items-center">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 text-[#e84741] border-gray-300 rounded focus:ring-[#e84741]"
+                      className="w-4 h-4 border-gray-300 rounded focus:ring-[#0077B6]"
+                      style={{ color: PRIMARY_COLOR }}
                     />
                     <span className="ml-2 text-sm text-gray-600">
                       Ingat saya
@@ -829,7 +841,8 @@ export default function LoginPage() {
                       setSuccessMsg(null);
                       setForgotPasswordData({ email: loginData.email });
                     }}
-                    className="text-sm text-[#e84741] hover:underline"
+                    className="text-sm hover:underline"
+                    style={{ color: PRIMARY_COLOR }}
                   >
                     Lupa password?
                   </button>
@@ -838,7 +851,8 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoggingIn}
-                  className="w-full bg-[#e84741] text-white py-4 rounded-2xl font-semibold hover:bg-[#e84741]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full text-white py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: ACCENT_COLOR }} // CTA Login: Jingga Energi
                 >
                   {isLoggingIn ? (
                     <>
@@ -847,16 +861,16 @@ export default function LoginPage() {
                     </>
                   ) : (
                     <>
-                      Masuk
+                      Masuk ke Platform
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}
                 </button>
               </form>
             ) : (
-              <form onSubmit={handleRegisterSubmit} className="space-y-6">
+              <form onSubmit={handleRegisterSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     Nama Lengkap
                   </label>
                   <div className="relative">
@@ -870,14 +884,14 @@ export default function LoginPage() {
                           fullName: e.target.value,
                         }))
                       }
-                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                       placeholder="Masukkan nama lengkap"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     Email Address
                   </label>
                   <div className="relative">
@@ -891,14 +905,14 @@ export default function LoginPage() {
                           email: e.target.value,
                         }))
                       }
-                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                       placeholder="nama@email.com"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     Nomor Telepon
                   </label>
                   <div className="relative">
@@ -912,73 +926,75 @@ export default function LoginPage() {
                           phone: e.target.value,
                         }))
                       }
-                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                       placeholder="+62 812 3456 7890"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={registerData.password}
-                      onChange={(e) =>
-                        setRegisterData((prev) => ({
-                          ...prev,
-                          password: e.target.value,
-                        }))
-                      }
-                      className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
-                      placeholder="Minimal 8 karakter"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={registerData.password}
+                        onChange={(e) =>
+                          setRegisterData((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
+                        className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
+                        placeholder="Minimal 8 karakter"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Konfirmasi Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={registerData.confirmPassword}
-                      onChange={(e) =>
-                        setRegisterData((prev) => ({
-                          ...prev,
-                          confirmPassword: e.target.value,
-                        }))
-                      }
-                      className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#e84741] focus:border-transparent"
-                      placeholder="Ulangi password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((v) => !v)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="w-5 h-5" />
-                      ) : (
-                        <Eye className="w-5 h-5" />
-                      )}
-                    </button>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2" style={{ color: TEXT_COLOR }}>
+                      Konfirmasi Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={registerData.confirmPassword}
+                        onChange={(e) =>
+                          setRegisterData((prev) => ({
+                            ...prev,
+                            confirmPassword: e.target.value,
+                          }))
+                        }
+                        className="w-full pl-12 pr-12 py-4 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
+                        placeholder="Ulangi password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -993,15 +1009,16 @@ export default function LoginPage() {
                         agreeToTerms: e.target.checked,
                       }))
                     }
-                    className="w-4 h-4 text-[#e84741] border-gray-300 rounded focus:ring-[#e84741] mt-1"
+                    className="w-4 h-4 border-gray-300 rounded focus:ring-[#0077B6] mt-1"
+                    style={{ color: PRIMARY_COLOR }}
                   />
                   <label htmlFor="terms" className="ml-3 text-sm text-gray-600">
                       Saya setuju dengan{" "}
-                      {/* ++ Step 4: Change links to buttons that open the modal */}
                       <button
                         type="button"
                         onClick={() => setModalContent(TERMS_CONTENT)}
-                        className="text-[#e84741] hover:underline font-medium"
+                        className="hover:underline font-medium"
+                        style={{ color: PRIMARY_COLOR }}
                       >
                         Syarat & Ketentuan
                       </button>{" "}
@@ -1009,7 +1026,8 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setModalContent(PRIVACY_POLICY_CONTENT)}
-                        className="text-[#e84741] hover:underline font-medium"
+                        className="hover:underline font-medium"
+                        style={{ color: PRIMARY_COLOR }}
                       >
                         Kebijakan Privasi
                       </button>
@@ -1019,7 +1037,8 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isRegistering}
-                  className="w-full bg-[#e84741] text-white py-4 rounded-2xl font-semibold hover:bg-[#e84741]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full text-white py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{ backgroundColor: ACCENT_COLOR }} // CTA Register: Jingga Energi
                 >
                   {isRegistering ? (
                     <>
@@ -1036,7 +1055,7 @@ export default function LoginPage() {
               </form>
             )}
 
-            <div className="mt-8 text-center">
+            <div className="mt-2 text-center">
               <p className="text-gray-600">
                 {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}{" "}
                 <button
@@ -1045,7 +1064,8 @@ export default function LoginPage() {
                     setErrors([]);
                     setSuccessMsg(null);
                   }}
-                  className="text-[#e84741] font-semibold hover:underline"
+                  className="font-semibold hover:underline"
+                  style={{ color: PRIMARY_COLOR }}
                 >
                   {isLogin ? "Daftar di sini" : "Masuk di sini"}
                 </button>
@@ -1055,11 +1075,11 @@ export default function LoginPage() {
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex items-center justify-center gap-6 text-sm text-gray-500">
                 <div className="flex items-center gap-1">
-                  <Shield className="w-4 h-4 text-[#e84741]" />
+                  <Shield className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
                   <span>SSL Secure</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4 text-[#e84741]" />
+                  <CheckCircle className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
                   <span>Data Terlindungi</span>
                 </div>
               </div>

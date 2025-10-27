@@ -10,8 +10,8 @@ import {
   Package,
   CheckCircle,
   ArrowRight,
-  Sparkles,
-  Shield,
+  Zap, // Mengganti Sparkles
+  ShieldCheck, // Mengganti Shield
   Truck,
   HeadphonesIcon,
   Mail,
@@ -22,8 +22,8 @@ import {
   ChevronUp,
   AlertCircle,
   ArrowLeft,
-  Store, // New icon for marketplace
-  Landmark, // New icon for savings & loans
+  Store, // Marketplace
+  Smartphone, // Digital/PPOB
 } from "lucide-react";
 import {
   Tooltip,
@@ -49,166 +49,157 @@ export default function HowToOrderPage() {
   const router = useRouter();
 
   const goToMarketplacePage = () => {
-    router.push("/marketplace");
+    router.push("/product"); // Diarahkan ke /product (Marketplace Elektronik)
   };
 
   const [activeStep, setActiveStep] = useState(1);
   const [expandedFAQ, setExpandedFAQ] = useState<number | null>(null);
 
-  // === THEME (urut ke-2: #F6CCD0), selang-seling dgn putih ===
-  const THEME = {
-    primary: "#6B6B6B", // warna halaman ini
-    bubbleA: "#DFF19D",
-    bubbleB: "#BFF0F5",
-  };
+  // === DEFINISI WARNA BRAND ===
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
 
   const orderSteps: Step[] = [
     {
       id: 1,
-      title: "Pilih Produk atau Layanan",
+      title: "Cari Produk Elektronik",
       description:
-        "Jelajahi marketplace kami untuk produk UMKM atau pilih layanan simpan pinjam yang Anda butuhkan.",
+        "Jelajahi Indotoliz Berniaga untuk menemukan smartphone, laptop, aksesori, atau layanan digital (pulsa, data, dll).",
       details: [
-        "Jelajahi kategori produk UMKM (Makanan, Kerajinan, dll.)",
-        "Pilih produk atau layanan simpan pinjam yang Anda butuhkan",
-        "Baca detail produk, manfaat, dan review dari anggota lain",
-        "Untuk layanan pinjaman, cek syarat dan ketentuannya",
+        "Jelajahi kategori (Gadget, Komponen, Aksesori, PPOB)",
+        "Pilih produk atau layanan yang Anda butuhkan",
+        "Cek detail produk, spesifikasi, dan ulasan dari pembeli",
       ],
-      icon: <ShoppingCart className="w-8 h-8" />,
+      icon: <Store className="w-8 h-8" />,
       image: "/images/new/order-steps/step-1.png",
       tips: [
-        "Gunakan fitur pencarian untuk menemukan produk favorit Anda",
-        "Cek rating dan ulasan dari anggota lain sebelum membeli",
-        "Untuk pinjaman, pastikan Anda telah melengkapi semua dokumen",
+        "Gunakan filter dan pencarian untuk menemukan produk dengan cepat",
+        "Periksa rating dan keaslian toko sebelum membeli",
       ],
     },
     {
       id: 2,
-      title: "Masukkan ke Keranjang",
+      title: "Tambahkan ke Keranjang",
       description:
-        "Tambahkan produk ke keranjang belanja Anda atau lengkapi formulir pengajuan layanan.",
+        "Masukkan produk fisik ke keranjang belanja atau lengkapi data untuk layanan digital (PPOB).",
       details: [
-        "Klik ikon keranjang untuk melihat daftar produk",
-        "Ubah jumlah produk yang akan dibeli jika diperlukan",
-        "Untuk layanan, klik 'Ajukan' dan lengkapi formulir",
+        "Klik 'Tambah ke Keranjang' untuk produk fisik",
+        "Ubah jumlah produk yang akan dibeli",
+        "Untuk PPOB, masukkan nomor pelanggan/telepon di halaman PPOB",
         "Klik 'Checkout' untuk melanjutkan",
       ],
-      icon: <Package className="w-8 h-8" />,
+      icon: <ShoppingCart className="w-8 h-8" />,
       image: "/images/new/order-steps/step-2.png",
       tips: [
-        "Pastikan Anda sudah login sebagai anggota untuk bertransaksi",
-        "Jika ada kode voucher, masukkan di halaman keranjang",
-        "Periksa kembali data diri di formulir pengajuan layanan",
+        "Pastikan Anda sudah login untuk menyimpan keranjang",
+        "Jika ada kode promo, masukkan di halaman checkout",
       ],
     },
     {
       id: 3,
-      title: "Isi Data Diri & Pengiriman",
+      title: "Lengkapi Alamat & Kontak",
       description:
-        "Lengkapi informasi pengiriman produk atau detail pengajuan layanan.",
+        "Isi data diri, alamat pengiriman yang valid, dan pilih kurir untuk produk fisik.",
       details: [
-        "Isi nama lengkap dan nomor WhatsApp aktif",
-        "Masukkan alamat lengkap untuk pengiriman produk",
-        "Untuk pengajuan, pastikan semua data diri terisi dengan benar",
+        "Verifikasi nama dan nomor WhatsApp aktif",
+        "Pilih atau tambahkan alamat lengkap untuk pengiriman produk",
+        "Pilih layanan logistik (JNE, SiCepat, dll)",
         "Tambahkan catatan khusus untuk penjual jika diperlukan",
       ],
       icon: <User className="w-8 h-8" />,
       image: "/images/new/order-steps/step-3.png",
       tips: [
-        "Pastikan nomor WhatsApp aktif untuk konfirmasi cepat",
-        "Alamat pengiriman harus jelas dan lengkap",
-        "Data pengajuan Anda akan dijaga kerahasiaannya",
+        "Pastikan nomor WhatsApp aktif untuk konfirmasi kurir",
+        "Alamat harus jelas (patokan, RT/RW, Kelurahan)",
       ],
     },
     {
       id: 4,
-      title: "Konfirmasi Pembayaran",
+      title: "Selesaikan Pembayaran",
       description:
-        "Lakukan pembayaran sesuai instruksi untuk menyelesaikan transaksi atau pengajuan.",
+        "Lakukan pembayaran sesuai metode yang Anda pilih untuk mengkonfirmasi pesanan.",
       details: [
-        "Pilih metode: Transfer Bank atau E-Wallet",
-        "Ikuti instruksi pembayaran yang tertera",
-        "Sistem kami akan memverifikasi pembayaran Anda",
-        "Konfirmasi pembayaran dikirim via WhatsApp/Email",
+        "Pilih metode: Transfer Bank, Virtual Account, atau E-Wallet",
+        "Ikuti instruksi pembayaran dan batas waktu yang tertera",
+        "Sistem akan memverifikasi pembayaran Anda secara otomatis",
+        "Konfirmasi pembayaran dikirim via Email",
       ],
       icon: <CreditCard className="w-8 h-8" />,
       image: "/images/new/order-steps/step-4.png",
       tips: [
-        "Transfer ke rekening koperasi yang tertera di invoice",
+        "Gunakan Virtual Account untuk verifikasi tercepat",
         "Simpan bukti pembayaran untuk berjaga-jaga",
-        "Konfirmasi biasanya memakan waktu beberapa menit",
       ],
     },
     {
       id: 5,
-      title: "Pesanan atau Pengajuan Diproses",
+      title: "Pesanan Diproses",
       description:
-        "Pesanan produk segera diproses oleh seller, dan pengajuan layanan akan diverifikasi oleh tim koperasi.",
+        "Produk elektronik segera diproses oleh penjual, dan pesanan PPOB dikirim secara instan.",
       details: [
-        "Pesanan produk akan diproses oleh seller UMKM dalam 1-2 hari kerja",
-        "Untuk pengajuan, tim kami akan segera menghubungi Anda",
-        "Update status akan dikirim via WhatsApp/Email",
-        "Estimasi pengiriman produk 2-5 hari kerja",
+        "Pesanan produk fisik diproses oleh seller dalam 1 hari kerja",
+        "Layanan PPOB (Pulsa/Data) terkirim dalam hitungan detik",
+        "Nomor resi pengiriman akan di-update penjual",
+        "Estimasi pengiriman produk 2-5 hari kerja (tergantung kurir)",
       ],
-      icon: <CheckCircle className="w-8 h-8" />,
+      icon: <Package className="w-8 h-8" />,
       image: "/images/new/order-steps/step-5.png",
       tips: [
-        "Simpan nomor pesanan untuk tracking",
-        "Cek update status di WhatsApp/Email",
-        "Hubungi customer service jika ada kendala",
+        "Cek status pesanan secara berkala di menu 'Pesanan Saya'",
+        "Hubungi penjual melalui chat jika ada keterlambatan proses",
       ],
     },
     {
       id: 6,
-      title: "Status Pesanan / Pengajuan",
+      title: "Terima & Beri Review",
       description:
-        "Pantau status pesanan produk atau konfirmasi pengajuan layanan Anda.",
+        "Setelah produk diterima dengan baik, konfirmasi pesanan selesai dan berikan ulasan Anda.",
       details: [
-        "Login ke akun Anda di aplikasi internal",
-        "Buka menu 'Pesanan Saya' untuk produk",
-        "Lihat status pengajuan layanan di menu 'Pinjaman' atau 'Layanan'",
-        "Berikan review dan nikmati manfaat SHU tahunan",
+        "Konfirmasi penerimaan produk di menu 'Pesanan Saya'",
+        "Beri rating dan ulasan terhadap produk dan pelayanan toko",
+        "Nikmati perangkat baru Anda!",
       ],
       icon: <Truck className="w-8 h-8" />,
       image: "/images/new/order-steps/step-6.png",
       tips: [
-        "Gunakan nomor resi untuk tracking pengiriman",
-        "Beri ulasan untuk produk yang Anda beli",
-        "Status akan update otomatis saat ada perubahan",
+        "Pastikan barang berfungsi sebelum konfirmasi selesai",
+        "Ulasan Anda sangat membantu pembeli lain",
       ],
     },
   ];
 
   const faqs: FAQ[] = [
     {
-      question: "Apakah saya harus menjadi anggota untuk membeli di marketplace?",
+      question: "Apakah saya harus punya akun untuk membeli di Indotoliz?",
       answer:
-        "Ya, marketplace kami adalah platform khusus untuk anggota. Dengan menjadi anggota, Anda tidak hanya bisa membeli, tetapi juga bisa mendapatkan Sisa Hasil Usaha (SHU) tahunan.",
+        "Ya, Anda harus membuat akun untuk bertransaksi. Akun memudahkan Anda menyimpan alamat, melacak pesanan, dan mendapatkan notifikasi promo.",
     },
     {
-      question: "Bagaimana cara mengajukan pinjaman?",
+      question: "Bagaimana cara tahu produk yang dijual asli?",
       answer:
-        "Anda bisa mengajukan pinjaman langsung melalui aplikasi internal atau website ini. Lengkapi data diri, unggah dokumen yang diperlukan, dan tim kami akan segera memprosesnya.",
+        "Kami bekerja sama dengan seller terverifikasi dan merek resmi. Kami mendorong pembeli untuk selalu memeriksa ulasan dan detail garansi sebelum membeli. Jika ada indikasi palsu, Anda dapat melaporkannya.",
     },
     {
       question: "Metode pembayaran apa saja yang tersedia?",
       answer:
-        "Saat ini kami menerima pembayaran melalui Transfer Bank dan E-Wallet. Semua transaksi akan diarahkan ke rekening resmi Koperasi Merah Putih.",
+        "Kami menerima pembayaran melalui Transfer Bank (BCA, Mandiri, dll.), Virtual Account, dan E-Wallet (GoPay, OVO, Dana).",
     },
     {
-      question: "Berapa lama proses persetujuan pinjaman?",
+      question: "Berapa lama waktu yang dibutuhkan untuk pengiriman?",
       answer:
-        "Proses persetujuan pinjaman bervariasi tergantung kelengkapan dokumen dan besarnya pinjaman. Namun, tim kami akan berusaha memprosesnya secepat mungkin, biasanya dalam 1-3 hari kerja.",
+        "Waktu pengiriman bervariasi tergantung lokasi dan kurir yang dipilih, umumnya 2-5 hari kerja setelah penjual menyerahkan barang ke kurir.",
     },
     {
-      question: "Bagaimana jika ada kendala atau pertanyaan?",
+      question: "Bagaimana jika ada kendala atau produk yang rusak?",
       answer:
-        "Anda bisa menghubungi tim Customer Service kami melalui WhatsApp atau email yang tertera di halaman ini. Kami siap membantu Anda.",
+        "Anda bisa mengajukan komplain atau retur melalui pusat resolusi pesanan di akun Anda, atau hubungi Customer Service kami untuk bantuan lebih lanjut.",
     },
     {
-      question: "Apa keuntungan menjadi seller di marketplace ini?",
+      question: "Apakah saya bisa menjadi seller di Indotoliz Berniaga?",
       answer:
-        "Sebagai seller anggota, Anda akan mendapatkan jangkauan pasar yang luas, dukungan dari komunitas, dan tentunya Sisa Hasil Usaha (SHU) dari transaksi penjualan Anda.",
+        "Tentu! Kami menyambut seller yang menjual produk elektronik, gadget, atau aksesori resmi. Anda bisa mendaftar melalui menu 'Jual di Indotoliz' di halaman profil.",
     },
   ];
 
@@ -216,7 +207,12 @@ export default function HowToOrderPage() {
     {
       name: "Transfer Bank",
       icon: "🏦",
-      description: "Ke Rekening Koperasi",
+      description: "BCA, Mandiri, BNI, BRI",
+    },
+    {
+      name: "Virtual Account",
+      icon: "💳",
+      description: "Verifikasi Otomatis",
     },
     {
       name: "E-Wallet",
@@ -224,32 +220,30 @@ export default function HowToOrderPage() {
       description: "GoPay, OVO, DANA",
     },
     {
-      name: "Virtual Account",
-      icon: "💳",
-      description: "VA Bank Anggota",
-    },
-    {
-      name: "Giro & Cek",
-      icon: "📄",
-      description: "Layanan Khusus Anggota",
+      name: "COD",
+      icon: "📦",
+      description: "Bayar di Tempat (Area Terpilih)",
     },
   ];
 
   const benefits = [
     {
-      icon: <Shield className="w-6 h-6" style={{ color: THEME.primary }} />,
-      title: "Keamanan Terjamin",
-      description: "Transaksi dan data dilindungi sistem Koperasi",
+      icon: <ShieldCheck className="w-6 h-6" />,
+      title: "Terjamin Aman",
+      description: "Proteksi Pembeli Penuh",
+      color: PRIMARY_COLOR
     },
     {
-      icon: <HeadphonesIcon className="w-6 h-6" style={{ color: THEME.primary }} />,
-      title: "Tim Solid",
-      description: "Tim support siap membantu setiap hari kerja",
+      icon: <HeadphonesIcon className="w-6 h-6" />,
+      title: "Dukungan Cepat",
+      description: "Tim Support Fast Response",
+      color: ACCENT_COLOR
     },
     {
-      icon: <Landmark className="w-6 h-6" style={{ color: THEME.primary }} />,
-      title: "Proses Cepat",
-      description: "Pengajuan dan konfirmasi cepat",
+      icon: <Truck className="w-6 h-6" />,
+      title: "Logistik Luas",
+      description: "Kurir Nasional Terintegrasi",
+      color: PRIMARY_COLOR
     },
   ];
 
@@ -257,17 +251,17 @@ export default function HowToOrderPage() {
     <div
       className="min-h-screen"
       style={{
-        background: `linear-gradient(180deg, #FFFFFF 0%, ${THEME.primary}1A 100%)`,
+        background: `linear-gradient(180deg, #FFFFFF 0%, ${PRIMARY_COLOR}1A 100%)`,
       }}
     >
-      {/* ============== HERO (Koperasi theme) ============== */}
+      {/* ============== HERO (Marketplace theme) ============== */}
       <section className="relative pt-24 pb-12 px-6 lg:px-12 overflow-hidden bg-white">
         {/* bubbles blend */}
         <div className="pointer-events-none absolute inset-0">
           <div
             className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full"
             style={{
-              background: "#6B6B6B",
+              background: PRIMARY_COLOR, // Biru
               filter: "blur(80px)",
               opacity: 0.15,
             }}
@@ -275,17 +269,9 @@ export default function HowToOrderPage() {
           <div
             className="absolute -top-10 right-[-10%] w-[28rem] h-[28rem] rounded-full"
             style={{
-              background: "#E53935",
+              background: ACCENT_COLOR, // Jingga
               filter: "blur(100px)",
               opacity: 0.12,
-            }}
-          />
-          <div
-            className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[36rem] h-[36rem] rounded-full"
-            style={{
-              background: "#6B6B6B",
-              filter: "blur(80px)",
-              opacity: 0.1,
             }}
           />
         </div>
@@ -294,121 +280,114 @@ export default function HowToOrderPage() {
           {/* Badge */}
           <div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
-            style={{ backgroundColor: "#E53935", color: "#FFFFFF" }}
+            style={{ backgroundColor: ACCENT_COLOR, color: "#FFFFFF" }}
           >
-            <Sparkles className="w-4 h-4 text-white" />
-            <span className="text-sm font-medium">Panduan Layanan</span>
+            <Zap className="w-4 h-4 text-white" />
+            <span className="text-sm font-medium">Panduan Belanja</span>
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl lg:text-6xl font-bold text-[#000000] mb-6">
-            Cara Menggunakan
-            <span className="block text-[#6B6B6B]">Layanan di</span>
-            <span className="block text-[#E53935]">Koperasi Merah Putih</span>
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6" style={{ color: TEXT_COLOR }}>
+            Cara Mudah Bertransaksi
+            <span className="block" style={{ color: PRIMARY_COLOR }}>di Indotoliz Berniaga</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl text-[#6B6B6B] max-w-3xl mx-auto mb-8">
-            Ikuti panduan mudah untuk bertransaksi di marketplace atau
-            mengajukan layanan simpan pinjam. Proses yang simple, aman, dan
-            menguntungkan!
+          <p className="text-xl max-w-3xl mx-auto mb-8" style={{ color: SECONDARY_TEXT }}>
+            Ikuti panduan langkah demi langkah untuk membeli produk elektronik
+            favorit Anda dan bertransaksi PPOB dengan aman dan cepat.
           </p>
 
-          {/* Quick Stats */}
+          {/* Quick Stats / Benefits */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {benefits.map((benefit, i) => (
               <div
                 key={i}
-                className="bg-white rounded-2xl p-4 shadow-sm border border-[#6B6B6B]/20"
+                className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200"
               >
-                <div className="flex justify-center mb-3 text-[#E53935]">
+                <div className="flex justify-center mb-3" style={{ color: benefit.color }}>
                   {benefit.icon}
                 </div>
-                <h3 className="font-semibold text-[#000000] text-sm mb-1">
+                <h3 className="font-semibold text-sm mb-1" style={{ color: TEXT_COLOR }}>
                   {benefit.title}
                 </h3>
-                <p className="text-xs text-[#6B6B6B]">{benefit.description}</p>
+                <p className="text-xs" style={{ color: SECONDARY_TEXT }}>{benefit.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ============== STEP NAV + CONTENT (Koperasi theme) ============== */}
+      {/* ============== STEP NAV + CONTENT ============== */}
       <section className="px-6 lg:px-12 mb-16 bg-white pt-10">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-[#000000] mb-4">
-              Langkah-langkah <span className="text-[#E53935]">Bertransaksi</span>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+              6 Langkah <span style={{ color: ACCENT_COLOR }}>Cepat & Aman</span>
             </h2>
-            <p className="text-[#6B6B6B] max-w-2xl mx-auto">
-              Proses yang simple dan user-friendly, dirancang untuk kemudahan
-              anggota.
+            <p className="max-w-2xl mx-auto" style={{ color: SECONDARY_TEXT }}>
+              Proses transaksi yang terintegrasi, dirancang untuk keamanan dan kenyamanan pembeli.
             </p>
           </div>
 
           {/* Step Navigation */}
-          <div className="flex justify-center mb-12">
             <div className="flex justify-center mb-12">
-              <div
-                className="bg-white rounded-3xl p-6 shadow-lg w-full"
-                style={{ border: `1px solid #6B6B6B33` }}
-              >
-                <div className="flex flex-wrap gap-3">
-                  {orderSteps.map((step, index) => (
-                    <div key={step.id} className="flex items-center">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={() => setActiveStep(step.id)}
-                            className="flex items-center gap-3 w-full sm:w-auto px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-sm sm:text-base"
-                            style={
-                              activeStep === step.id
-                                ? {
-                                    backgroundColor: "#E53935",
-                                    color: "#fff",
-                                    boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
-                                  }
-                                : {
-                                    backgroundColor: "#F3F4F6",
-                                    color: "#6B6B6B",
-                                  }
-                            }
-                          >
-                            <div
-                              className="p-2 rounded-xl flex items-center justify-center"
-                              style={{
-                                backgroundColor:
-                                  activeStep === step.id ? "#FFFFFF33" : "#fff",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  color:
-                                    activeStep === step.id ? "#fff" : "#E53935",
-                                }}
-                              >
-                                {step.icon}
-                              </div>
-                            </div>
-                            <span className="sm:hidden">{step.id}</span>
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {index + 1}. {step.title}
-                        </TooltipContent>
-                      </Tooltip>
-
-                      {/* Arrow only on large screens */}
-                      {index < orderSteps.length - 1 && (
-                        <ArrowRight className="w-5 h-5 text-[#6B6B6B]/30 mx-2" />
-                      )}
+            <div
+              className="bg-white rounded-3xl p-6 shadow-lg w-full"
+              style={{ border: `1px solid ${PRIMARY_COLOR}33` }}
+            >
+              <div className="flex flex-wrap gap-3 justify-center items-center">
+              {orderSteps.map((step, index) => (
+                <div key={step.id} className="flex items-center">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                  <button
+                    onClick={() => setActiveStep(step.id)}
+                    className="flex flex-col items-center gap-2 w-full sm:w-auto px-4 py-3 rounded-2xl font-medium transition-all duration-300 text-sm sm:text-base"
+                    style={
+                    activeStep === step.id
+                      ? {
+                        backgroundColor: PRIMARY_COLOR,
+                        color: "#fff",
+                        boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                      }
+                      : {
+                        backgroundColor: "#F3F4F6",
+                        color: SECONDARY_TEXT,
+                      }
+                    }
+                  >
+                    <div
+                    className="p-2 rounded-xl flex items-center justify-center mx-auto"
+                    style={{
+                      backgroundColor:
+                      activeStep === step.id ? "#FFFFFF33" : "#fff",
+                    }}
+                    >
+                    <div
+                      style={{
+                      color:
+                        activeStep === step.id ? "#fff" : ACCENT_COLOR,
+                      }}
+                    >
+                      {step.icon}
                     </div>
-                  ))}
+                    </div>
+                    <span className="sm:hidden">{step.id}</span>
+                  </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                  {index + 1}. {step.title}
+                  </TooltipContent>
+                </Tooltip>
+                {index < orderSteps.length - 1 && (
+                  <ArrowRight className="w-5 h-5 text-[#0077B6]/30 mx-2" />
+                )}
                 </div>
+              ))}
               </div>
             </div>
-          </div>
+            </div>
 
           {/* Active Step Content */}
           {orderSteps.map((step) => (
@@ -428,51 +407,52 @@ export default function HowToOrderPage() {
                       <div className="flex items-center gap-4 mb-6">
                         <div
                           className="w-16 h-16 rounded-2xl flex items-center justify-center text-white"
-                          style={{ backgroundColor: "#E53935" }}
+                          style={{ backgroundColor: PRIMARY_COLOR }} // Biru Stabil
                         >
                           {step.icon}
                         </div>
                         <div>
-                          <div className="font-semibold text-sm text-[#E53935]">
+                          <div className="font-semibold text-sm" style={{ color: ACCENT_COLOR }}>
                             Langkah {step.id}
                           </div>
-                          <h3 className="text-2xl font-bold text-[#000000]">
+                          <h3 className="text-2xl font-bold" style={{ color: TEXT_COLOR }}>
                             {step.title}
                           </h3>
                         </div>
                       </div>
 
-                      <p className="text-[#6B6B6B] text-lg mb-6">
+                      <p className="text-lg mb-6" style={{ color: SECONDARY_TEXT }}>
                         {step.description}
                       </p>
 
                       <div className="space-y-4 mb-8">
-                        <h4 className="font-semibold text-[#000000]">
+                        <h4 className="font-semibold" style={{ color: TEXT_COLOR }}>
                           Detail Langkah:
                         </h4>
                         {step.details.map((detail, index) => (
                           <div key={index} className="flex items-start gap-3">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-[#E53935]/10">
-                              <div className="w-2 h-2 rounded-full bg-[#E53935]" />
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ACCENT_COLOR }} />
                             </div>
-                            <span className="text-[#6B6B6B]">{detail}</span>
+                            <span style={{ color: SECONDARY_TEXT }}>{detail}</span>
                           </div>
                         ))}
                       </div>
 
                       {step.tips && (
-                        <div className="rounded-2xl p-6 bg-[#6B6B6B]/5">
-                          <h4 className="font-semibold text-[#000000] mb-3 flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-[#E53935]" />
+                        <div className="rounded-2xl p-6" style={{ backgroundColor: `${PRIMARY_COLOR}08` }}>
+                          <h4 className="font-semibold mb-3 flex items-center gap-2" style={{ color: PRIMARY_COLOR }}>
+                            <AlertCircle className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                             Tips Berguna:
                           </h4>
                           <ul className="space-y-2">
                             {step.tips.map((tip, index) => (
                               <li
                                 key={index}
-                                className="text-sm flex items-start gap-2 text-[#6B6B6B]"
+                                className="text-sm flex items-start gap-2"
+                                style={{ color: SECONDARY_TEXT }}
                               >
-                                <Star className="w-4 h-4 flex-shrink-0 mt-0.5 text-[#E53935]" />
+                                <Star className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: ACCENT_COLOR }} />
                                 {tip}
                               </li>
                             ))}
@@ -482,7 +462,7 @@ export default function HowToOrderPage() {
                     </div>
 
                     {/* Visual */}
-                    <div className="relative flex items-center justify-center p-8 bg-gradient-to-br from-[#FFFFFF] via-[#F9F9F9] to-[#FFEAEA]">
+                    <div className="relative flex items-center justify-center p-8 bg-gradient-to-br from-[#FFFFFF] via-[#F9F9F9]">
                       <div className="relative w-full max-w-md">
                         <Image
                           src={step.image}
@@ -491,8 +471,8 @@ export default function HowToOrderPage() {
                           height={300}
                           className="w-full h-auto rounded-2xl shadow-lg"
                         />
-                        <div className="absolute -top-4 -right-4 w-8 h-8 rounded-full opacity-50 bg-[#E53935]/30" />
-                        <div className="absolute -bottom-4 -left-4 w-6 h-6 rounded-full opacity-50 bg-[#6B6B6B]/30" />
+                        <div className="absolute -top-4 -right-4 w-8 h-8 rounded-full opacity-50" style={{ backgroundColor: `${ACCENT_COLOR}30` }} />
+                        <div className="absolute -bottom-4 -left-4 w-6 h-6 rounded-full opacity-50" style={{ backgroundColor: `${PRIMARY_COLOR}30` }} />
                       </div>
                     </div>
                   </div>
@@ -506,7 +486,8 @@ export default function HowToOrderPage() {
             <button
               onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
               disabled={activeStep === 1}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-[#6B6B6B] text-[#6B6B6B] hover:bg-[#6B6B6B] hover:text-white"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border hover:bg-[#0077B6] hover:text-white"
+              style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
             >
               <ArrowLeft className="w-5 h-5" />
               Langkah Sebelumnya
@@ -515,7 +496,8 @@ export default function HowToOrderPage() {
             <button
               onClick={() => setActiveStep(Math.min(6, activeStep + 1))}
               disabled={activeStep === 6}
-              className="flex items-center gap-2 px-6 py-3 text-white rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-[#E53935] hover:bg-[#c62828]"
+              className="flex items-center gap-2 px-6 py-3 text-white rounded-2xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+              style={{ backgroundColor: ACCENT_COLOR }}
             >
               Langkah Selanjutnya
               <ArrowRight className="w-5 h-5" />
@@ -530,12 +512,12 @@ export default function HowToOrderPage() {
           <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-lg">
             {/* Title */}
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Metode <span style={{ color: THEME.primary }}>Pembayaran</span>
+              <h2 className="text-3xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+                Metode <span style={{ color: ACCENT_COLOR }}>Pembayaran</span>
               </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
+              <p className="max-w-2xl mx-auto" style={{ color: SECONDARY_TEXT }}>
                 Kami menyediakan berbagai metode pembayaran yang aman dan
-                terpercaya
+                terpercaya untuk semua transaksi Anda.
               </p>
             </div>
 
@@ -549,14 +531,14 @@ export default function HowToOrderPage() {
                 >
                   <div
                     className="text-4xl mb-4"
-                    style={{ color: THEME.primary }}
+                    style={{ color: PRIMARY_COLOR }}
                   >
                     {method.icon}
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">
+                  <h3 className="font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                     {method.name}
                   </h3>
-                  <p className="text-sm text-gray-600">{method.description}</p>
+                  <p className="text-sm" style={{ color: SECONDARY_TEXT }}>{method.description}</p>
                 </div>
               ))}
             </div>
@@ -564,17 +546,16 @@ export default function HowToOrderPage() {
             {/* Security Info */}
             <div
               className="rounded-2xl p-6 text-center"
-              style={{ backgroundColor: `${THEME.primary}0D` }} // merah lembut transparan
+              style={{ backgroundColor: `${PRIMARY_COLOR}10` }} // Biru lembut transparan
             >
               <div className="flex justify-center mb-4">
-                <Shield className="w-8 h-8" style={{ color: THEME.primary }} />
+                <ShieldCheck className="w-8 h-8" style={{ color: PRIMARY_COLOR }} />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
+              <h3 className="font-semibold mb-2" style={{ color: TEXT_COLOR }}>
                 Keamanan Terjamin
               </h3>
-              <p className="text-gray-600">
-                Semua transaksi dilindungi sistem keamanan Koperasi dan diawasi
-                tim internal
+              <p style={{ color: SECONDARY_TEXT }}>
+                Semua transaksi dilindungi sistem keamanan digital terenkripsi.
               </p>
             </div>
           </div>
@@ -587,16 +568,14 @@ export default function HowToOrderPage() {
           <div
             className="rounded-3xl p-8 lg:p-12 text-gray-900"
             style={{
-              background: `linear-gradient(90deg, ${THEME.primary} 0%, ${THEME.primary}CC 100%)`,
+              background: PRIMARY_COLOR, // Biru Stabil
               color: "#fff",
             }}
           >
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-4">Butuh Bantuan?</h2>
               <p className="text-white/90 max-w-2xl mx-auto">
-                Tim Customer Services akan siap membantu fast response hari
-                Senin - Jumat jam 08.00 - 17.00 WIB. Jangan ragu untuk
-                menghubungi kami!
+                Tim Customer Services kami siap membantu Anda terkait pesanan, pengiriman, dan produk.
               </p>
             </div>
 
@@ -606,9 +585,9 @@ export default function HowToOrderPage() {
                   <MessageCircle className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">WhatsApp</h3>
-                <p className="text-white/90">+62 817 694 2128</p>
+                <p className="text-white/90">+62 812 345 6789</p>
                 <p className="text-sm text-white/70">
-                  Respon cepat dalam 5 menit
+                  Respon cepat fast response
                 </p>
               </div>
 
@@ -617,17 +596,17 @@ export default function HowToOrderPage() {
                   <Mail className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">Email</h3>
-                <p className="text-white/90">support@koperasimerahputih.co.id</p>
-                <p className="text-sm text-white/70">Respon dalam 2 jam</p>
+                <p className="text-white/90">support@indotoliz.co.id</p>
+                <p className="text-sm text-white/70">Respon dalam 2 jam kerja</p>
               </div>
 
               <div className="text-center">
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <HeadphonesIcon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="font-semibold mb-2">Customer Support</h3>
-                <p className="text-white/90">24/7 Online</p>
-                <p className="text-sm text-white/70">Live chat tersedia</p>
+                <h3 className="font-semibold mb-2">Live Chat</h3>
+                <p className="text-white/90">24/7 Virtual Support</p>
+                <p className="text-sm text-white/70">Asisten chatbot tersedia</p>
               </div>
             </div>
           </div>
@@ -638,29 +617,29 @@ export default function HowToOrderPage() {
       <section className="px-6 lg:px-12 mb-16">
         <div className="container mx-auto">
           <div className="bg-white rounded-3xl p-8 lg:p-12 text-center shadow-lg">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Yuk Mulai Bertransaksi Sekarang
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+              Siap Jelajahi Dunia Teknologi?
             </h2>
-            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-              Jelajahi berbagai produk UMKM dari anggota kami atau ajukan
-              layanan simpan pinjam untuk kebutuhan Anda.
+            <p className="mb-8 max-w-2xl mx-auto" style={{ color: SECONDARY_TEXT }}>
+              Mulai belanja produk elektronik orisinal dan temukan berbagai solusi digital sekarang!
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={goToMarketplacePage}
-                className="text-white px-8 py-4 rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2"
-                style={{ backgroundColor: THEME.primary }}
+                className="text-white px-8 py-4 rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2 hover:opacity-90"
+                style={{ backgroundColor: ACCENT_COLOR }} // CTA utama: Jingga Energi
               >
                 <Store className="w-5 h-5" />
                 Masuk ke Marketplace
               </button>
               <button
-                className="px-8 py-4 rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2 border"
-                style={{ color: THEME.primary, borderColor: THEME.primary }}
+                onClick={() => router.push("/ppob")}
+                className="px-8 py-4 rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2 border hover:bg-[#0077B6] hover:text-white"
+                style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }} // CTA sekunder: Biru Stabil
               >
-                <Landmark className="w-5 h-5" />
-                Ajukan Pinjaman
+                <Smartphone className="w-5 h-5" />
+                Layanan Digital PPOB
               </button>
             </div>
           </div>
@@ -671,12 +650,12 @@ export default function HowToOrderPage() {
       <section className="px-6 lg:px-12 pb-16">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-              Pertanyaan <span style={{ color: THEME.primary }}>Umum</span>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+              Pertanyaan <span style={{ color: ACCENT_COLOR }}>Umum</span>
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="max-w-2xl mx-auto" style={{ color: SECONDARY_TEXT }}>
               Temukan jawaban untuk pertanyaan yang sering ditanyakan tentang
-              proses bertransaksi dan pengajuan layanan.
+              proses transaksi di platform kami.
             </p>
           </div>
 
@@ -693,24 +672,24 @@ export default function HowToOrderPage() {
                     }
                     className="w-full px-6 py-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
-                    <h3 className="font-semibold text-gray-900 pr-4">
+                    <h3 className="font-semibold pr-4" style={{ color: TEXT_COLOR }}>
                       {faq.question}
                     </h3>
                     {expandedFAQ === index ? (
                       <ChevronUp
                         className="w-5 h-5"
-                        style={{ color: THEME.primary }}
+                        style={{ color: PRIMARY_COLOR }}
                       />
                     ) : (
                       <ChevronDown
                         className="w-5 h-5"
-                        style={{ color: THEME.primary }}
+                        style={{ color: PRIMARY_COLOR }}
                       />
                     )}
                   </button>
                   {expandedFAQ === index && (
                     <div className="px-6 pb-6">
-                      <p className="text-gray-600 leading-relaxed">
+                      <p className="leading-relaxed" style={{ color: SECONDARY_TEXT }}>
                         {faq.answer}
                       </p>
                     </div>

@@ -8,8 +8,8 @@ import {
   User,
   ArrowLeft,
   ArrowRight,
-  Sparkles,
-  BookOpen,
+  Zap, // Mengganti Sparkles
+  Monitor, // Mengganti BookOpen
   Filter,
   Search,
   Heart,
@@ -48,6 +48,12 @@ const estimateReadTime = (content: string) => {
 };
 
 export default function NewsPage() {
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+
   // ===== list state
   const [selectedCategory, setSelectedCategory] = useState("Semua");
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,7 +82,7 @@ export default function NewsPage() {
     () => [
       {
         name: "Semua",
-        icon: <BookOpen className="w-4 h-4" />,
+        icon: <Monitor className="w-4 h-4" />,
         count: listResp?.total ?? listItems.length ?? 0,
       },
     ],
@@ -142,8 +148,8 @@ export default function NewsPage() {
 
     return (
       <div className="min-h-screen bg-white">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-[#6B6B6B] to-[#6B6B6B]/80 text-white pt-16">
+        {/* Header (Detail View) */}
+        <div className="pt-16" style={{ backgroundColor: PRIMARY_COLOR }}>
           <div className="container mx-auto px-6 lg:px-12 py-8">
             <button
               onClick={closeArticle}
@@ -156,18 +162,18 @@ export default function NewsPage() {
             <div className="max-w-4xl">
               <div className="flex items-center gap-4 mb-4">
                 <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-                  Artikel
+                  Industri Teknologi
                 </span>
               </div>
 
-              <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+              <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight text-white">
                 {isDetailLoading ? "Memuat…" : title}
               </h1>
 
               <div className="flex flex-wrap items-center gap-6 text-white/90">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4" />
-                  <span>Koperasi Merah Putih</span>
+                  <span>Indotoliz Berniaga Tim</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
@@ -242,8 +248,8 @@ export default function NewsPage() {
                       onClick={() => detail && toggleLike(detail.id)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-2xl transition-colors ${
                         detail && likedArticles.includes(detail.id)
-                          ? "bg-red-50 text-red-600"
-                          : "bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600"
+                          ? "bg-[#FF6B35] text-white" // Jingga Energi untuk Like Aktif
+                          : "bg-gray-100 text-gray-700 hover:bg-[#FF6B35] hover:text-white"
                       }`}
                     >
                       <Heart
@@ -256,7 +262,7 @@ export default function NewsPage() {
                       <span>Suka</span>
                     </button>
 
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-2xl hover:bg-[#A3B18A]/10 hover:text-[#A3B18A] transition-colors">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-2xl hover:bg-[#0077B6]/10 hover:text-[#0077B6] transition-colors">
                       <MessageCircle className="w-5 h-5" />
                       Diskusikan
                     </button>
@@ -273,18 +279,20 @@ export default function NewsPage() {
                       Tentang Penulis
                     </h4>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 bg-[#6B6B6B] rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: PRIMARY_COLOR }}>
                         <User className="w-6 h-6 text-white" />
                       </div>
                       <div>
                         <div className="font-semibold text-gray-900">
-                          Koperasi Merah Putih Team
+                          Indotoliz Berniaga Tim
                         </div>
-                        <div className="text-sm text-gray-600">Penulis</div>
+                        <div className="text-sm text-gray-600">
+                          Spesialis E-commerce
+                        </div>
                       </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                      Berbagi inspirasi & info terbaru Koperasi.
+                      Berbagi berita, tren, dan panduan terbaru di industri teknologi dan e-commerce.
                     </p>
                   </div>
 
@@ -304,7 +312,7 @@ export default function NewsPage() {
                               onClick={() => openArticle(a)}
                               className="cursor-pointer group"
                             >
-                              <h5 className="font-medium text-gray-900 group-hover:text-[#E53935] transition-colors text-sm leading-snug">
+                              <h5 className="font-medium text-gray-900 group-hover:text-[#FF6B35] transition-colors text-sm leading-snug">
                                 {a.title}
                               </h5>
                               <p className="text-xs text-gray-500 mt-1">
@@ -324,7 +332,8 @@ export default function NewsPage() {
               <div className="mt-8">
                 <button
                   onClick={closeArticle}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border border-[#A3B18A] text-[#A3B18A] hover:bg-[#A3B18A]/10"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border transition-colors"
+                  style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR }}
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Kembali
@@ -339,28 +348,27 @@ export default function NewsPage() {
 
   // ===== Main News List View
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-[#DFF19D]/10">
+    <div className="min-h-screen bg-gradient-to-br from-white to-[#0077B610]">
       {/* Header Section */}
       <section className="pt-24 pb-12 px-6 lg:px-12">
         <div className="container mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-[#E53935]/10 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-[#E53935]" />
-            <span className="text-sm font-medium text-[#E53935]">
-              Berita & Artikel
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+            <Zap className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+            <span className="text-sm font-medium" style={{ color: PRIMARY_COLOR }}>
+              Berita E-commerce & Teknologi
             </span>
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl lg:text-6xl font-bold text-[#6B6B6B] mb-6">
-            Informasi Terkini{" "}
-            <span className="block text-[#E53935]">Koperasi Merah Putih</span>
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6" style={{ color: TEXT_COLOR }}>
+            Wawasan Bisnis{" "}
+            <span className="block" style={{ color: PRIMARY_COLOR }}>Industri Digital</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Dapatkan berita terbaru, pengumuman penting, dan artikel inspiratif
-            tentang perkembangan koperasi dan ekonomi anggota.
+            Dapatkan berita terbaru, tren teknologi, dan panduan bisnis untuk sukses di dunia *e-commerce*.
           </p>
         </div>
       </section>
@@ -375,20 +383,20 @@ export default function NewsPage() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Cari artikel, berita, pengumuman..."
+                  placeholder="Cari tren, panduan, ulasan gadget..."
                   value={searchTerm}
                   onChange={(e) => {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
                   className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-2xl 
-                       focus:outline-none focus:ring-2 focus:ring-[#E53935] focus:border-transparent"
+                       focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                 />
               </div>
 
               {/* Categories */}
               <div className="flex items-center gap-3 overflow-x-auto">
-                <Filter className="w-5 h-5 text-[#6B6B6B] flex-shrink-0" />
+                <Filter className="w-5 h-5 flex-shrink-0" style={{ color: SECONDARY_TEXT }} />
                 {categories.map((category) => (
                   <button
                     key={category.name}
@@ -398,9 +406,13 @@ export default function NewsPage() {
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-medium whitespace-nowrap transition-all duration-300 ${
                       selectedCategory === category.name
-                        ? "bg-[#E53935] text-white shadow-md"
-                        : "bg-gray-100 text-gray-700 hover:bg-[#6B6B6B] hover:text-white"
+                        ? "text-white shadow-md"
+                        : "bg-gray-100 hover:text-white"
                     }`}
+                    style={{
+                      backgroundColor: selectedCategory === category.name ? ACCENT_COLOR : 'rgb(243 244 246)',
+                      color: selectedCategory === category.name ? 'white' : SECONDARY_TEXT,
+                    }}
                   >
                     {category.icon}
                     {category.name}
@@ -410,6 +422,7 @@ export default function NewsPage() {
                           ? "bg-white/20"
                           : "bg-gray-200"
                       }`}
+                      style={{ color: selectedCategory !== category.name ? TEXT_COLOR : 'white' }}
                     >
                       {category.count}
                     </span>
@@ -439,21 +452,21 @@ export default function NewsPage() {
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute top-4 left-4">
-                    <span className="bg-[#E53935] text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md">
-                      Artikel Unggulan
+                    <span className="text-white px-4 py-2 rounded-full text-sm font-semibold shadow-md" style={{ backgroundColor: PRIMARY_COLOR }}>
+                      Tren Teknologi
                     </span>
                   </div>
                 </div>
 
                 {/* Konten Artikel */}
                 <div className="p-8 lg:p-12 flex flex-col justify-center">
-                  <span className="text-[#6B6B6B] font-semibold mb-3 uppercase tracking-wide">
-                    Berita Koperasi
+                  <span className="font-semibold mb-3 uppercase tracking-wide" style={{ color: PRIMARY_COLOR }}>
+                    Wawasan E-commerce
                   </span>
-                  <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 group-hover:text-[#E53935] transition-colors leading-snug">
+                  <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4 group-hover:text-[#FF6B35] transition-colors leading-snug">
                     {featured.title}
                   </h2>
-                  <p className="text-gray-600 text-lg mb-6 leading-relaxed">
+                  <p className="text-lg mb-6 leading-relaxed" style={{ color: SECONDARY_TEXT }}>
                     {makeExcerpt(featured.content, 220)}
                   </p>
 
@@ -461,7 +474,7 @@ export default function NewsPage() {
                   <div className="flex items-center gap-6 text-sm text-gray-500 mb-6">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
-                      <span>Koperasi Merah Putih</span>
+                      <span>Indotoliz Berniaga Tim</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
@@ -478,7 +491,7 @@ export default function NewsPage() {
                   </div>
 
                   {/* CTA Button */}
-                  <button className="self-start bg-[#E53935] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#c62828] transition-colors flex items-center gap-2">
+                  <button className="self-start text-white px-6 py-3 rounded-2xl font-semibold hover:opacity-90 transition-colors flex items-center gap-2" style={{ backgroundColor: ACCENT_COLOR }}>
                     Baca Selengkapnya
                     <ArrowRight className="w-5 h-5" />
                   </button>
@@ -514,12 +527,12 @@ export default function NewsPage() {
           <div className="container mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-2xl font-bold" style={{ color: TEXT_COLOR }}>
                 {selectedCategory === "Semua"
                   ? "Semua Berita & Artikel"
                   : selectedCategory}
               </h3>
-              <p className="text-gray-600">
+              <p style={{ color: SECONDARY_TEXT }}>
                 {filteredArticles.length} artikel ditemukan
               </p>
             </div>
@@ -541,18 +554,18 @@ export default function NewsPage() {
                       className="object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-4 left-4">
-                      <span className="bg-white/90 backdrop-blur-sm text-[#E53935] px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
-                        Artikel
+                      <span className="bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold shadow-sm" style={{ color: PRIMARY_COLOR }}>
+                        E-commerce
                       </span>
                     </div>
                   </div>
 
                   {/* Konten */}
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#E53935] transition-colors line-clamp-2">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-[#FF6B35] transition-colors line-clamp-2">
                       {article.title}
                     </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">
+                    <p className="mb-4 line-clamp-3" style={{ color: SECONDARY_TEXT }}>
                       {makeExcerpt(article.content)}
                     </p>
 
@@ -560,7 +573,7 @@ export default function NewsPage() {
                     <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
-                        <span>Koperasi Merah Putih</span>
+                        <span>Indotoliz Tim</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
@@ -584,8 +597,8 @@ export default function NewsPage() {
                           }}
                           className={`flex items-center gap-1 px-3 py-1 rounded-xl transition-colors ${
                             likedArticles.includes(article.id)
-                              ? "bg-red-50 text-red-600"
-                              : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-600"
+                              ? "bg-[#FF6B35] text-white"
+                              : "bg-gray-100 text-gray-600 hover:bg-[#FF6B35] hover:text-white"
                           }`}
                         >
                           <Heart
@@ -613,13 +626,13 @@ export default function NewsPage() {
             {/* Empty State */}
             {displayedArticles.length === 0 && (
               <div className="text-center py-20">
-                <div className="w-24 h-24 bg-[#6B6B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="w-12 h-12 text-[#6B6B6B]" />
+                <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${PRIMARY_COLOR}10` }}>
+                  <Monitor className="w-12 h-12" style={{ color: PRIMARY_COLOR }} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                  Artikel tidak ditemukan
+                <h3 className="text-2xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+                  Wawasan Digital Tidak Ditemukan
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="mb-6" style={{ color: SECONDARY_TEXT }}>
                   Coba ubah filter atau kata kunci pencarian Anda.
                 </p>
                 <button
@@ -628,7 +641,8 @@ export default function NewsPage() {
                     setSelectedCategory("Semua");
                     setCurrentPage(1);
                   }}
-                  className="bg-[#E53935] text-white px-6 py-3 rounded-2xl font-semibold hover:bg-[#c62828] transition-colors"
+                  className="text-white px-6 py-3 rounded-2xl font-semibold hover:opacity-90 transition-colors"
+                  style={{ backgroundColor: PRIMARY_COLOR }}
                 >
                   Reset Filter
                 </button>
@@ -647,9 +661,9 @@ export default function NewsPage() {
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((prev) => prev - 1)}
-                className="px-6 py-3 border border-[#A3B18A] text-[#A3B18A] rounded-full font-medium
-                     hover:bg-[#A3B18A] hover:text-white shadow-sm transition-all
+                className="px-6 py-3 rounded-full font-medium shadow-sm transition-all
                      disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '1px solid' }}
               >
                 Previous
               </button>
@@ -664,9 +678,14 @@ export default function NewsPage() {
                       className={`w-12 h-12 rounded-full font-semibold transition-all shadow-sm
                 ${
                   currentPage === page
-                    ? "bg-[#A3B18A] text-white shadow-md scale-105"
-                    : "border border-[#A3B18A] text-[#A3B18A] hover:bg-[#A3B18A] hover:text-white"
+                    ? "text-white shadow-md scale-105"
+                    : "border hover:text-white"
                 }`}
+                    style={{
+                      backgroundColor: currentPage === page ? ACCENT_COLOR : 'transparent',
+                      borderColor: PRIMARY_COLOR,
+                      color: currentPage === page ? 'white' : PRIMARY_COLOR,
+                    }}
                     >
                       {page}
                     </button>
@@ -678,9 +697,9 @@ export default function NewsPage() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((prev) => prev + 1)}
-                className="px-6 py-3 border border-[#A3B18A] text-[#A3B18A] rounded-full font-medium
-                     hover:bg-[#A3B18A] hover:text-white shadow-sm transition-all
+                className="px-6 py-3 rounded-full font-medium shadow-sm transition-all
                      disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none"
+                style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '1px solid' }}
               >
                 Next
               </button>
@@ -692,14 +711,13 @@ export default function NewsPage() {
       {/* Newsletter CTA */}
       <section className="px-6 lg:px-12 mb-16">
         <div className="container mx-auto">
-          <div className="bg-[#6B6B6B]/10 rounded-3xl p-10 lg:p-16 text-center shadow-sm">
+          <div className="rounded-3xl p-10 lg:p-16 text-center shadow-sm" style={{ backgroundColor: `${PRIMARY_COLOR}10` }}>
             {/* Heading */}
-            <h3 className="text-3xl lg:text-4xl font-bold mb-4 text-gray-900">
-              Jangan Lewatkan Update Terbaru
+            <h3 className="text-3xl lg:text-4xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+              Dapatkan Wawasan Digital Terbaru
             </h3>
             <p className="text-lg lg:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Dapatkan berita terbaru, pengumuman, dan artikel inspiratif
-              langsung di inbox Anda setiap minggu.
+              Langganan untuk mendapatkan berita, tren, dan panduan eksklusif dari dunia *e-commerce* dan teknologi.
             </p>
 
             {/* Input + Button */}
@@ -707,12 +725,13 @@ export default function NewsPage() {
               <input
                 type="email"
                 placeholder="Masukkan email Anda"
-                className="flex-1 px-6 py-4 rounded-full text-gray-900 border border-[#6B6B6B]/40
-                     focus:ring-2 focus:ring-[#6B6B6B] focus:border-[#6B6B6B] outline-none transition-all"
+                className="flex-1 px-6 py-4 rounded-full text-gray-900 border 
+                     focus:ring-2 focus:ring-[#0077B6] focus:border-transparent outline-none transition-all"
+                style={{ borderColor: `${PRIMARY_COLOR}40` }}
               />
               <button
-                className="bg-[#6B6B6B] text-white px-8 py-4 rounded-full font-semibold 
-                           hover:bg-[#6B6B6B]/90 transition-colors"
+                className="text-white px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-colors"
+                style={{ backgroundColor: ACCENT_COLOR }}
               >
                 Langganan
               </button>
@@ -721,7 +740,7 @@ export default function NewsPage() {
             {/* Small Note */}
             <p className="text-sm text-gray-500 mt-6">
               Dengan berlangganan, Anda setuju menerima email dari
-              Koperasi Merah Putih.
+              Indotoliz Berniaga.
             </p>
           </div>
         </div>

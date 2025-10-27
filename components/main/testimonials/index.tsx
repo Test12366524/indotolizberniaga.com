@@ -2,11 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Star, Sparkles, User, Store, Landmark } from "lucide-react";
+import { Star, Zap, User, Store, ShieldCheck, Truck, MessageCircle } from "lucide-react"; // Mengganti Landmark
 import Image from "next/image";
 
 export default function TestimonialsPage() {
   const router = useRouter();
+
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
 
   const goToRegisterPage = () => {
     router.push("/register");
@@ -16,38 +22,38 @@ export default function TestimonialsPage() {
     {
       id: 1,
       name: "Budi, 45",
-      role: "Anggota Koperasi",
+      role: "Pembeli Elektronik",
       image: "/avatars/1.jpeg",
       content:
-        "Proses pengajuan pinjaman di sini sangat mudah dan cepat. Bunga yang ditawarkan juga sangat adil. Sangat membantu saya untuk membiayai kebutuhan tak terduga.",
+        "Saya sering belanja komponen PC di sini. Produknya selalu original, harganya kompetitif, dan yang paling penting, pengirimannya aman dan terpercaya sampai tujuan.",
     },
     {
       id: 2,
       name: "Siti, 32",
-      role: "Anggota & Seller",
+      role: "Seller Gadget",
       image: "/avatars/2.jpeg",
       content:
-        "Sejak menjual produk di marketplace Koperasi Merah Putih, penjualan saya meningkat drastis. Ada banyak dukungan dan promosi yang membantu UMKM seperti saya.",
+        "Sejak menjual produk di Indotoliz Berniaga, jangkauan pasar saya meluas. Sistem pembayaran cepat dan dukungan *seller*-nya sangat membantu meningkatkan omzet toko saya.",
     },
     {
       id: 3,
       name: "Rudi, 55",
-      role: "Anggota Koperasi",
+      role: "Pembeli PPOB",
       image: "/avatars/3.jpeg",
       content:
-        "Saya merasa tenang menyimpan uang di sini. Layanan yang transparan dan digital membuat semuanya terasa mudah diakses, bahkan bagi saya yang sudah senior.",
+        "Platform ini sangat mudah digunakan, bahkan bagi saya yang kurang familiar dengan teknologi. Isi pulsa dan bayar tagihan digital jadi cepat dan tanpa kendala.",
     },
   ];
 
   return (
     <>
-      <section className="px-6 lg:px-12 py-20 bg-gradient-to-b from-white to-[#6B6B6B]/10">
+      <section className={`px-6 lg:px-12 py-20 bg-gradient-to-b from-white to-[${PRIMARY_COLOR}10]`}>
         <div className="container mx-auto text-center">
           {/* Heading */}
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6 text-[#6B6B6B] bg-[#6B6B6B]/20">
-            <Sparkles className="w-4 h-4 text-#6B6B6B" />
-            <span className="text-sm font-medium">Testimoni</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ color: PRIMARY_COLOR, backgroundColor: `${PRIMARY_COLOR}20` }}>
+            <Zap className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+            <span className="text-sm font-medium">Pengalaman Pengguna</span>
           </div>
 
           <motion.h2
@@ -55,19 +61,21 @@ export default function TestimonialsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4"
+            className="text-4xl lg:text-5xl font-bold mb-4"
+            style={{ color: TEXT_COLOR }}
           >
-            Apa Kata Para Anggota Kami?
+            Apa Kata Pelanggan Kami?
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="text-lg text-gray-600 mb-12 max-w-2xl mx-auto"
+            className="text-lg mb-12 max-w-2xl mx-auto"
+            style={{ color: SECONDARY_TEXT }}
           >
-            Dengarkan pengalaman nyata dari anggota kami yang sudah merasakan
-            manfaat bergabung dengan Koperasi Merah Putih.
+            Dengarkan pengalaman nyata dari pembeli dan *seller* yang sudah
+            merasakan manfaat bertransaksi di Indotoliz Berniaga.
           </motion.p>
 
           {/* Testimonial Cards */}
@@ -89,10 +97,10 @@ export default function TestimonialsPage() {
                     className="rounded-full object-cover"
                   />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">
+                <h3 className="text-xl font-semibold" style={{ color: TEXT_COLOR }}>
                   {t.name}
                 </h3>
-                <p className="text-sm text-[#6B6B6B] mb-4">{t.role}</p>
+                <p className="text-sm mb-4" style={{ color: ACCENT_COLOR }}>{t.role}</p>
 
                 {/* Stars */}
                 <div className="flex gap-1 mb-4">
@@ -101,12 +109,12 @@ export default function TestimonialsPage() {
                     .map((_, idx) => (
                       <Star
                         key={idx}
-                        className="w-5 h-5 text-[#6B6B6B] fill-current"
+                        className="w-5 h-5 text-yellow-500 fill-current"
                       />
                     ))}
                 </div>
 
-                <p className="text-gray-600 leading-relaxed">{t.content}</p>
+                <p className="leading-relaxed" style={{ color: SECONDARY_TEXT }}>{t.content}</p>
               </motion.div>
             ))}
           </div>
@@ -120,10 +128,10 @@ export default function TestimonialsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-lg p-8"
+            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
           >
-            <h3 className="text-4xl font-bold text-[#6B6B6B] mb-2">2.5K+</h3>
-            <p className="text-gray-600">Anggota Aktif</p>
+            <h3 className="text-4xl font-bold mb-2" style={{ color: PRIMARY_COLOR }}>500K+</h3>
+            <p className="text-gray-600">Total Transaksi Berhasil</p>
           </motion.div>
 
           <motion.div
@@ -131,10 +139,10 @@ export default function TestimonialsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-lg p-8"
+            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
           >
-            <h3 className="text-4xl font-bold text-[#6B6B6B] mb-2">98%</h3>
-            <p className="text-gray-600">Tingkat Kepuasan Anggota</p>
+            <h3 className="text-4xl font-bold mb-2" style={{ color: PRIMARY_COLOR }}>99%</h3>
+            <p className="text-gray-600">Tingkat Keaslian Produk</p>
           </motion.div>
 
           <motion.div
@@ -142,10 +150,10 @@ export default function TestimonialsPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             viewport={{ once: true }}
-            className="bg-white rounded-3xl shadow-lg p-8"
+            className="bg-white rounded-3xl shadow-lg p-8 border border-gray-100"
           >
-            <h3 className="text-4xl font-bold text-[#6B6B6B] mb-2">4.9/5</h3>
-            <p className="text-gray-600">Rating Rata-rata Pelayanan</p>
+            <h3 className="text-4xl font-bold mb-2" style={{ color: PRIMARY_COLOR }}>4.8/5</h3>
+            <p className="text-gray-600">Rating Rata-rata Toko</p>
           </motion.div>
         </div>
       </section>
@@ -153,7 +161,7 @@ export default function TestimonialsPage() {
       {/* CTA Section */}
       <section className="px-6 lg:px-12 py-20">
         <div className="container mx-auto">
-          <div className="bg-gradient-to-r from-[#6B6B6B] to-[#6B6B6B]/90 rounded-3xl p-12 text-center text-white">
+          <div className="rounded-3xl p-12 text-center text-white" style={{ background: PRIMARY_COLOR }}>
             <motion.h3
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -161,19 +169,21 @@ export default function TestimonialsPage() {
               viewport={{ once: true }}
               className="text-3xl lg:text-4xl font-bold mb-4"
             >
-              Siap Menjadi Bagian dari Kami?
+              Siap Jelajahi Dunia Teknologi?
             </motion.h3>
             <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-              Gabung dengan ribuan anggota yang sudah merasakan manfaat
-              keuangan dan bisnis dari Koperasi Merah Putih.
+              Gabung sekarang, temukan produk elektronik terbaik, atau mulai
+              bisnis *e-commerce* Anda sebagai *seller* terverifikasi.
             </p>
             <motion.button
               onClick={goToRegisterPage}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-white text-[#6B6B6B] px-8 py-4 rounded-2xl font-semibold hover:bg-gray-100 transition-colors"
+              className="px-8 py-4 rounded-2xl font-semibold transition-colors flex items-center justify-center mx-auto gap-2"
+              style={{ backgroundColor: ACCENT_COLOR, color: 'white' }}
             >
-              Daftar Jadi Anggota
+              <Store className="w-5 h-5" />
+              Daftar Jadi Pelanggan/Seller
             </motion.button>
           </div>
         </div>

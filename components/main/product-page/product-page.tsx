@@ -9,9 +9,10 @@ import {
   Search,
   Grid3X3,
   List,
-  Sparkles,
+  Zap, // Mengganti Sparkles dengan Zap (lebih tech)
   Package,
   MessageCircle,
+  Truck, // Mengganti Package untuk Empty State
 } from "lucide-react";
 import Image from "next/image";
 import { Product } from "@/types/admin/product";
@@ -51,6 +52,12 @@ export default function ProductsPage() {
 
   const { data: session } = useSession();
   const userRole = session?.user?.roles[0]?.name ?? "";
+
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Promosi
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
 
   // Ambil kategori publik (top-level). Sesuaikan paginate jika perlu.
   const {
@@ -246,49 +253,50 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-[#6B6B6B]/10">
+    <div className="min-h-screen bg-gradient-to-br from-white to-[#0077B6]/10">
       {/* ===================== Header / Hero ===================== */}
       <section className="relative pt-24 pb-12 px-6 lg:px-12 overflow-hidden bg-white">
-        {/* background aksen */}
-        <div className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full bg-[#E53935]/10 blur-3xl opacity-50" />
-        <div className="absolute top-1/3 right-[-10%] w-[28rem] h-[28rem] rounded-full bg-[#6B6B6B]/10 blur-3xl opacity-40" />
+        {/* background aksen (Menggunakan Biru Stabil dan Jingga Energi) */}
+        <div className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full bg-[#0077B6]/10 blur-3xl opacity-50" />
+        <div className="absolute top-1/3 right-[-10%] w-[28rem] h-[28rem] rounded-full bg-[#FF6B35]/10 blur-3xl opacity-40" />
 
         <div className="container mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-[#E53935]/10 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-[#E53935]" />
-            <span className="text-sm font-medium text-[#6B6B6B]">
-              Jelajahi Marketplace
+          <div className="inline-flex items-center gap-2 bg-[#FF6B35]/10 px-4 py-2 rounded-full mb-6">
+            <Zap className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+            <span className="text-sm font-medium" style={{ color: PRIMARY_COLOR }}>
+              Pusat Elektronik & Gadget
             </span>
           </div>
 
-          <h1 className="text-4xl lg:text-6xl font-bold text-[#6B6B6B] mb-6">
-            Produk UMKM{" "}
-            <span className="block text-[#E53935]">Koperasi Merah Putih</span>
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6" style={{ color: TEXT_COLOR }}>
+            Jelajahi Produk{" "}
+            <span className="block" style={{ color: PRIMARY_COLOR }}>Teknologi Terpercaya</span>
           </h1>
 
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Temukan produk unggulan dari UMKM anggota kami dan solusi keuangan
-            dari layanan simpan pinjam koperasi.
+            Temukan smartphone, laptop, dan aksesori terbaru dengan jaminan
+            keaslian dan harga terbaik di Indotoliz Berniaga.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-700">
+          {/* Info Badge (Disesuaikan dengan tema E-commerce) */}
+          <div className="flex flex-wrap justify-center gap-4 text-sm" style={{ color: SECONDARY_TEXT }}>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#E53935] rounded-full" />
-              <span>Produk UMKM Lokal</span>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PRIMARY_COLOR }} />
+              <span>Jaminan Original</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-[#6B6B6B] rounded-full" />
-              <span>Dikelola Anggota</span>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ACCENT_COLOR }} />
+              <span>Pengiriman Aman</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-black rounded-full" />
-              <span>Tersedia Layanan Pinjaman</span>
+              <span>Ribuan Ulasan Positif</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ===================== Filters & Search (Koperasi Theme) ===================== */}
+      {/* ===================== Filters & Search (Marketplace Theme) ===================== */}
       <section className="px-6 lg:px-12 mb-8">
         <div className="container mx-auto">
           <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
@@ -298,10 +306,10 @@ export default function ProductsPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Cari produk & layanan..."
+                  placeholder="Cari gadget, komponen, & aksesori..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E53935] focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] focus:border-transparent"
                 />
               </div>
 
@@ -313,17 +321,16 @@ export default function ProductsPage() {
                   onChange={(e) =>
                     setFilter({ ...filter, category: e.target.value })
                   }
-                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E53935] bg-white text-[#6B6B6B]"
+                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] bg-white"
+                  style={{ color: TEXT_COLOR }}
                   disabled={isCategoryLoading}
                 >
                   <option value="all">Semua Kategori</option>
-
                   {isCategoryLoading && (
                     <option value="" disabled>
                       Memuat kategori...
                     </option>
                   )}
-
                   {!isCategoryLoading &&
                     !isCategoryError &&
                     categoryOptions.map((cat) => (
@@ -331,7 +338,6 @@ export default function ProductsPage() {
                         {cat.name}
                       </option>
                     ))}
-
                   {isCategoryError && (
                     <>
                       <option value="" disabled>
@@ -349,7 +355,8 @@ export default function ProductsPage() {
                   onChange={(e) =>
                     setFilter({ ...filter, priceRange: e.target.value })
                   }
-                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E53935] bg-white text-[#6B6B6B]"
+                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] bg-white"
+                  style={{ color: TEXT_COLOR }}
                 >
                   <option value="all">Semua Harga</option>
                   <option value="under-100k">Di bawah Rp100.000</option>
@@ -364,7 +371,8 @@ export default function ProductsPage() {
                   onChange={(e) =>
                     setFilter({ ...filter, sort: e.target.value })
                   }
-                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#E53935] bg-white text-[#6B6B6B]"
+                  className="px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0077B6] bg-white"
+                  style={{ color: TEXT_COLOR }}
                 >
                   <option value="featured">Unggulan</option>
                   <option value="newest">Terbaru</option>
@@ -373,7 +381,7 @@ export default function ProductsPage() {
                   <option value="rating">Rating Tertinggi</option>
                 </select>
 
-                {/* Seller (Combobox) */}
+                {/* Seller (Combobox) - tetap dipertahankan */}
                 {userRole === "superadmin" && (
                   <div className="w-72 lg:w-40">
                     <Combobox
@@ -388,15 +396,16 @@ export default function ProductsPage() {
                           ? `${s.shop.name} (${s.email})`
                           : `${s.name} (${s.email})`
                       }
-                      buttonClassName="h-12 rounded-xl" // biar tinggi sama dengan select lain
+                      buttonClassName="h-12 rounded-xl" 
                     />
                   </div>
                 )}
 
                 {/* Reset semua filter */}
                 <Button
-                  variant="destructive"
-                  className="h-12"
+                  // Menggunakan warna sekunder/netral agar tidak terlalu dominan
+                  className="h-12 border-2 text-white font-semibold rounded-2xl shadow-sm hover:opacity-90 transition-colors"
+                  style={{ backgroundColor: PRIMARY_COLOR, color: 'white' }} 
                   size="lg"
                   onClick={() => {
                     setSearchTerm("");
@@ -420,8 +429,8 @@ export default function ProductsPage() {
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-xl transition-colors ${
                     viewMode === "grid"
-                      ? "bg-[#E53935] text-white shadow-sm"
-                      : "text-[#6B6B6B] hover:text-[#E53935]"
+                      ? "bg-[#0077B6] text-white shadow-sm" // Biru Stabil
+                      : "text-gray-600 hover:text-[#0077B6]"
                   }`}
                 >
                   <Grid3X3 className="w-5 h-5" />
@@ -430,8 +439,8 @@ export default function ProductsPage() {
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-xl transition-colors ${
                     viewMode === "list"
-                      ? "bg-[#E53935] text-white shadow-sm"
-                      : "text-[#6B6B6B] hover:text-[#E53935]"
+                      ? "bg-[#0077B6] text-white shadow-sm" // Biru Stabil
+                      : "text-gray-600 hover:text-[#0077B6]"
                   }`}
                 >
                   <List className="w-5 h-5" />
@@ -451,7 +460,7 @@ export default function ProductsPage() {
                 <DotdLoader />
               </div>
             ) : (
-              <p className="text-[#6B6B6B]">
+              <p style={{ color: SECONDARY_TEXT }}>
                 Menampilkan {sortedProducts?.length ?? 0} dari{" "}
                 {products?.length ?? 0} produk
               </p>
@@ -485,8 +494,8 @@ export default function ProductsPage() {
                           onClick={() => toggleWishlist(product.id)}
                           className={`p-2 rounded-full shadow-lg transition-colors ${
                             wishlist.includes(product.id)
-                              ? "bg-[#E53935] text-white"
-                              : "bg-white text-[#6B6B6B] hover:text-[#E53935]"
+                              ? "bg-[#0077B6] text-white" // Biru Stabil untuk Wishlist
+                              : "bg-white text-gray-500 hover:text-[#0077B6]"
                           }`}
                         >
                           <Heart
@@ -499,7 +508,7 @@ export default function ProductsPage() {
                         </button>
                         <button
                           onClick={() => openProductModal(product)}
-                          className="p-2 bg-white text-[#6B6B6B] hover:text-[#E53935] rounded-full shadow-lg transition-colors"
+                          className="p-2 bg-white text-gray-500 hover:text-[#FF6B35] rounded-full shadow-lg transition-colors" // Jingga Energi untuk Quick View
                         >
                           <Eye className="w-5 h-5" />
                         </button>
@@ -508,10 +517,10 @@ export default function ProductsPage() {
 
                     <div className="p-6">
                       <div className="mb-3">
-                        <span className="text-xs text-[#6B6B6B] font-medium">
+                        <span className="text-xs font-medium" style={{ color: SECONDARY_TEXT }}>
                           {product.category_name}
                         </span>
-                        <h3 className="text-lg font-bold text-[#000000] mt-1 line-clamp-2">
+                        <h3 className="text-lg font-bold mt-1 line-clamp-2" style={{ color: TEXT_COLOR }}>
                           {product.name}
                         </h3>
                       </div>
@@ -529,13 +538,13 @@ export default function ProductsPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-sm text-[#6B6B6B]">
+                        <span className="text-sm" style={{ color: SECONDARY_TEXT }}>
                           ({reviews})
                         </span>
                       </div>
 
                       <div className="flex items-center gap-3 mb-4">
-                        <span className="text-2xl font-bold text-[#6B6B6B]">
+                        <span className="text-2xl font-bold" style={{ color: ACCENT_COLOR }}>
                           Rp {product.price.toLocaleString("id-ID")}
                         </span>
                       </div>
@@ -543,7 +552,8 @@ export default function ProductsPage() {
                       <div className="flex gap-3">
                         <button
                           onClick={() => addToCart(product)}
-                          className="group flex-1 h-12 rounded-2xl bg-[#E53935] hover:bg-[#c62828] text-white font-semibold shadow-sm transition-colors inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E53935]"
+                          className="group flex-1 h-12 rounded-2xl text-white font-semibold shadow-sm transition-colors inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                          style={{ backgroundColor: ACCENT_COLOR }} // Jingga Energi untuk CTA utama
                         >
                           <ShoppingCart className="w-5 h-5" />
                           <span>Tambah ke Keranjang</span>
@@ -552,7 +562,8 @@ export default function ProductsPage() {
                         <button
                           onClick={() => router.push("/chat?to=1")} // sementara hardcode id=1
                           aria-label="Chat penjual"
-                          className="h-12 w-12 rounded-2xl border border-[#E53935]/60 bg-white text-[#E53935] hover:bg-[#E53935]/10 inline-flex items-center justify-center shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#E53935]"
+                          className="h-12 w-12 rounded-2xl bg-white shadow-sm transition-colors inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                          style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '2px solid' }} // Biru Stabil untuk CTA sekunder
                           title="Chat penjual"
                         >
                           <MessageCircle className="w-5 h-5" />
@@ -590,10 +601,10 @@ export default function ProductsPage() {
                         <div>
                           <div className="flex items-start justify-between mb-4">
                             <div>
-                              <span className="text-sm text-[#6B6B6B] font-medium">
+                              <span className="text-sm font-medium" style={{ color: SECONDARY_TEXT }}>
                                 {product.category_name}
                               </span>
-                              <h3 className="text-2xl font-bold text-[#000000] mt-1">
+                              <h3 className="text-2xl font-bold mt-1" style={{ color: TEXT_COLOR }}>
                                 {product.name}
                               </h3>
                             </div>
@@ -601,8 +612,8 @@ export default function ProductsPage() {
                               onClick={() => toggleWishlist(product.id)}
                               className={`p-2 rounded-full transition-colors ${
                                 wishlist.includes(product.id)
-                                  ? "bg-[#E53935] text-white"
-                                  : "bg-gray-100 text-[#6B6B6B] hover:text-[#E53935]"
+                                  ? "bg-[#0077B6] text-white" // Biru Stabil
+                                  : "bg-gray-100 text-gray-500 hover:text-[#0077B6]"
                               }`}
                             >
                               <Heart
@@ -615,7 +626,7 @@ export default function ProductsPage() {
                             </button>
                           </div>
 
-                          <p className="text-[#6B6B6B] mb-4 line-clamp-3">
+                          <p className="mb-4 line-clamp-3" style={{ color: SECONDARY_TEXT }}>
                             {product.description}
                           </p>
 
@@ -632,7 +643,7 @@ export default function ProductsPage() {
                                 />
                               ))}
                             </div>
-                            <span className="text-sm text-[#6B6B6B]">
+                            <span className="text-sm" style={{ color: SECONDARY_TEXT }}>
                               ({reviews} ulasan)
                             </span>
                           </div>
@@ -640,7 +651,7 @@ export default function ProductsPage() {
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <span className="text-3xl font-bold text-[#6B6B6B]">
+                            <span className="text-3xl font-bold" style={{ color: ACCENT_COLOR }}>
                               Rp {product.price.toLocaleString("id-ID")}
                             </span>
                           </div>
@@ -648,13 +659,15 @@ export default function ProductsPage() {
                           <div className="flex gap-3">
                             <button
                               onClick={() => openProductModal(product)}
-                              className="px-6 py-3 border border-[#6B6B6B] text-[#6B6B6B] rounded-2xl hover:bg-[#6B6B6B] hover:text-white transition-colors"
+                              className="px-6 py-3 rounded-2xl transition-colors"
+                              style={{ borderColor: SECONDARY_TEXT, color: SECONDARY_TEXT, border: '1px solid' }} // Detail: Sekunder
                             >
                               Detail
                             </button>
                             <button
                               onClick={() => addToCart(product)}
-                              className="px-6 py-3 bg-[#E53935] text-white rounded-2xl hover:bg-red-700 transition-colors flex items-center gap-2"
+                              className="px-6 py-3 text-white rounded-2xl transition-colors flex items-center gap-2"
+                              style={{ backgroundColor: ACCENT_COLOR }} // Cart: Jingga Energi
                             >
                               <ShoppingCart className="w-5 h-5" />
                               Tambah ke Keranjang
@@ -672,13 +685,13 @@ export default function ProductsPage() {
           {/* Empty State */}
           {!isLoading && sortedProducts.length === 0 && (
             <div className="text-center py-20">
-              <div className="w-24 h-24 bg-[#6B6B6B]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Package className="w-12 h-12 text-[#6B6B6B]" />
+              <div className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${PRIMARY_COLOR}1A` }}>
+                <Truck className="w-12 h-12" style={{ color: PRIMARY_COLOR }} />
               </div>
-              <h3 className="text-2xl font-bold text-[#000000] mb-4">
-                Produk tidak ditemukan
+              <h3 className="text-2xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+                Produk Teknologi Tidak Ditemukan
               </h3>
-              <p className="text-[#6B6B6B] mb-6">
+              <p className="mb-6" style={{ color: SECONDARY_TEXT }}>
                 Coba ubah filter atau kata kunci pencarian Anda.
               </p>
               <button
@@ -692,7 +705,8 @@ export default function ProductsPage() {
                     sellerId: null,
                   });
                 }}
-                className="bg-[#E53935] text-white px-6 py-3 rounded-2xl hover:bg-red-700 transition-colors"
+                className="text-white px-6 py-3 rounded-2xl transition-colors"
+                style={{ backgroundColor: PRIMARY_COLOR }} // Biru Stabil untuk Reset
               >
                 Reset Filter
               </button>
@@ -710,9 +724,9 @@ export default function ProductsPage() {
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((prev) => prev - 1)}
-                className="px-6 py-3 border border-[#6B6B6B] text-[#6B6B6B] rounded-2xl 
-                     hover:bg-[#E53935] hover:text-white transition-colors
+                className="px-6 py-3 rounded-2xl transition-colors 
                      disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '1px solid' }}
               >
                 Previous
               </button>
@@ -726,9 +740,14 @@ export default function ProductsPage() {
                       onClick={() => setCurrentPage(page)}
                       className={`w-12 h-12 rounded-2xl font-semibold transition-colors ${
                         currentPage === page
-                          ? "bg-[#E53935] text-white"
-                          : "border border-[#6B6B6B] text-[#6B6B6B] hover:bg-[#E53935] hover:text-white"
+                          ? "text-white"
+                          : "border hover:text-white"
                       }`}
+                      style={{ 
+                        backgroundColor: currentPage === page ? PRIMARY_COLOR : 'transparent',
+                        borderColor: PRIMARY_COLOR,
+                        color: currentPage === page ? 'white' : PRIMARY_COLOR,
+                      }}
                     >
                       {page}
                     </button>
@@ -740,9 +759,9 @@ export default function ProductsPage() {
               <button
                 disabled={currentPage === totalPages}
                 onClick={() => setCurrentPage((prev) => prev + 1)}
-                className="px-6 py-3 border border-[#6B6B6B] text-[#6B6B6B] rounded-2xl 
-                     hover:bg-[#E53935] hover:text-white transition-colors
+                className="px-6 py-3 rounded-2xl transition-colors 
                      disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '1px solid' }}
               >
                 Next
               </button>
@@ -758,7 +777,7 @@ export default function ProductsPage() {
             <div className="p-6">
               {/* Header */}
               <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-[#000000]">
+                <h2 className="text-2xl font-bold" style={{ color: TEXT_COLOR }}>
                   Detail Produk
                 </h2>
                 <button
@@ -766,7 +785,8 @@ export default function ProductsPage() {
                     setIsModalOpen(false);
                     setSelectedSlug(null);
                   }}
-                  className="p-2 hover:bg-[#6B6B6B]/10 rounded-2xl transition-colors"
+                  className="p-2 hover:bg-gray-200 rounded-2xl transition-colors"
+                  style={{ color: TEXT_COLOR }}
                 >
                   ✕
                 </button>
@@ -774,7 +794,7 @@ export default function ProductsPage() {
 
               {/* Error State */}
               {isDetailError && (
-                <div className="text-[#E53935]">
+                <div style={{ color: ACCENT_COLOR }}>
                   Gagal memuat detail produk.
                 </div>
               )}
@@ -802,10 +822,10 @@ export default function ProductsPage() {
 
                   {/* Product Info */}
                   <div>
-                    <span className="text-sm text-[#6B6B6B] font-medium">
+                    <span className="text-sm font-medium" style={{ color: SECONDARY_TEXT }}>
                       {detailProduct.category_name}
                     </span>
-                    <h3 className="text-3xl font-bold text-[#000000] mt-2 mb-4">
+                    <h3 className="text-3xl font-bold mt-2 mb-4" style={{ color: TEXT_COLOR }}>
                       {detailProduct.name}
                     </h3>
 
@@ -817,33 +837,33 @@ export default function ProductsPage() {
                             key={star}
                             className={`w-5 h-5 ${
                               star <= Math.round(toNumber(detailProduct.rating))
-                                ? "fill-[#E53935] text-[#E53935]"
-                                : "text-[#6B6B6B]/40"
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
                             }`}
                           />
                         ))}
                       </div>
-                      <span className="text-[#6B6B6B]">
+                      <span style={{ color: SECONDARY_TEXT }}>
                         ({detailProduct.total_reviews} ulasan)
                       </span>
                     </div>
 
                     {/* Description */}
-                    <p className="text-[#6B6B6B] mb-6">
+                    <p className="mb-6" style={{ color: SECONDARY_TEXT }}>
                       {detailProduct.description}
                     </p>
 
                     {/* Meta Info */}
                     <div className="space-y-3 mb-6">
-                      <div className="flex items-center gap-3 text-sm text-[#6B6B6B]">
+                      <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
                         <span className="font-medium">Kategori:</span>
                         <span>{detailProduct.category_name}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-[#6B6B6B]">
-                        <span className="font-medium">Asal UMKM:</span>
+                      <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
+                        <span className="font-medium">Merk/Toko:</span>
                         <span>{detailProduct.merk_name}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-[#6B6B6B]">
+                      <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
                         <span className="font-medium">Stok Tersedia:</span>
                         <span>{detailProduct.stock}</span>
                       </div>
@@ -851,7 +871,7 @@ export default function ProductsPage() {
 
                     {/* Price */}
                     <div className="flex items-center gap-3 mb-6">
-                      <span className="text-4xl font-bold text-[#E53935]">
+                      <span className="text-4xl font-bold" style={{ color: ACCENT_COLOR }}>
                         Rp {detailProduct.price.toLocaleString("id-ID")}
                       </span>
                     </div>
@@ -864,8 +884,9 @@ export default function ProductsPage() {
                           setIsModalOpen(false);
                           setSelectedSlug(null);
                         }}
-                        className="flex-1 bg-[#E53935] text-white py-4 rounded-2xl font-semibold 
-                             hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 text-white py-4 rounded-2xl font-semibold 
+                             transition-colors flex items-center justify-center gap-2"
+                        style={{ backgroundColor: ACCENT_COLOR }} // Jingga Energi
                       >
                         <ShoppingCart className="w-5 h-5" />
                         Tambah ke Keranjang

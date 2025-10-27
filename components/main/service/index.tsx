@@ -1,9 +1,14 @@
 "use client";
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Handshake, DollarSign, BookOpen } from "lucide-react";
+import {
+  Zap, // Mengganti Sparkles
+  Wrench, // Mengganti Handshake: Layanan Teknis/Perbaikan
+  MessageSquare, // Mengganti DollarSign: Konsultasi/Dukungan
+  ShieldCheck, // Mengganti BookOpen: Garansi/Proteksi
+} from "lucide-react";
 import Image from "next/image";
-import ReservationModal from "./reservation-modal";
+import ReservationModal from "./reservation-modal"; // Asumsi modal ini sudah ada
 import { useGetProductListPublicQuery } from "@/services/product.service";
 
 interface Service {
@@ -23,6 +28,12 @@ export default function ServicesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+
   // Fetch services from API
   const {
     data: shopProductsData,
@@ -38,10 +49,7 @@ export default function ServicesPage() {
   const services = useMemo(() => {
     if (!shopProductsData?.data) return [];
 
-    // ✨ FIX: Removed redundant client-side filter for "jasa".
-    // The filtering is already handled by `merk_id: 2` in the API query.
     return shopProductsData.data.map((product) => {
-      // Build images array with proper filtering
       const images = [
         product.image,
         product.image_2,
@@ -50,7 +58,7 @@ export default function ServicesPage() {
         product.image_5,
         product.image_6,
         product.image_7,
-      ].filter((img) => typeof img === "string" && img.trim() !== ""); // Remove empty or null images
+      ].filter((img) => typeof img === "string" && img.trim() !== "");
 
       return {
         id: product.id,
@@ -64,7 +72,7 @@ export default function ServicesPage() {
         name: product.name,
         description: product.description,
         price: product.price,
-        duration: product.stock ? `${product.stock} Menit` : "30 Menit",
+        duration: product.stock ? `${product.stock} Jam` : "30 Menit", // Mengubah Durasi dari Menit ke Jam (lebih masuk akal untuk jasa)
         category_name: product.category_name,
         merk_name: product.merk_name,
       };
@@ -121,7 +129,7 @@ export default function ServicesPage() {
 
     return pageButtons.map((page, index) =>
       page === "..." ? (
-        <span key={index} className="px-4 py-2 text-[#6B6B6B]">
+        <span key={index} className="px-4 py-2" style={{ color: SECONDARY_TEXT }}>
           ...
         </span>
       ) : (
@@ -130,9 +138,14 @@ export default function ServicesPage() {
           onClick={() => setCurrentPage(Number(page))}
           className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
             currentPage === page
-              ? "bg-[#E53935] text-white"
-              : "border border-[#6B6B6B] text-[#6B6B6B] hover:bg-[#E53935] hover:text-white"
+              ? "text-white"
+              : "border hover:text-white"
           }`}
+          style={{
+            backgroundColor: currentPage === page ? ACCENT_COLOR : 'transparent', // CTA/Aksen untuk halaman aktif
+            borderColor: SECONDARY_TEXT,
+            color: currentPage === page ? 'white' : SECONDARY_TEXT,
+          }}
         >
           {page}
         </button>
@@ -142,40 +155,41 @@ export default function ServicesPage() {
 
   return (
     <section className="bg-white min-h-screen">
-      {/* Hero Section - Layanan Koperasi */}
-      <section className="pt-24 pb-16 px-6 lg:px-12 bg-gradient-to-r from-white via-[#F5F5F5] to-[#FFEAEA]">
-        <div className="container mx-auto text-center text-[#6B6B6B]">
+      {/* Hero Section - Layanan Purna Jual */}
+      <section className="pt-24 pb-16 px-6 lg:px-12 bg-gradient-to-r from-white via-[#F5FBFF] to-[#E6F3FF]">
+        <div className="container mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-[#E53935]/10 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-[#E53935]" />
-            <span className="text-sm font-medium">Layanan Utama Koperasi</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ backgroundColor: `${PRIMARY_COLOR}10` }}>
+            <Zap className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+            <span className="text-sm font-medium" style={{ color: PRIMARY_COLOR }}>Layanan Nilai Tambah Teknologi</span>
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl lg:text-6xl font-bold mb-6">
-            Wujudkan Kebutuhan Anda
-            <span className="block text-[#E53935]">Dengan Layanan Koperasi</span>
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6" style={{ color: TEXT_COLOR }}>
+            Solusi Purna Jual & IT
+            <span className="block" style={{ color: ACCENT_COLOR }}>Spesialis Elektronik Anda</span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl text-[#6B6B6B] max-w-3xl mx-auto mb-8">
-            Nikmati berbagai layanan simpan pinjam, konsultasi bisnis, dan
-            pinjaman modal usaha untuk membantu Anda berkembang bersama.
+          <p className="text-xl max-w-3xl mx-auto mb-8" style={{ color: SECONDARY_TEXT }}>
+            Kami menyediakan layanan purna jual, perbaikan, dan konsultasi
+            teknis profesional untuk memastikan perangkat elektronik Anda selalu
+            berfungsi optimal.
           </p>
 
-          {/* Tags */}
+          {/* Tags (Ikon dan warna disesuaikan) */}
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow">
-              <Handshake className="w-4 h-4 text-[#E53935]" />
-              <span>Simpanan</span>
+              <Wrench className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+              <span style={{ color: SECONDARY_TEXT }}>Jasa Perbaikan</span>
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow">
-              <DollarSign className="w-4 h-4 text-[#6B6B6B]" />
-              <span>Pinjaman</span>
+              <MessageSquare className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+              <span style={{ color: SECONDARY_TEXT }}>Konsultasi IT</span>
             </div>
             <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow">
-              <BookOpen className="w-4 h-4 text-[#E53935]" />
-              <span>Konsultasi Usaha</span>
+              <ShieldCheck className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+              <span style={{ color: SECONDARY_TEXT }}>Proteksi Garansi</span>
             </div>
           </div>
         </div>
@@ -188,17 +202,19 @@ export default function ServicesPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-3xl font-bold text-[#000000] text-center mb-12"
+          className="text-3xl font-bold text-center mb-12"
+          style={{ color: TEXT_COLOR }}
         >
-          Layanan Utama Koperasi
+          Katalog Jasa Kami
         </motion.h2>
 
         {isLoading ? (
+          // Loading state (warna loading dipertahankan netral)
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(9)].map((_, i) => (
               <div
                 key={i}
-                className="bg-white border border-[#6B6B6B]/20 rounded-3xl shadow-md p-6 animate-pulse"
+                className="bg-white border border-gray-200 rounded-3xl shadow-md p-6 animate-pulse"
               >
                 <div className="w-full h-48 bg-gray-200 rounded-t-2xl mb-3"></div>
                 <div className="h-6 bg-gray-200 rounded mb-3"></div>
@@ -210,20 +226,23 @@ export default function ServicesPage() {
             ))}
           </div>
         ) : error ? (
+          // Error state (warna tombol disesuaikan)
           <div className="text-center py-12">
             <p className="text-red-500 mb-4">Gagal memuat layanan</p>
             <button
               onClick={() => window.location.reload()}
-              className="bg-[#E53935] text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              className="px-6 py-2 rounded-2xl font-semibold transition-colors"
+              style={{ backgroundColor: PRIMARY_COLOR, color: 'white' }}
             >
               Coba Lagi
             </button>
           </div>
         ) : services.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#6B6B6B] mb-4">Belum ada layanan tersedia</p>
+            <p className="mb-4" style={{ color: SECONDARY_TEXT }}>Belum ada layanan tersedia</p>
           </div>
         ) : (
+          // Services List
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
               <motion.div
@@ -232,7 +251,7 @@ export default function ServicesPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-white border border-[#6B6B6B]/20 rounded-3xl shadow-md hover:shadow-xl transition-all p-6 flex flex-col justify-between"
+                className="bg-white border border-gray-200 rounded-3xl shadow-md hover:shadow-xl transition-all p-6 flex flex-col justify-between"
               >
                 <div>
                   <Image
@@ -254,26 +273,30 @@ export default function ServicesPage() {
                     priority={false}
                   />
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs bg-[#E53935]/10 text-[#E53935] px-2 py-1 rounded-full">
+                    <span 
+                      className="text-xs px-2 py-1 rounded-full" 
+                      style={{ backgroundColor: `${ACCENT_COLOR}1A`, color: ACCENT_COLOR }} // Aksen Jingga
+                    >
                       {service.category_name}
                     </span>
                   </div>
-                  <h3 className="text-xl font-semibold text-[#000000] mb-3">
+                  <h3 className="text-xl font-semibold mb-3" style={{ color: PRIMARY_COLOR }}>
                     {service.name}
                   </h3>
-                  <p className="text-[#6B6B6B] mb-4 line-clamp-3">
+                  <p className="mb-4 line-clamp-3" style={{ color: SECONDARY_TEXT }}>
                     {service.description}
                   </p>
-                  <p className="text-sm text-[#6B6B6B] mb-2">
+                  <p className="text-sm mb-2" style={{ color: SECONDARY_TEXT }}>
                     Durasi: {service.duration}
                   </p>
-                  <p className="text-lg font-bold text-[#E53935]">
+                  <p className="text-lg font-bold" style={{ color: ACCENT_COLOR }}>
                     Rp {service.price.toLocaleString("id-ID")}
                   </p>
                 </div>
                 <button
                   onClick={() => openModal(service)}
-                  className="mt-6 w-full bg-[#E53935] text-white py-3 rounded-2xl font-semibold hover:bg-red-700 transition-colors"
+                  className="mt-6 w-full py-3 rounded-2xl font-semibold transition-colors"
+                  style={{ backgroundColor: PRIMARY_COLOR, color: 'white' }} // CTA utama: Biru Stabil
                 >
                   Ajukan Layanan
                 </button>
@@ -289,7 +312,8 @@ export default function ServicesPage() {
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 rounded-lg border border-[#6B6B6B] text-[#6B6B6B] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E53935] hover:text-white transition-colors"
+            className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            style={{ borderColor: SECONDARY_TEXT, color: SECONDARY_TEXT }}
           >
             Previous
           </button>
@@ -299,7 +323,8 @@ export default function ServicesPage() {
               setCurrentPage((prev) => Math.min(totalPages, prev + 1))
             }
             disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded-lg border border-[#6B6B6B] text-[#6B6B6B] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#E53935] hover:text-white transition-colors"
+            className="px-4 py-2 rounded-lg border disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[#0077B6] hover:text-white"
+            style={{ borderColor: SECONDARY_TEXT, color: SECONDARY_TEXT }}
           >
             Next
           </button>

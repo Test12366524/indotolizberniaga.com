@@ -2,30 +2,36 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-const team = [
-  {
-    name: "Ayu Pratama",
-    role: "Ketua Koperasi",
-    image: "/avatars/1.jpeg",
-  },
-  {
-    name: "Rina Cahya",
-    role: "Manajer Simpan Pinjam",
-    image: "/avatars/2.jpeg",
-  },
-  {
-    name: "Nanda Putri",
-    role: "Koordinator Marketplace",
-    image: "/avatars/3.jpeg",
-  },
-  {
-    name: "Dewi Lestari",
-    role: "Manajer Keanggotaan",
-    image: "/avatars/4.jpeg",
-  },
-];
-
 export default function TeamSection() {
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: Aksen
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+
+  // Struktur tim yang relevan dengan E-commerce/Tech
+  const team = [
+    {
+      name: "Ayu Pratama",
+      role: "CEO & Pendiri",
+      image: "/avatars/1.jpeg",
+    },
+    {
+      name: "Rina Cahya",
+      role: "Chief Technology Officer (CTO)",
+      image: "/avatars/2.jpeg",
+    },
+    {
+      name: "Nanda Putri",
+      role: "Head of Marketplace Operations",
+      image: "/avatars/3.jpeg",
+    },
+    {
+      name: "Dewi Lestari",
+      role: "Logistics & Supply Chain Manager",
+      image: "/avatars/4.jpeg",
+    },
+  ];
+
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-6 lg:px-12">
@@ -36,13 +42,13 @@ export default function TeamSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl lg:text-5xl font-bold text-[#6B6B6B] mb-4">
-            Pengurus dan Tim{" "}
-            <span className="text-[#E53935]">Koperasi Merah Putih</span>
+          <h2 className="text-4xl lg:text-5xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+            Tim Profesional{" "}
+            <span style={{ color: PRIMARY_COLOR }}>Indotoliz Berniaga</span>
           </h2>
-          <p className="text-lg text-[#6B6B6B] max-w-2xl mx-auto">
-            Tim profesional berpengalaman yang berdedikasi untuk melayani
-            anggota dan memajukan koperasi.
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: TEXT_COLOR }}>
+            Tim berdedikasi yang membangun dan menjaga platform teknologi terpercaya
+            untuk pengalaman belanja *e-commerce* terbaik.
           </p>
         </motion.div>
 
@@ -64,10 +70,13 @@ export default function TeamSection() {
                   className="object-cover"
                 />
               </div>
-              <h3 className="text-xl font-bold text-[#6B6B6B]">
+              <h3 className="text-xl font-bold" style={{ color: TEXT_COLOR }}>
                 {member.name}
               </h3>
-              <p className="text-[#E53935] font-medium">{member.role}</p>
+              {/* Warna peran menggunakan Jingga Energi sebagai aksen */}
+              <p className="font-medium" style={{ color: ACCENT_COLOR }}>
+                {member.role}
+              </p>
             </motion.div>
           ))}
         </div>

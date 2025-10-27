@@ -1,31 +1,42 @@
 "use client";
 import { motion } from "framer-motion";
-import { Handshake, Laptop, Store } from "lucide-react";
-
-const story = [
-  {
-    year: "2008",
-    title: "Pendirian Koperasi",
-    desc: "Koperasi Merah Putih didirikan dengan tujuan utama untuk meningkatkan kesejahteraan ekonomi anggota melalui semangat gotong royong dan kemandirian.",
-    icon: <Handshake className="w-6 h-6 text-white" />,
-  },
-  {
-    year: "2015",
-    title: "Inovasi Digital",
-    desc: "Kami meluncurkan sistem simpan pinjam berbasis digital untuk mempermudah anggota dalam bertransaksi, menjadikan layanan lebih cepat dan transparan.",
-    icon: <Laptop className="w-6 h-6 text-white" />,
-  },
-  {
-    year: "2023",
-    title: "Ekspansi Marketplace",
-    desc: "Koperasi meluncurkan platform marketplace khusus untuk produk UMKM anggota, membuka akses pasar lebih luas dan meningkatkan pendapatan anggota.",
-    icon: <Store className="w-6 h-6 text-white" />,
-  },
-];
+import { ShieldCheck, Zap, Package } from "lucide-react"; 
 
 export default function BrandStory() {
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: Inovasi, Aksi
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+
+  // Cerita yang relevan dengan evolusi marketplace elektronik
+  const story = [
+    {
+      year: "2018",
+      title: "Visi Platform Digital",
+      desc: "Indotoliz didirikan sebagai startup teknologi dengan visi menciptakan platform *e-commerce* yang berfokus pada produk elektronik terpercaya dan terjamin.",
+      icon: <ShieldCheck className="w-6 h-6 text-white" />,
+    },
+    {
+      year: "2021",
+      title: "Peluncuran Marketplace Beta",
+      desc: "Setelah pengembangan sistem keamanan dan infrastruktur logistik, Indotoliz Berniaga meluncurkan versi beta, fokus pada pengalaman pengguna yang intuitif dan cepat.",
+      icon: <Zap className="w-6 h-6 text-white" />,
+    },
+    {
+      year: "2024",
+      title: "Ekspansi Nasional & Logistik",
+      desc: "Indotoliz memperkuat kemitraan dengan layanan logistik premium, memungkinkan pengiriman produk elektronik yang aman dan cepat ke seluruh 34 provinsi di Indonesia.",
+      icon: <Package className="w-6 h-6 text-white" />,
+    },
+  ];
+
   return (
-    <section className="py-20 bg-gradient-to-r from-[#6B6B6B]/5 to-[#E53935]/5">
+    <section 
+      className="py-20" 
+      style={{ 
+        backgroundImage: `linear-gradient(to right, ${PRIMARY_COLOR}0A, ${ACCENT_COLOR}0A)` 
+      }}
+    >
       <div className="container mx-auto px-6 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -34,19 +45,24 @@ export default function BrandStory() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl lg:text-5xl font-bold text-[#6B6B6B] mb-4">
+          <h2 className="text-4xl lg:text-5xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
             Perjalanan{" "}
-            <span className="text-[#E53935]">Koperasi Merah Putih</span>
+            <span style={{ color: PRIMARY_COLOR }}>Indotoliz Berniaga</span>
           </h2>
-          <p className="text-lg text-[#6B6B6B] max-w-2xl mx-auto">
-            Dari awal berdiri hingga kini, kami terus konsisten menghadirkan
-            inovasi untuk kemandirian finansial dan kesejahteraan anggota.
+          <p className="text-lg max-w-2xl mx-auto" style={{ color: TEXT_COLOR }}>
+            Evolusi kami dari visi digital hingga menjadi *marketplace* elektronik
+            terkemuka di Indonesia.
           </p>
         </motion.div>
 
-        <div className="relative">
-          {/* Timeline Line */}
-          <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-[#6B6B6B]/20" />
+        {/* Timeline Line membutuhkan induk RELATIVE dan memiliki tinggi yang cukup (misal padding) */}
+        <div className="relative"> 
+          {/* -------------------- PERBAIKAN DI SINI -------------------- */}
+          <div 
+            className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full" 
+            style={{ backgroundColor: `${PRIMARY_COLOR}20` }}
+          />
+          {/* ------------------------------------------------------------- */}
 
           <div className="space-y-12">
             {story.map((item, index) => (
@@ -64,17 +80,17 @@ export default function BrandStory() {
                 <div className={`flex-1 bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
                   index % 2 === 0 ? "lg:pr-12" : "lg:pl-12"
                 }`}>
-                  <div className="text-[#E53935] text-2xl font-bold mb-2">
+                  <div className="text-2xl font-bold mb-2" style={{ color: ACCENT_COLOR }}>
                     {item.year}
                   </div>
-                  <h3 className="text-xl font-bold text-[#6B6B6B] mb-3">
+                  <h3 className="text-xl font-bold mb-3" style={{ color: PRIMARY_COLOR }}>
                     {item.title}
                   </h3>
-                  <p className="text-[#6B6B6B]/80">{item.desc}</p>
+                  <p style={{ color: TEXT_COLOR }}>{item.desc}</p>
                 </div>
 
-                {/* Timeline Dot */}
-                <div className="hidden lg:flex items-center justify-center w-14 h-14 rounded-full bg-[#E53935] text-white shadow-lg mx-8">
+                {/* Timeline Dot (Menggunakan Biru Stabil) */}
+                <div className="hidden lg:flex items-center justify-center w-14 h-14 rounded-full text-white shadow-lg mx-8" style={{ backgroundColor: PRIMARY_COLOR }}>
                   {item.icon}
                 </div>
 

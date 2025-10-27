@@ -31,7 +31,6 @@ const ppobServices = [
   { id: "internet", name: "Internet & TV", icon: <Tv className="w-7 h-7" /> },
 ] as const;
 
-// TARUH DI ATAS (dekat PRODUCT_MAP)
 type PPOBCategory = "pulsa" | "data" | "pln" | "pdam" | "ewallet" | "internet";
 
 const PRODUCT_MAP = {
@@ -58,6 +57,12 @@ const DEFAULT_PAYMENT_CHANNEL = "bca";
 
 export default function PPOBPage() {
   const [activeCategory, setActiveCategory] = useState<PPOBCategory>("pulsa");
+
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Promosi
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
 
   // ============= INVOICE MODAL STATE (sama seperti contoh) =============
   const [invoiceData, setInvoiceData] = useState<ApiTransaksiData | null>(null);
@@ -137,28 +142,29 @@ export default function PPOBPage() {
   const handleInvoiceCancel = () => setInvoiceData(null);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-white to-[#6B6B6B]/10">
+    <div className="min-h-screen bg-gradient-to-br from-white to-[#0077B610]">
       {/* ===================== Header / Hero ===================== */}
       <section className="relative pt-24 pb-12 px-6 lg:px-12 overflow-hidden bg-white">
-        <div className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full bg-[#E53935]/10 blur-3xl opacity-50" />
-        <div className="absolute top-1/3 right-[-10%] w-[28rem] h-[28rem] rounded-full bg-[#6B6B6B]/10 blur-3xl opacity-40" />
+        {/* background aksen (Menggunakan Biru Stabil dan Jingga Energi) */}
+        <div className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full bg-[#0077B6]/10 blur-3xl opacity-50" />
+        <div className="absolute top-1/3 right-[-10%] w-[28rem] h-[28rem] rounded-full bg-[#FF6B35]/10 blur-3xl opacity-40" />
 
         <div className="container mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 bg-[#E53935]/10 px-4 py-2 rounded-full mb-6">
-            <Sparkles className="w-4 h-4 text-[#E53935]" />
-            <span className="text-sm font-medium text-[#6B6B6B]">
-              Layanan Digital Koperasi
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+            <Zap className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+            <span className="text-sm font-medium" style={{ color: PRIMARY_COLOR }}>
+              Layanan Digital Indotoliz
             </span>
           </div>
 
-          <h1 className="text-4xl lg:text-6xl font-bold text-[#6B6B6B] mb-6">
+          <h1 className="text-4xl lg:text-6xl font-bold mb-6" style={{ color: TEXT_COLOR }}>
             Bayar & Beli Kebutuhan{" "}
-            <span className="block text-[#E53935]">Digital Anda</span>
+            <span className="block" style={{ color: PRIMARY_COLOR }}>Digital Instan</span>
           </h1>
 
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Nikmati kemudahan membayar tagihan dan membeli produk digital
-            langsung dari Koperasi Merah Putih. Cepat, aman, dan terpercaya.
+            Nikmati kemudahan mengisi pulsa, bayar tagihan, dan membeli produk digital
+            dengan sistem pembayaran yang cepat, aman, dan terpercaya.
           </p>
         </div>
       </section>
@@ -169,14 +175,14 @@ export default function PPOBPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column: Interactive Form */}
             <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-lg border border-gray-200">
-              <h2 className="text-3xl font-bold text-[#6B6B6B] mb-2">
+              <h2 className="text-3xl font-bold mb-2" style={{ color: TEXT_COLOR }}>
                 Pilih Layanan
               </h2>
-              <p className="text-gray-500 mb-8">
-                Klik layanan yang Anda butuhkan di bawah ini.
+              <p className="mb-8" style={{ color: SECONDARY_TEXT }}>
+                Klik layanan pembayaran atau pembelian digital yang Anda butuhkan.
               </p>
 
-              {/* Service Selection (UI tidak diubah) */}
+              {/* Service Selection */}
               <div className="grid grid-cols-4 md:grid-cols-6 gap-4 mb-10">
                 {ppobServices.map((service) => (
                   <button
@@ -186,9 +192,14 @@ export default function PPOBPage() {
                     }
                     className={`flex flex-col items-center justify-center gap-2 p-3 rounded-2xl aspect-square transition-all duration-300 ${
                       activeCategory === service.id
-                        ? "bg-[#E53935] text-white shadow-lg -translate-y-1"
-                        : "bg-gray-100 text-[#6B6B6B] hover:bg-gray-200"
+                        ? "text-white shadow-lg -translate-y-1"
+                        : "bg-gray-100 hover:bg-gray-200"
                     }`}
+                    // Styling yang disesuaikan dengan Brand
+                    style={{
+                        backgroundColor: activeCategory === service.id ? PRIMARY_COLOR : undefined, // Aktif: Biru Stabil
+                        color: activeCategory === service.id ? 'white' : TEXT_COLOR // Warna teks dinamis
+                    }}
                   >
                     {service.icon}
                     <span className="text-xs font-semibold">
@@ -198,7 +209,7 @@ export default function PPOBPage() {
                 ))}
               </div>
 
-              {/* Dynamic Form Area (UI tetap, logic diangkat ke callback createTransaksi) */}
+              {/* Dynamic Form Area */}
               <div className="border-t border-gray-200 pt-8">
                 <PpobForms
                   category={activeCategory}
@@ -208,7 +219,7 @@ export default function PPOBPage() {
               </div>
             </div>
 
-            {/* Right Column: Why Us & Promo (UI tidak diubah) */}
+            {/* Right Column: Why Us & Promo */}
             <div className="space-y-8">
               <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 text-center">
                 <div className="relative h-48 mb-6">
@@ -219,46 +230,46 @@ export default function PPOBPage() {
                     objectFit="contain"
                   />
                 </div>
-                <h3 className="text-2xl font-bold text-[#6B6B6B] mb-4">
-                  Kenapa Bertransaksi di Sini?
+                <h3 className="text-2xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+                  Kenapa Bertransaksi di Indotoliz?
                 </h3>
                 <div className="space-y-5 text-left">
                   <div className="flex items-start gap-4">
-                    <div className="bg-[#E53935]/10 p-2 rounded-full">
-                      <Zap className="w-6 h-6 text-[#E53935]" />
+                    <div className="p-2 rounded-full" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+                      <Zap className="w-6 h-6" style={{ color: ACCENT_COLOR }} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-800">
-                        Transaksi Cepat & Mudah
+                      <h4 className="font-bold" style={{ color: TEXT_COLOR }}>
+                        Transaksi Cepat & Instan
                       </h4>
-                      <p className="text-sm text-gray-500">
-                        Proses instan 24/7, hanya butuh beberapa klik.
+                      <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                        Proses *real-time* 24/7, transaksi langsung berhasil.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="bg-[#E53935]/10 p-2 rounded-full">
-                      <ShieldCheck className="w-6 h-6 text-[#E53935]" />
+                    <div className="p-2 rounded-full" style={{ backgroundColor: `${PRIMARY_COLOR}10` }}>
+                      <ShieldCheck className="w-6 h-6" style={{ color: PRIMARY_COLOR }} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-800">
-                        Aman & Terpercaya
+                      <h4 className="font-bold" style={{ color: TEXT_COLOR }}>
+                        Aman & Terenkripsi
                       </h4>
-                      <p className="text-sm text-gray-500">
-                        Sistem terenkripsi untuk keamanan data Anda.
+                      <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                        Sistem pembayaran terjamin dan data pribadi Anda aman.
                       </p>
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="bg-[#E53935]/10 p-2 rounded-full">
-                      <TicketPercent className="w-6 h-6 text-[#E53935]" />
+                    <div className="p-2 rounded-full" style={{ backgroundColor: `${ACCENT_COLOR}10` }}>
+                      <TicketPercent className="w-6 h-6" style={{ color: ACCENT_COLOR }} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-800">
-                        Banyak Promo Menarik
+                      <h4 className="font-bold" style={{ color: TEXT_COLOR }}>
+                        Harga Kompetitif & Promo
                       </h4>
-                      <p className="text-sm text-gray-500">
-                        Dapatkan diskon dan cashback spesial untuk anggota.
+                      <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                        Dapatkan harga terbaik dan diskon spesial untuk layanan digital.
                       </p>
                     </div>
                   </div>

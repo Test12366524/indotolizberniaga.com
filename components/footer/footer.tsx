@@ -8,10 +8,12 @@ import {
   MapPin,
   Phone,
   Mail,
-  Heart,
+  Zap, // Mengganti Heart
   Shield,
   Award,
   ArrowRight,
+  Truck, // Mengganti Award
+  MessageCircle, // Mengganti Shield
 } from "lucide-react";
 import { FaInstagram, FaFacebookF, FaWhatsapp } from "react-icons/fa";
 import Image from "next/image";
@@ -20,20 +22,26 @@ export default function Footer() {
   const router = useRouter();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+  // Definisi Warna Brand
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+
   const goToFaqPage = () => {
     router.push("/faq");
   };
 
   const faqs = [
     {
-      question: "Bagaimana cara menjadi anggota Koperasi Merah Putih?",
+      question: "Apakah produk yang dijual di Indotoliz 100% original?",
       answer:
-        "Anda dapat mendaftar melalui aplikasi internal kami atau menghubungi tim kami. Prosesnya cepat dan mudah!",
+        "Ya, kami hanya bekerja dengan distributor resmi. Semua produk dijamin asli dan memiliki garansi resmi.",
     },
     {
-      question: "Apakah UMKM bisa menjual produk di marketplace?",
+      question: "Bagaimana cara menjadi seller di platform ini?",
       answer:
-        "Ya, semua anggota koperasi bisa mendaftar sebagai seller di marketplace kami. Ini adalah platform khusus untuk UMKM anggota.",
+        "Anda dapat mendaftar melalui halaman profil. Kami menerima seller yang menjual produk elektronik, gadget, dan aksesori.",
     },
   ];
 
@@ -43,11 +51,11 @@ export default function Footer() {
     { name: "Cara Pemesanan", href: "/how-to-order" },
     { name: "Testimoni", href: "/testimonials" },
     { name: "FAQs", href: "/faq" },
-    { name: "Login Anggota", href: "/auth/login" },
+    { name: "Login Seller", href: "/auth/login" },
   ];
 
   return (
-    <footer className="bg-gray-50 text-gray-700 relative overflow-hidden border-t">
+    <footer className="text-gray-700 relative overflow-hidden border-t" style={{ backgroundColor: '#F8F9FA' }}>
       <div className="relative z-10">
         {/* Main Footer Content */}
         <div className="pt-16 pb-8 px-6 lg:px-12">
@@ -55,70 +63,69 @@ export default function Footer() {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
               {/* Company Info */}
               <div className="lg:col-span-2">
-                {/* --- PERUBAHAN DIMULAI DI SINI --- */}
-                {/* Struktur diubah agar logo dan teks sejajar */}
+                {/* Logo & Company Name */}
                 <div className="flex items-center gap-4 mb-4">
                   <Image
-                    src="/logo-koperasi-merah-putih-online.webp"
-                    alt="Koperasi Merah Putih Logo"
+                    src="/logo-indotoliz-berniaga.webp" // Ganti dengan logo Indotoliz
+                    alt="Indotoliz Berniaga Logo"
                     width={75}
                     height={75}
                     className="flex-shrink-0 object-contain"
                   />
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      Koperasi Merah Putih
+                    <h2 className="text-lg font-semibold" style={{ color: TEXT_COLOR }}>
+                      Indotoliz Berniaga
                     </h2>
-                    <p className="text-sm text-gray-600">
-                      Koperasi Simpan Pinjam & Marketplace untuk UMKM
+                    <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                      Marketplace Elektronik & Solusi Digital
                     </p>
                   </div>
                 </div>
-                {/* --- PERUBAHAN SELESAI DI SINI --- */}
 
-                <p className="text-sm text-gray-600 leading-relaxed mb-3">
-                  Mewujudkan kemandirian dan kesejahteraan anggota melalui unit
-                  usaha simpan pinjam dan marketplace yang terintegrasi.
+                <p className="text-sm leading-relaxed mb-3" style={{ color: SECONDARY_TEXT }}>
+                  Platform *e-commerce* terpercaya yang menyediakan produk
+                  elektronik orisinal dan solusi digital terbaik untuk kebutuhan
+                  Anda.
                 </p>
 
-                {/* Values */}
+                {/* Values (Disesuaikan) */}
                 <div className="space-y-3 mb-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-[#E53935]" />
-                    <span>Anggota sebagai Prioritas</span>
+                  <div className="flex items-center gap-2" style={{ color: SECONDARY_TEXT }}>
+                    <Shield className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+                    <span>Keamanan Transaksi Terjamin</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-[#E53935]" />
-                    <span>Transparansi & Akuntabilitas</span>
+                  <div className="flex items-center gap-2" style={{ color: SECONDARY_TEXT }}>
+                    <MessageCircle className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+                    <span>Dukungan Pelanggan Cepat</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-[#E53935]" />
-                    <span>Kesejahteraan Bersama</span>
+                  <div className="flex items-center gap-2" style={{ color: SECONDARY_TEXT }}>
+                    <Truck className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+                    <span>Logistik Nasional Terintegrasi</span>
                   </div>
                 </div>
 
-                {/* Contact Info */}
+                {/* Contact Info (Disesuaikan) */}
                 <div className="space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <MapPin className="w-4.5 h-4.5 text-[#E53935]" />
+                  <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
+                    <MapPin className="w-4.5 h-4.5" style={{ color: PRIMARY_COLOR }} />
                     <span>
-                      Jl. Kemerdekaan No. 17, Jakarta Pusat, DKI Jakarta 10120
+                      Jl. Teknologi Digital No. 1, Jakarta Selatan, 12790
                     </span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Phone className="w-4 h-4 text-[#E53935]" />
-                    <span>+62 812 3456 7890</span>
+                  <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
+                    <Phone className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+                    <span>+62 812 3456 7890 (WA Support)</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-[#E53935]" />
-                    <span>info@koperasimerahputih.co.id</span>
+                  <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
+                    <Mail className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+                    <span>support@indotoliz.co.id</span>
                   </div>
                 </div>
               </div>
 
               {/* Quick Links */}
               <div>
-                <h4 className="text-lg font-semibold mb-6 text-gray-800">
+                <h4 className="text-lg font-semibold mb-6" style={{ color: TEXT_COLOR }}>
                   Menu Utama
                 </h4>
                 <ul className="space-y-3">
@@ -126,9 +133,10 @@ export default function Footer() {
                     <li key={index}>
                       <a
                         href={link.href}
-                        className="text-gray-600 hover:text-[#E53935] transition-colors flex items-center group"
+                        className="hover:text-[#0077B6] transition-colors flex items-center group"
+                        style={{ color: SECONDARY_TEXT }}
                       >
-                        <ArrowRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity text-[#E53935]" />
+                        <ArrowRight className="w-3 h-3 mr-2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: ACCENT_COLOR }} />
                         <span className="group-hover:translate-x-1 transition-transform">
                           {link.name}
                         </span>
@@ -140,8 +148,8 @@ export default function Footer() {
 
               {/* FAQ */}
               <div>
-                <h4 className="text-lg font-semibold mb-6 text-gray-800">
-                  FAQ
+                <h4 className="text-lg font-semibold mb-6" style={{ color: TEXT_COLOR }}>
+                  FAQ Singkat
                 </h4>
                 <div className="space-y-4 mb-4">
                   {faqs.map((faq, i) => (
@@ -150,7 +158,8 @@ export default function Footer() {
                       className="bg-white border border-gray-200 rounded-2xl overflow-hidden"
                     >
                       <button
-                        className="w-full flex justify-between items-center text-left p-4 text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex justify-between items-center text-left p-4 hover:bg-gray-50 transition-colors"
+                        style={{ color: SECONDARY_TEXT }}
                         onClick={() =>
                           setActiveIndex(activeIndex === i ? null : i)
                         }
@@ -160,15 +169,15 @@ export default function Footer() {
                         </span>
                         <div className="flex-shrink-0">
                           {activeIndex === i ? (
-                            <ChevronUp className="w-4 h-4 text-[#E53935]" />
+                            <ChevronUp className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
                           ) : (
-                            <ChevronDown className="w-4 h-4 text-[#E53935]" />
+                            <ChevronDown className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
                           )}
                         </div>
                       </button>
                       {activeIndex === i && (
                         <div className="px-4 pb-4">
-                          <p className="text-sm text-gray-600 leading-relaxed">
+                          <p className="text-sm leading-relaxed" style={{ color: SECONDARY_TEXT }}>
                             {faq.answer}
                           </p>
                         </div>
@@ -179,7 +188,8 @@ export default function Footer() {
                   <button
                     onClick={goToFaqPage}
                     type="button"
-                    className="w-full bg-[#E53935] text-white py-3 rounded-2xl font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2"
+                    className="w-full text-white py-3 rounded-2xl font-semibold hover:opacity-90 transition-colors flex items-center justify-center gap-2"
+                    style={{ backgroundColor: PRIMARY_COLOR }}
                   >
                     Punya Pertanyaan Lain?
                   </button>
@@ -190,41 +200,42 @@ export default function Footer() {
         </div>
 
         {/* Social Media & Bottom Bar */}
-        <div className="border-t border-gray-200 bg-gray-100">
+        <div className="border-t border-gray-200" style={{ backgroundColor: '#ECEFF1' }}>
           <div className="container mx-auto px-6 lg:px-12 py-6">
             <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
-              <p>
-                © {new Date().getFullYear()} Koperasi Merah Putih. All rights
+              <p style={{ color: SECONDARY_TEXT }}>
+                © {new Date().getFullYear()} Indotoliz Berniaga. All rights
                 reserved.
               </p>
 
               {/* Social Media */}
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                <p className="text-gray-600 text-sm">Ikuti kami di:</p>
+                <p className="text-sm" style={{ color: SECONDARY_TEXT }}>Ikuti kami di:</p>
                 <div className="flex gap-4">
                   <a
-                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-pink-500 hover:text-white"
-                    href="https://www.instagram.com/koperasimerahputih"
+                    href="https://www.instagram.com/indotoliz"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    // Removed invalid style prop, use Tailwind for hover background
+                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-[#FF6B35] hover:text-white transition-colors"
+                  >
+                    <FaInstagram size={18} style={{ color: SECONDARY_TEXT }} />
+                  </a>
+                  <a
+                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-[#0077B6] hover:text-white transition-colors"
+                    href="https://www.facebook.com/indotoliz"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <FaInstagram size={18} />
+                    <FaFacebookF size={18} style={{ color: SECONDARY_TEXT }} />
                   </a>
                   <a
-                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-blue-600 hover:text-white"
-                    href="https://www.facebook.com/koperasimerahputih"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <FaFacebookF size={18} />
-                  </a>
-                  <a
-                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-green-500 hover:text-white"
+                    className="w-10 h-10 bg-white border border-gray-200 rounded-2xl flex items-center justify-center text-gray-600 hover:bg-green-500 hover:text-white transition-colors"
                     href="https://wa.me/6281234567890"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <FaWhatsapp size={18} />
+                    <FaWhatsapp size={18} style={{ color: SECONDARY_TEXT }} />
                   </a>
                 </div>
               </div>
