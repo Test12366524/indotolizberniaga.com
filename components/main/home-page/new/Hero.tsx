@@ -65,7 +65,7 @@ export default function Hero() {
         >
           {/* Ganti src dan alt dengan gambar yang relevan dengan elektronik/gadget */}
           <Image
-            src="/hero-koperasi.webp" 
+            src="/hero-indotoliz.webp" 
             alt="Marketplace Elektronik Indotoliz Berniaga"
             width={500}
             height={500}

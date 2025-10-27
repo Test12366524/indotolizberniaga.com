@@ -59,193 +59,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: "/admin/dashboard",
     },
     {
-      id: "anggota",
-      label: "Anggota",
-      icon: <Users className="h-5 w-5" />,
-      href: "/admin/anggota",
-    },
-    {
-      id: "simpanan",
-      label: "Simpanan",
-      icon: <FaCoins className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "simpanan/simpanan-anggota",
-          label: "Simpanan Anggota",
-          href: "/admin/simpanan/simpanan-anggota",
-        },
-        {
-          id: "simpanan/kategori",
-          label: "Kategori Simpanan",
-          href: "/admin/simpanan/kategori",
-        },
-        {
-          id: "penarikan-simpanan",
-          label: "Penarikan Simpanan",
-          href: "/admin/penarikan-simpanan",
-        },
-      ],
-    },
-    {
-      id: "pinjaman",
-      label: "Pinjaman",
-      icon: <FaMoneyBillWave className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "pinjaman/pinjaman-anggota",
-          label: "Pinjaman Anggota",
-          href: "/admin/pinjaman/pinjaman-anggota",
-        },
-        {
-          id: "pinjaman/kategori",
-          label: "Kategori Pinjaman",
-          href: "/admin/pinjaman/pinjaman-kategori",
-        },
-      ],
-    },
-    {
-      id: "data-keuangan",
-      label: "Data Keuangan",
-      icon: <Landmark className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "data-keuangan/pemotongan-gaji",
-          label: "Data Pemotongan Gaji",
-          href: "/admin/keuangan/gaji",
-        },
-        {
-          id: "data-keuangan/angsuran-pinjaman",
-          label: "Update Angsuran Pinjaman",
-          href: "/admin/keuangan/angsuran-pinjaman",
-        },
-      ],
-    },
-    {
-      id: "anggota-meninggal",
-      label: "Anggota Meninggal",
-      icon: <ClipboardList className="h-5 w-5" />,
-      href: "/admin/anggota-meninggal",
-    },
-    {
-      id: "akuntansi",
-      label: "Akuntansi",
-      icon: <FileText className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "akuntansi/jurnal-transaksi",
-          label: "Jurnal Transaksi",
-          href: "/admin/akuntansi/jurnal-transaksi",
-        },
-        {
-          id: "akuntansi/saldo-coa",
-          label: "Saldo COA",
-          href: "/admin/akuntansi/saldo-coa",
-        },
-        {
-          id: "akuntansi/buku-besar",
-          label: "Buku Besar",
-          href: "/admin/akuntansi/buku-besar",
-        },
-      ],
-    },
-    {
-      id: "laporan",
-      label: "Laporan",
-      icon: <LineChart className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "laporan/pengajuan-pinjaman",
-          label: "Pengajuan Pinjaman",
-          href: "/admin/laporan/pengajuan-pinjaman",
-        },
-        {
-          id: "laporan/nominatif-pinjaman",
-          label: "Nominatif Pinjaman",
-          href: "/admin/laporan/nominatif-pinjaman",
-        },
-        {
-          id: "laporan/nominatif-simpanan",
-          label: "Nominatif Simpanan",
-          href: "/admin/laporan/nominatif-simpanan",
-        },
-        {
-          id: "laporan/anggota-meninggal-dunia",
-          label: "Anggota Meninggal Dunia",
-          href: "/admin/laporan/anggota-meninggal-dunia",
-        },
-        {
-          id: "laporan/sisa-hasil-usaha",
-          label: "Sisa Hasil Usaha",
-          href: "/admin/laporan/sisa-hasil-usaha",
-        },
-      ],
-    },
-    {
-      id: "konfigurasi",
-      label: "Konfigurasi",
-      icon: <Settings className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "master/coa",
-          label: "Chart of Accounts",
-          href: "/admin/master/coas",
-        },
-        {
-          id: "master/kode-transaksi",
-          label: "Kode Transaksi",
-          href: "/admin/master/kode-transaksi",
-        },
-        {
-          id: "konfigurasi/pengelola",
-          label: "Pengelola",
-          href: "/admin/pengelola",
-        },
-        {
-          id: "konfigurasi/role",
-          label: "Role",
-          href: "/admin/role",
-        },
-      ],
-    },
-    {
-      id: "master",
-      label: "Master",
-      icon: <Database className="h-5 w-5" />,
-      href: "#",
-      children: [
-        {
-          id: "master/coa",
-          label: "COA",
-          href: "/admin/master/coas",
-        },
-        {
-          id: "master/kode-transaksi",
-          label: "Kode Transaksi",
-          href: "/admin/master/kode-transaksi",
-        },
-      ],
-    },
-
-    // --- Marketplace ---
-    {
-      id: "pemisah-marketplace",
-      label: "Marketplace",
-      isSeparator: true,
-      href: "#",
-    },
-    {
-      id: "dashboard-marketplace",
-      label: "Dashboard",
-      icon: <BookDashed className="h-5 w-5" />,
-      href: "/admin/dashboard-marketplace",
-    },
-    {
       id: "seller",
       label: "Seller",
       icon: <UserCheck className="h-5 w-5" />,
@@ -362,6 +175,34 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       icon: <Building className="h-5 w-5" />,
       href: "/admin/profile-toko",
     },
+    {
+      id: "konfigurasi",
+      label: "Konfigurasi",
+      icon: <Settings className="h-5 w-5" />,
+      href: "#",
+      children: [
+        {
+          id: "master/coa",
+          label: "Chart of Accounts",
+          href: "/admin/master/coas",
+        },
+        {
+          id: "master/kode-transaksi",
+          label: "Kode Transaksi",
+          href: "/admin/master/kode-transaksi",
+        },
+        {
+          id: "konfigurasi/pengelola",
+          label: "Pengelola",
+          href: "/admin/pengelola",
+        },
+        {
+          id: "konfigurasi/role",
+          label: "Role",
+          href: "/admin/role",
+        },
+      ],
+    },
 
     // --- Konten Website ---
     {
@@ -369,18 +210,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       label: "Konten Website",
       isSeparator: true,
       href: "#",
-    },
-    {
-      id: "home",
-      label: "Home",
-      icon: <Webhook className="h-5 w-5" />,
-      href: "/admin/home",
-    },
-    {
-      id: "tentang-kami",
-      label: "Tentang Kami",
-      icon: <FileStack className="h-5 w-5" />,
-      href: "/admin/tentang-kami",
     },
     {
       id: "gallery",

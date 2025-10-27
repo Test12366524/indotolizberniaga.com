@@ -208,6 +208,14 @@ export default function CartPage() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  // === DEFINISI WARNA BRAND ===
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+  const LIGHT_ACCENT_BG = `${ACCENT_COLOR}1A`; // Jingga transparan untuk latar belakang ringan
+  const LIGHT_PRIMARY_BG = `${PRIMARY_COLOR}1A`; // Biru transparan untuk latar belakang ringan
+
   const sessionName = useMemo(() => session?.user?.name ?? "", [session]);
 
   const [cartItems, setCartItems] = useState<CartItemView[]>([]);
@@ -684,9 +692,12 @@ export default function CartPage() {
       <div className="min-h-screen w-full bg-gradient-to-br from-white to-[#6B6B6B]/10 pt-24">
         <div className="container mx-auto px-6 lg:px-12">
           <div className="max-w-2xl mx-auto text-center py-20">
-            <div className="w-32 h-32 bg-[#6B6B6B]/10 rounded-full flex items-center justify-center mx-auto mb-8">
-              <ShoppingCart className="w-16 h-16 text-[#6B6B6B]" />
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8`} style={{ backgroundColor: LIGHT_PRIMARY_BG }}>
+              <ShoppingCart className="w-16 h-16" style={{ color: PRIMARY_COLOR }} />
             </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              Keranjang Kosong
+            </h1>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               Keranjang Kosong
             </h1>
@@ -696,7 +707,8 @@ export default function CartPage() {
             </p>
             <a
               href="/product"
-              className="inline-flex bg-[#6B6B6B] text-white px-8 py-4 rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors items-center gap-2"
+              className={`inline-flex text-white px-8 py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors items-center gap-2`}
+              style={{ backgroundColor: PRIMARY_COLOR }}
             >
               <ArrowLeft className="w-5 h-5" />
               Mulai Berbelanja
@@ -800,14 +812,14 @@ export default function CartPage() {
             </a>
           </div>
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 bg-[#6B6B6B]/10 px-4 py-2 rounded-full mb-4">
-              <Sparkles className="w-4 h-4 text-[#6B6B6B]" />
-              <span className="text-sm font-medium text-[#6B6B6B]">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4`} style={{ backgroundColor: LIGHT_ACCENT_BG }}>
+              <Sparkles className="w-4 h-4" style={{ color: ACCENT_COLOR }} />
+              <span className="text-sm font-medium" style={{ color: ACCENT_COLOR }}>
                 Keranjang Belanja
               </span>
             </div>
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Produk <span className="text-[#6B6B6B]">Pilihan Anda</span>
+              Produk <span style={{ color: PRIMARY_COLOR }}>Pilihan Anda</span>
             </h1>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Review produk favorit dan lanjutkan untuk mendapatkan pengalaman
@@ -1379,7 +1391,7 @@ export default function CartPage() {
                 <div className="border-t border-gray-200 pt-3">
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
-                    <span className="text-[#6B6B6B]">
+                    <span style={{ color: PRIMARY_COLOR }}>
                       Rp {total.toLocaleString("id-ID")}
                     </span>
                   </div>
@@ -1413,7 +1425,8 @@ export default function CartPage() {
                   !paymentType ||
                   (payType === "automatic" && (!payMethod || !payChannel))
                 }
-                className="w-full bg-[#6B6B6B] text-white py-4 rounded-2xl font-semibold hover:bg-[#6B6B6B]/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`w-full text-white py-4 rounded-2xl font-semibold hover:opacity-90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+                style={{ backgroundColor: PRIMARY_COLOR }}
               >
                 {isCheckingOut || isSubmitting ? (
                   <>
@@ -1436,12 +1449,12 @@ export default function CartPage() {
                 !shippingMethod ||
                 !shippingInfo.fullName ||
                 !shippingInfo.address_line_1) && (
-                <p className="text-red-500 text-sm text-center mt-3">
+                <p className="text-red-500 text-sm text-center mt-3" style={{ color: ACCENT_COLOR }}>
                   * Harap lengkapi semua informasi yang diperlukan
                 </p>
               )}
               {cartItems.some((it) => !it.inStock) && (
-                <p className="text-red-500 text-sm text-center mt-3">
+                <p className="text-red-500 text-sm text-center mt-3" style={{ color: ACCENT_COLOR }}>
                   Beberapa produk tidak tersedia. Hapus untuk melanjutkan.
                 </p>
               )}
@@ -1451,7 +1464,7 @@ export default function CartPage() {
         {/* <div className="mt-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Produk <span className="text-[#6B6B6B]">Rekomendasi</span>
+              Produk <span style={{ color: PRIMARY_COLOR }}>Rekomendasi</span>
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Lengkapi koleksi kreatif si kecil dengan produk pilihan lainnya

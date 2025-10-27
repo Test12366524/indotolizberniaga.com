@@ -22,20 +22,22 @@ import {
   FaEnvelope,
   FaPhone,
   FaArrowRight,
-  FaCoins,
-  FaHandshake,
+  FaShoppingCart, // Mengganti FaCoins
+  FaTruckLoading, // Mengganti FaHandshake
   FaChartLine,
-  FaPiggyBank,
+  FaWarehouse, // Mengganti FaPiggyBank
   FaUsers,
-  FaBuilding,
-  FaCalculator,
+  FaBoxes, // Mengganti FaBuilding
+  FaCreditCard, // Mengganti FaCalculator
   FaShieldAlt,
   FaPlus,
   FaTrash,
+  FaStore, // Ikon baru untuk bisnis
+  FaGlobe, // Ikon baru untuk jangkauan
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { formatDateForInput } from "@/lib/format-utils";
-import type { DocumentsAnggota } from "@/types/koperasi-types/anggota";
+// import type { DocumentsAnggota } from "@/types/koperasi-types/anggota"; // Ini mungkin tidak relevan lagi, sesuaikan jika ada dokumen seller
 
 type AuthFormProps = {
   mode: "login" | "register";
@@ -49,16 +51,25 @@ type RegisterError = {
   };
 };
 
-type MediaItem = DocumentsAnggota["media"][number];
+// Sesuaikan tipe dokumen jika ini untuk seller/penjual, bukan anggota koperasi
+type DocumentsSeller = {
+  id: number;
+  seller_id: number;
+  key: string; // Misal: "KTP", "SIUP", "NPWP Perusahaan"
+  document: File | null;
+  created_at: string;
+  updated_at: string;
+  media: Array<{ original_url: string }>;
+};
 
-const makeEmptyDoc = (anggota_id = 0): DocumentsAnggota => ({
+const makeEmptyDoc = (seller_id = 0): DocumentsSeller => ({
   id: 0,
-  anggota_id,
+  seller_id,
   key: "",
   document: null,
   created_at: "",
   updated_at: "",
-  media: [] as DocumentsAnggota["media"],
+  media: [] as DocumentsSeller["media"],
 });
 
 const variants = {
@@ -66,10 +77,11 @@ const variants = {
   visible: { opacity: 1, y: 0 },
 };
 
+// Gambar carousel yang lebih relevan untuk e-commerce / B2B
 const carouselImages = [
-  "/images/koperasi-1.jpg",
-  "/images/koperasi-2.jpg",
-  "/images/koperasi-3.jpg",
+  "https://images.unsplash.com/photo-1572021332263-ad02e93d8b24?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Gudang modern / logistik
+  "https://images.unsplash.com/photo-1522071820081-009f0129c7ce?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Tim kolaborasi / meeting
+  "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Dashboard analytics
 ];
 
 // === Interface 2: payload eksplisit untuk register ===
@@ -79,15 +91,14 @@ type RegisterPayload = {
   phone: string;
   password: string;
   password_confirmation: string;
-  gender?: "M" | "F";
-  birth_place?: string;
-  birth_date?: string; // yyyy-mm-dd
-  nik?: string; // 16 digit
-  npwp?: string; // 15 digit (ignore .-/spasi)
-  nip?: string; // 8-20 digit (opsional)
-  unit_kerja?: string;
-  jabatan?: string;
+  // Field tambahan untuk seller/penjual
+  business_name?: string;
+  business_category?: string;
   address?: string;
+  city?: string;
+  province?: string;
+  postal_code?: string;
+  // dokumen mungkin dikirim terpisah atau hanya meta datanya
 };
 
 type FieldErrors = Partial<Record<keyof RegisterPayload, string>> & {
@@ -102,21 +113,18 @@ const isValidPhoneID = (s: string) => {
   const d = digitsOnly(s);
   return d.startsWith("08") && d.length >= 10 && d.length <= 14;
 };
-const normalizeNPWP = (s: string) => digitsOnly(s);
-const notFutureDate = (value?: string) => {
-  if (!value) return true;
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return false;
-  const today = new Date();
-  d.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return d.getTime() <= today.getTime();
-};
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const isLogin = mode === "login";
   const isRegister = !isLogin;
+
+  // === DEFINISI WARNA BRAND ===
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+  const LIGHT_PRIMARY_BG = `${PRIMARY_COLOR}1A`; // Biru transparan untuk latar belakang ringan
 
   // ===== Umum (Akun) =====
   const [name, setName] = useState("");
@@ -125,19 +133,16 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
 
-  // ===== Field tambahan (seperti AnggotaForm) =====
-  const [gender, setGender] = useState<"" | "M" | "F">("");
-  const [birthPlace, setBirthPlace] = useState("");
-  const [birthDate, setBirthDate] = useState<string>("");
-  const [nik, setNik] = useState("");
-  const [npwp, setNpwp] = useState("");
-  const [nip, setNip] = useState("");
-  const [unitKerja, setUnitKerja] = useState("");
-  const [jabatan, setJabatan] = useState("");
+  // ===== Field tambahan untuk Seller/Bisnis =====
+  const [businessName, setBusinessName] = useState("");
+  const [businessCategory, setBusinessCategory] = useState("");
   const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [postalCode, setPostalCode] = useState("");
 
-  // ===== Dokumen dinamis =====
-  const [documents, setDocuments] = useState<DocumentsAnggota[]>([
+  // ===== Dokumen dinamis (disesuaikan untuk seller) =====
+  const [documents, setDocuments] = useState<DocumentsSeller[]>([
     makeEmptyDoc(0),
   ]);
 
@@ -202,8 +207,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const validateRegister = (): FieldErrors => {
     const errs: FieldErrors = {};
 
-    if (!name.trim()) errs.name = "Nama wajib diisi.";
-    else if (name.trim().length < 3) errs.name = "Nama minimal 3 karakter.";
+    if (!name.trim()) errs.name = "Nama Penanggung Jawab wajib diisi.";
+    else if (name.trim().length < 3)
+      errs.name = "Nama Penanggung Jawab minimal 3 karakter.";
 
     if (!email.trim()) errs.email = "Email wajib diisi.";
     else if (!isValidEmail(email.trim()))
@@ -223,50 +229,28 @@ export default function AuthForm({ mode }: AuthFormProps) {
       errs.password_confirmation = "Konfirmasi password tidak cocok.";
     }
 
-    if (gender && gender !== "M" && gender !== "F") {
-      errs.gender = "Gender tidak valid.";
-    }
+    if (!businessName.trim()) errs.business_name = "Nama Bisnis wajib diisi.";
+    else if (businessName.trim().length < 2)
+      errs.business_name = "Nama Bisnis minimal 2 karakter.";
 
-    if (birthPlace && birthPlace.trim().length < 2) {
-      errs.birth_place = "Tempat lahir minimal 2 karakter.";
-    }
+    if (!businessCategory.trim())
+      errs.business_category = "Kategori Bisnis wajib diisi.";
 
-    if (birthDate && !notFutureDate(birthDate)) {
-      errs.birth_date = "Tanggal lahir tidak boleh di masa depan.";
-    }
+    if (!address.trim()) errs.address = "Alamat Bisnis wajib diisi.";
+    else if (address.trim().length < 10)
+      errs.address = "Alamat Bisnis minimal 10 karakter.";
 
-    const nikDigits = digitsOnly(nik);
-    if (nik && nikDigits.length !== 16) {
-      errs.nik = "NIK (KTP) harus 16 digit.";
-    }
-
-    const npwpDigits = normalizeNPWP(npwp);
-    if (npwp && npwpDigits.length !== 15) {
-      errs.npwp = "NPWP harus 15 digit (tanpa tanda baca).";
-    }
-
-    const nipDigits = digitsOnly(nip);
-    if (nip && (nipDigits.length < 8 || nipDigits.length > 20)) {
-      errs.nip = "NIP harus 8–20 digit.";
-    }
-
-    if (unitKerja && unitKerja.trim().length < 2) {
-      errs.unit_kerja = "Unit kerja minimal 2 karakter.";
-    }
-    if (jabatan && jabatan.trim().length < 2) {
-      errs.jabatan = "Jabatan minimal 2 karakter.";
-    }
-
-    if (address && address.trim().length < 10) {
-      errs.address = "Alamat minimal 10 karakter.";
-    }
+    if (!city.trim()) errs.city = "Kota wajib diisi.";
+    if (!province.trim()) errs.province = "Provinsi wajib diisi.";
+    if (!postalCode.trim()) errs.postal_code = "Kode Pos wajib diisi.";
 
     // Dokumen: jika ada file maka nama file wajib
     for (let i = 0; i < documents.length; i++) {
       const d = documents[i];
       if (d.document && !d.key) {
-        // tidak ada field error spesifik; pesan ini bisa ditampilkan di UI bagian dokumen kalau mau
-        errs.address = errs.address ?? ""; // no-op untuk menandai ada error tambahan
+        // Ini contoh bagaimana error dokumen bisa ditangani,
+        // Anda mungkin ingin menampilkan pesan error ini di UI dokumen secara spesifik
+        errs.address = errs.address ?? ""; // Placeholder: menandakan ada error tambahan di bagian dokumen
       }
     }
 
@@ -288,7 +272,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
         });
 
         if (signInRes?.ok) {
-          router.push("/admin/dashboard");
+          router.push("/admin/dashboard"); // Atau ke dashboard seller
         } else {
           setError("Gagal masuk. Email atau password salah.");
         }
@@ -305,7 +289,25 @@ export default function AuthForm({ mode }: AuthFormProps) {
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
       setIsLoading(false);
-      setActiveTab("data");
+      // Pindah ke tab 'data' jika ada error di data diri
+      if (
+        errs.name ||
+        errs.email ||
+        errs.phone ||
+        errs.password ||
+        errs.password_confirmation ||
+        errs.business_name ||
+        errs.business_category ||
+        errs.address ||
+        errs.city ||
+        errs.province ||
+        errs.postal_code
+      ) {
+        setActiveTab("data");
+      } else {
+        // Jika error hanya di dokumen, tetap di tab dokumen
+        setActiveTab("dokumen");
+      }
       return;
     }
 
@@ -316,26 +318,23 @@ export default function AuthForm({ mode }: AuthFormProps) {
         phone: digitsOnly(phone),
         password,
         password_confirmation: passwordConfirmation,
-        gender: gender || undefined,
-        birth_place: birthPlace ? birthPlace.trim() : undefined,
-        birth_date: birthDate || undefined,
-        nik: nik ? digitsOnly(nik) : undefined,
-        npwp: npwp ? normalizeNPWP(npwp) : undefined,
-        nip: nip ? digitsOnly(nip) : undefined,
-        unit_kerja: unitKerja ? unitKerja.trim() : undefined,
-        jabatan: jabatan ? jabatan.trim() : undefined,
-        address: address ? address.trim() : undefined,
+        business_name: businessName.trim(),
+        business_category: businessCategory.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        province: province.trim(),
+        postal_code: postalCode.trim(),
       };
 
       await register(payload).unwrap();
 
       await Swal.fire({
-        title: "Pendaftaran berhasil",
-        text: "Silakan cek email kamu untuk verifikasi sebelum login.",
+        title: "Pendaftaran Berhasil",
+        text: "Akun Anda berhasil dibuat! Silakan cek email untuk verifikasi sebelum login ke dashboard seller Anda.",
         icon: "success",
       });
 
-      router.push("/auth/login");
+      router.push("/auth/login"); // Arahkan ke halaman login seller
     } catch (err) {
       const error = err as RegisterError;
       console.error("Register error:", error);
@@ -346,11 +345,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
       if (showResend) {
         const result = await Swal.fire({
           title: "Email belum diverifikasi",
-          text: "Apakah kamu ingin mengirim ulang email verifikasi?",
+          text: "Apakah Anda ingin mengirim ulang email verifikasi?",
           icon: "warning",
           showCancelButton: true,
           confirmButtonText: "Kirim Ulang",
           cancelButtonText: "Batal",
+          confirmButtonColor: PRIMARY_COLOR,
+          cancelButtonColor: SECONDARY_TEXT,
         });
 
         if (result.isConfirmed) {
@@ -360,12 +361,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
               title: "Terkirim!",
               text: "Email verifikasi berhasil dikirim ulang.",
               icon: "success",
+              confirmButtonColor: PRIMARY_COLOR,
             });
           } catch {
             await Swal.fire({
               title: "Gagal",
               text: "Gagal mengirim ulang email verifikasi.",
               icon: "error",
+              confirmButtonColor: PRIMARY_COLOR,
             });
           }
         }
@@ -378,8 +381,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
   };
 
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-gradient-to-br from-red-50 to-white">
-      {/* Left Pane - Koperasi Merah Putih Theme with Carousel */}
+    <div className="w-full min-h-screen grid grid-cols-1 lg:grid-cols-2" style={{ background: `linear-gradient(to bottom right, #FFFFFF, ${PRIMARY_COLOR}10)` }}>
+      {/* Left Pane - Indotoliz Berniaga Theme with Carousel */}
       <div className="relative hidden lg:flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0" ref={emblaRef}>
           <div className="embla__container flex h-full">
@@ -390,7 +393,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
               >
                 <Image
                   src={src}
-                  alt={`Koperasi Merah Putih ${index + 1}`}
+                  alt={`Indotoliz Berniaga ${index + 1}`}
                   fill
                   style={{ objectFit: "cover" }}
                   quality={100}
@@ -402,15 +405,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
         </div>
 
         {/* Overlay */}
-        <div className="absolute inset-0 z-10 bg-black/40 flex flex-col items-center justify-center p-8 text-white text-center">
+        <div className="absolute inset-0 z-10 bg-gradient-to-tr from-blue-900/60 via-blue-800/50 to-orange-600/50 flex flex-col items-center justify-center p-8 text-white text-center">
           {/* Floating Icons */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <motion.div
               animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }}
               transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-20 left-16 text-red-300/60"
+              className={`absolute top-20 left-16 text-[${PRIMARY_COLOR}]/60`}
             >
-              <FaCoins size={32} />
+              <FaShoppingCart size={32} />
             </motion.div>
             <motion.div
               animate={{ y: [0, 15, 0], rotate: [0, -3, 0] }}
@@ -420,9 +423,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 1,
               }}
-              className="absolute top-32 left-8 text-red-200/50"
+              className={`absolute top-32 left-8 text-[${PRIMARY_COLOR}]/50`}
             >
-              <FaPiggyBank size={24} />
+              <FaWarehouse size={24} />
             </motion.div>
             <motion.div
               animate={{ y: [0, -15, 0], rotate: [0, -5, 0] }}
@@ -432,9 +435,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 2,
               }}
-              className="absolute top-24 right-20 text-red-300/60"
+              className={`absolute top-24 right-20 text-[${ACCENT_COLOR}]/60`}
             >
-              <FaHandshake size={28} />
+              <FaTruckLoading size={28} />
             </motion.div>
             <motion.div
               animate={{ y: [0, 20, 0], rotate: [0, 3, 0] }}
@@ -444,7 +447,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 0.5,
               }}
-              className="absolute top-40 right-12 text-red-200/50"
+              className={`absolute top-40 right-12 text-[${ACCENT_COLOR}]/50`}
             >
               <FaChartLine size={26} />
             </motion.div>
@@ -456,7 +459,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 1.5,
               }}
-              className="absolute bottom-32 left-12 text-red-300/60"
+              className={`absolute bottom-32 left-12 text-[${PRIMARY_COLOR}]/60`}
             >
               <FaUsers size={30} />
             </motion.div>
@@ -468,9 +471,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 3,
               }}
-              className="absolute bottom-20 left-24 text-red-200/50"
+              className={`absolute bottom-20 left-24 text-[${ACCENT_COLOR}]/50`}
             >
-              <FaBuilding size={22} />
+              <FaBoxes size={22} />
             </motion.div>
             <motion.div
               animate={{ y: [0, -12, 0], rotate: [0, -4, 0] }}
@@ -480,9 +483,9 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 2.5,
               }}
-              className="absolute bottom-28 right-16 text-red-300/60"
+              className={`absolute bottom-28 right-16 text-[${PRIMARY_COLOR}]/60`}
             >
-              <FaCalculator size={28} />
+              <FaCreditCard size={28} />
             </motion.div>
             <motion.div
               animate={{ y: [0, 16, 0], rotate: [0, 2, 0] }}
@@ -492,7 +495,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 ease: "easeInOut",
                 delay: 1,
               }}
-              className="absolute bottom-16 right-8 text-red-200/50"
+              className={`absolute bottom-16 right-8 text-[${ACCENT_COLOR}]/50`}
             >
               <FaShieldAlt size={24} />
             </motion.div>
@@ -503,43 +506,52 @@ export default function AuthForm({ mode }: AuthFormProps) {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8 }}
-            className="z-20 p-8 rounded-2xl backdrop-blur-sm bg-white/95 border-2 border-red-600 shadow-2xl"
+            className={`z-20 p-8 rounded-2xl backdrop-blur-sm bg-white/95 border-2 shadow-2xl`}
+            style={{ borderColor: ACCENT_COLOR }}
           >
             <div className="flex items-center justify-center mb-6">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
+                {/* Asumsi Anda memiliki logo Indotoliz Berniaga */}
                 <Image
-                  src="/logo-koperasi-merah-putih-online.webp"
-                  alt="Koperasi Merah Putih Logo"
-                  width={50}
-                  height={50}
+                  src="/logo-only-indotoliz.png" // Ganti dengan path logo Indotoliz Berniaga Anda
+                  alt="Indotoliz Berniaga Logo"
+                  width={60}
+                  height={60}
                   className="flex-shrink-0 object-contain"
                 />
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    Koperasi Merah Putih
+                  <h2 className="text-2xl font-bold" style={{ color: PRIMARY_COLOR }}>
+                    Indotoliz Berniaga
                   </h2>
-                  <p className="text-xs text-gray-600 mt-[-5px]">
-                    Simpan Pinjam & Marketplace
+                  <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                    Solusi E-commerce B2B Terdepan
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="w-16 h-1 bg-gradient-to-r from-red-600 to-red-400 mx-auto mb-4"></div>
+            <div
+              className="w-20 h-1 mx-auto mb-4"
+              style={{ background: `linear-gradient(to right, ${PRIMARY_COLOR}, ${ACCENT_COLOR})` }}
+            ></div>
 
             <p className="text-base font-medium text-gray-700 max-w-sm mx-auto leading-relaxed">
-              Sistem Manajemen Koperasi Terintegrasi untuk Simpan Pinjam,
-              Pengelolaan Anggota, dan Operasional Keuangan
+              Platform terintegrasi untuk mengelola bisnis Anda, dari inventaris
+              hingga penjualan dan analisis performa.
             </p>
 
             <div className="mt-6 flex justify-center space-x-4 text-sm text-gray-600">
               <div className="flex items-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                Simpan Pinjam
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: PRIMARY_COLOR }}></div>
+                Manajemen Produk
               </div>
               <div className="flex items-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                Manajemen Anggota
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: ACCENT_COLOR }}></div>
+                Pelacakan Pesanan
+              </div>
+              <div className="flex items-center">
+                <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: PRIMARY_COLOR }}></div>
+                Analisis Penjualan
               </div>
             </div>
           </motion.div>
@@ -552,8 +564,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
               key={index}
               className={`h-2 rounded-full transition-all duration-300 ${
                 index === selectedIndex
-                  ? "w-8 bg-white shadow-lg"
-                  : "w-2 bg-white/60"
+                  ? `w-8 bg-white shadow-lg`
+                  : `w-2 bg-white/60`
               }`}
             />
           ))}
@@ -561,14 +573,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
       </div>
 
       {/* Right Pane - Form */}
-      <div className="relative flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-white to-red-50 transition-colors duration-500 overflow-hidden">
+      <div className="relative flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8 transition-colors duration-500 overflow-hidden" style={{ background: `linear-gradient(to bottom right, #FFFFFF, ${PRIMARY_COLOR}10)` }}>
         {/* Static Icons */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-2/12 right-4 text-red-300/50 z-0">
-            <FaPiggyBank size={120} />
+          <div className={`absolute top-2/12 right-4 text-[${PRIMARY_COLOR}]/30 z-0`}>
+            <FaWarehouse size={120} />
           </div>
-          <div className="absolute bottom-0 -translate-y-1/2 -left-4 text-red-300/50 z-0">
-            <FaHandshake size={110} />
+          <div className={`absolute bottom-0 -translate-y-1/2 -left-4 text-[${ACCENT_COLOR}]/30 z-0`}>
+            <FaTruckLoading size={110} />
           </div>
         </div>
 
@@ -581,27 +593,31 @@ export default function AuthForm({ mode }: AuthFormProps) {
         >
           {/* Header */}
           <motion.div variants={variants} className="text-center">
-            <div className="flex items-center justify-center mb-4 gap-1">
+            <div className="flex items-center justify-center mb-4 gap-2">
+              {/* Asumsi Anda memiliki logo Indotoliz Berniaga */}
               <Image
-                src="/logo-koperasi-merah-putih-online.webp"
-                alt="Koperasi Merah Putih Logo"
+                src="/logo-only-indotoliz.png" // Ganti dengan path logo Indotoliz Berniaga Anda
+                alt="Indotoliz Berniaga Logo"
                 width={50}
                 height={50}
                 className="flex-shrink-0 object-contain"
               />
               <div>
-                <h2 className="text-lg font-semibold text-gray-800">
-                  Koperasi Merah Putih
+                <h2 className="text-2xl font-bold" style={{ color: PRIMARY_COLOR }}>
+                  Indotoliz Berniaga
                 </h2>
-                <p className="text-xs text-gray-600 mt-[-5px]">
-                  Simpan Pinjam & Marketplace
+                <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                  Solusi E-commerce B2B Terdepan
                 </p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold mt-4" style={{ color: TEXT_COLOR }}>
+              {isLogin ? "Selamat Datang Kembali!" : "Bergabung sebagai Mitra"}
+            </h1>
+            <p className="text-sm mt-2" style={{ color: SECONDARY_TEXT }}>
               {isLogin
-                ? "Akses dashboard admin untuk mengelola operasional koperasi"
-                : "Bergabunglah sebagai anggota koperasi untuk memulai"}
+                ? "Akses dashboard Anda untuk mengelola bisnis."
+                : "Daftarkan bisnis Anda dan mulai jualan sekarang!"}
             </p>
           </motion.div>
 
@@ -609,11 +625,12 @@ export default function AuthForm({ mode }: AuthFormProps) {
           <motion.form
             variants={variants}
             onSubmit={handleSubmit}
-            className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-red-100 flex flex-col max-h-[60vh] overflow-y-auto"
+            className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border flex flex-col max-h-[70vh] overflow-y-auto`}
+            style={{ borderColor: LIGHT_PRIMARY_BG }}
           >
             {/* Sticky Tabs (Register only) */}
             {isRegister && (
-              <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-red-100">
+              <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b" style={{ borderColor: LIGHT_PRIMARY_BG }}>
                 <div className="px-8 pt-6">
                   <div className="flex gap-2">
                     <button
@@ -621,22 +638,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
                       onClick={() => setActiveTab("data")}
                       className={`px-4 py-2 text-sm font-semibold ${
                         activeTab === "data"
-                          ? "text-red-700 border-b-2 border-red-600"
-                          : "text-gray-500 hover:text-red-600"
+                          ? `text-[${PRIMARY_COLOR}] border-b-2 border-[${PRIMARY_COLOR}]`
+                          : `text-gray-500 hover:text-[${PRIMARY_COLOR}]`
                       }`}
                     >
-                      Data Diri
+                      Informasi Bisnis & Akun
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab("dokumen")}
                       className={`px-4 py-2 text-sm font-semibold ${
                         activeTab === "dokumen"
-                          ? "text-red-700 border-b-2 border-red-600"
-                          : "text-gray-500 hover:text-red-600"
+                          ? `text-[${PRIMARY_COLOR}] border-b-2 border-[${PRIMARY_COLOR}]`
+                          : `text-gray-500 hover:text-[${PRIMARY_COLOR}]`
                       }`}
                     >
-                      Dokumen
+                      Dokumen Pendukung
                     </button>
                   </div>
                 </div>
@@ -651,20 +668,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   <motion.div variants={variants} className="space-y-2">
                     <Label
                       htmlFor="email"
-                      className="text-sm font-semibold text-gray-700"
+                      className="text-sm font-semibold"
+                      style={{ color: TEXT_COLOR }}
                     >
                       Email
                     </Label>
                     <div className="relative">
-                      <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                      <FaEnvelope className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                       <Input
                         id="email"
                         type="email"
-                        placeholder="email@example.com"
+                        placeholder="email@bisnisanda.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
+                        className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
                         aria-invalid={!!fieldErrors.email}
                       />
                     </div>
@@ -673,19 +691,20 @@ export default function AuthForm({ mode }: AuthFormProps) {
                   <motion.div variants={variants} className="space-y-2">
                     <Label
                       htmlFor="password"
-                      className="text-sm font-semibold text-gray-700"
+                      className="text-sm font-semibold"
+                      style={{ color: TEXT_COLOR }}
                     >
                       Password
                     </Label>
                     <div className="relative">
-                      <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                      <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                       <Input
                         id="password"
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
+                        className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
                         placeholder="Masukkan password"
                         aria-invalid={!!fieldErrors.password}
                       />
@@ -697,25 +716,29 @@ export default function AuthForm({ mode }: AuthFormProps) {
               {/* ======= REGISTER: DATA DIRI ======= */}
               {isRegister && activeTab === "data" && (
                 <>
-                  {/* Baris 1: Nama, Email */}
+                  {/* Bagian Informasi Penanggung Jawab */}
+                  <h3 className="text-lg font-bold mt-6 mb-4" style={{ color: TEXT_COLOR }}>
+                    Informasi Penanggung Jawab
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <motion.div variants={variants} className="space-y-2">
                       <Label
                         htmlFor="name"
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
                       >
-                        Nama Lengkap
+                        Nama Lengkap Penanggung Jawab
                       </Label>
                       <div className="relative">
-                        <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                        <FaUser className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                         <Input
                           id="name"
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           required
-                          className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
-                          placeholder="Masukkan nama lengkap"
+                          className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                          placeholder="Nama lengkap Anda"
                           aria-invalid={!!fieldErrors.name}
                         />
                       </div>
@@ -728,79 +751,81 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
                     <motion.div variants={variants} className="space-y-2">
                       <Label
-                        htmlFor="email"
-                        className="text-sm font-semibold text-gray-700"
+                        htmlFor="phone"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
                       >
-                        Email
+                        Nomor Telepon Penanggung Jawab
                       </Label>
                       <div className="relative">
-                        <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                        <FaPhone className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                         <Input
-                          id="email"
-                          type="email"
-                          placeholder="email@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          id="phone"
+                          type="tel"
+                          inputMode="numeric"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
                           required
-                          className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
-                          aria-invalid={!!fieldErrors.email}
+                          className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                          placeholder="08xxxxxxxxxx"
+                          aria-invalid={!!fieldErrors.phone}
                         />
                       </div>
-                      {fieldErrors.email && (
+                      {fieldErrors.phone && (
                         <p className="text-xs text-red-600">
-                          {fieldErrors.email}
+                          {fieldErrors.phone}
                         </p>
                       )}
                     </motion.div>
                   </div>
 
-                  {/* Baris 2: Phone */}
+                  {/* Baris Email, Password & Konfirmasi */}
                   <motion.div variants={variants} className="space-y-2">
                     <Label
-                      htmlFor="phone"
-                      className="text-sm font-semibold text-gray-700"
+                      htmlFor="email"
+                      className="text-sm font-semibold"
+                      style={{ color: TEXT_COLOR }}
                     >
-                      Nomor Telepon
+                      Email Bisnis
                     </Label>
                     <div className="relative">
-                      <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                      <FaEnvelope className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                       <Input
-                        id="phone"
-                        type="tel"
-                        inputMode="numeric"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        id="email"
+                        type="email"
+                        placeholder="email@bisnisanda.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
-                        placeholder="08xxxxxxxxxx"
-                        aria-invalid={!!fieldErrors.phone}
+                        className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                        aria-invalid={!!fieldErrors.email}
                       />
                     </div>
-                    {fieldErrors.phone && (
+                    {fieldErrors.email && (
                       <p className="text-xs text-red-600">
-                        {fieldErrors.phone}
+                        {fieldErrors.email}
                       </p>
                     )}
                   </motion.div>
 
-                  {/* Baris 3: Password & Konfirmasi */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <motion.div variants={variants} className="space-y-2">
                       <Label
                         htmlFor="password"
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
                       >
                         Password
                       </Label>
                       <div className="relative">
-                        <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                        <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
+                          className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
                           placeholder="Masukkan password"
                           aria-invalid={!!fieldErrors.password}
                         />
@@ -815,12 +840,13 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     <motion.div variants={variants} className="space-y-2">
                       <Label
                         htmlFor="password_confirmation"
-                        className="text-sm font-semibold text-gray-700"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
                       >
                         Konfirmasi Password
                       </Label>
                       <div className="relative">
-                        <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                        <FaLock className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
                         <Input
                           id="password_confirmation"
                           type="password"
@@ -829,7 +855,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                             setPasswordConfirmation(e.target.value)
                           }
                           required
-                          className="pl-10 pr-4 py-3 border-red-200 focus:border-red-500 focus:ring-red-500/20 rounded-lg transition-all duration-200"
+                          className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
                           placeholder="Konfirmasi password"
                           aria-invalid={!!fieldErrors.password_confirmation}
                         />
@@ -842,164 +868,91 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     </motion.div>
                   </div>
 
-                  {/* Baris 4: Gender, Tempat/Tanggal Lahir */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Gender
-                      </Label>
-                      <select
-                        className="border rounded-md px-3 py-2 text-sm bg-white border-gray-200 focus:border-red-500 focus:ring-red-500/20"
-                        value={gender}
-                        onChange={(e) =>
-                          setGender(e.target.value as "M" | "F" | "")
-                        }
-                        aria-invalid={!!fieldErrors.gender}
-                      >
-                        <option value="">Pilih Gender</option>
-                        <option value="M">Male (M)</option>
-                        <option value="F">Female (F)</option>
-                      </select>
-                      {fieldErrors.gender && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.gender}
-                        </p>
-                      )}
-                    </motion.div>
-
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Tempat Lahir
-                      </Label>
-                      <Input
-                        value={birthPlace}
-                        onChange={(e) => setBirthPlace(e.target.value)}
-                        placeholder="Kota/Kabupaten"
-                        aria-invalid={!!fieldErrors.birth_place}
-                      />
-                      {fieldErrors.birth_place && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.birth_place}
-                        </p>
-                      )}
-                    </motion.div>
-
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Tanggal Lahir
-                      </Label>
-                      <Input
-                        type="date"
-                        value={formatDateForInput(birthDate) ?? ""}
-                        onChange={(e) => setBirthDate(e.target.value)}
-                        aria-invalid={!!fieldErrors.birth_date}
-                      />
-                      {fieldErrors.birth_date && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.birth_date}
-                        </p>
-                      )}
-                    </motion.div>
-                  </div>
-
-                  {/* Baris 5: NIK / NPWP */}
+                  {/* Bagian Informasi Bisnis */}
+                  <h3 className="text-lg font-bold mt-8 mb-4" style={{ color: TEXT_COLOR }}>
+                    Informasi Bisnis Anda
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        NIK
+                      <Label
+                        htmlFor="business_name"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
+                      >
+                        Nama Bisnis
                       </Label>
-                      <Input
-                        value={nik}
-                        inputMode="numeric"
-                        onChange={(e) => setNik(digitsOnly(e.target.value))}
-                        placeholder="16 digit"
-                        aria-invalid={!!fieldErrors.nik}
-                      />
-                      {fieldErrors.nik && (
+                      <div className="relative">
+                        <FaStore className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
+                        <Input
+                          id="business_name"
+                          type="text"
+                          value={businessName}
+                          onChange={(e) => setBusinessName(e.target.value)}
+                          required
+                          className={`pl-10 pr-4 py-3 border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                          placeholder="Nama PT, CV, atau Usaha Anda"
+                          aria-invalid={!!fieldErrors.business_name}
+                        />
+                      </div>
+                      {fieldErrors.business_name && (
                         <p className="text-xs text-red-600">
-                          {fieldErrors.nik}
+                          {fieldErrors.business_name}
                         </p>
                       )}
                     </motion.div>
+
                     <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        NPWP
+                      <Label
+                        htmlFor="business_category"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
+                      >
+                        Kategori Bisnis
                       </Label>
-                      <Input
-                        value={npwp}
-                        onChange={(e) => setNpwp(e.target.value)}
-                        placeholder="15 digit (boleh dengan titik/garis)"
-                        aria-invalid={!!fieldErrors.npwp}
-                      />
-                      {fieldErrors.npwp && (
+                      <div className="relative">
+                        <FaBoxes className={`absolute left-3 top-1/2 -translate-y-1/2 text-[${PRIMARY_COLOR}]`} />
+                        <select
+                          id="business_category"
+                          className={`w-full pl-10 pr-4 py-3 border-gray-200 rounded-lg focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 transition-all duration-200 bg-white`}
+                          value={businessCategory}
+                          onChange={(e) => setBusinessCategory(e.target.value)}
+                          aria-invalid={!!fieldErrors.business_category}
+                          required
+                        >
+                          <option value="">Pilih Kategori</option>
+                          <option value="elektronik">Elektronik</option>
+                          <option value="fashion">Fashion</option>
+                          <option value="makanan">Makanan & Minuman</option>
+                          <option value="rumah_tangga">Rumah Tangga</option>
+                          <option value="otomotif">Otomotif</option>
+                          <option value="jasa">Jasa</option>
+                          <option value="lainnya">Lainnya</option>
+                        </select>
+                      </div>
+                      {fieldErrors.business_category && (
                         <p className="text-xs text-red-600">
-                          {fieldErrors.npwp}
+                          {fieldErrors.business_category}
                         </p>
                       )}
                     </motion.div>
                   </div>
 
-                  {/* Baris 6: NIP / Unit Kerja / Jabatan */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        NIP
-                      </Label>
-                      <Input
-                        value={nip}
-                        inputMode="numeric"
-                        onChange={(e) => setNip(digitsOnly(e.target.value))}
-                        placeholder="8–20 digit"
-                        aria-invalid={!!fieldErrors.nip}
-                      />
-                      {fieldErrors.nip && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.nip}
-                        </p>
-                      )}
-                    </motion.div>
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Unit Kerja
-                      </Label>
-                      <Input
-                        value={unitKerja}
-                        onChange={(e) => setUnitKerja(e.target.value)}
-                        aria-invalid={!!fieldErrors.unit_kerja}
-                      />
-                      {fieldErrors.unit_kerja && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.unit_kerja}
-                        </p>
-                      )}
-                    </motion.div>
-                    <motion.div variants={variants} className="space-y-2">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Jabatan
-                      </Label>
-                      <Input
-                        value={jabatan}
-                        onChange={(e) => setJabatan(e.target.value)}
-                        aria-invalid={!!fieldErrors.jabatan}
-                      />
-                      {fieldErrors.jabatan && (
-                        <p className="text-xs text-red-600">
-                          {fieldErrors.jabatan}
-                        </p>
-                      )}
-                    </motion.div>
-                  </div>
-
-                  {/* Baris 7: Alamat */}
                   <motion.div variants={variants} className="space-y-2">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Alamat
+                    <Label
+                      htmlFor="address"
+                      className="text-sm font-semibold"
+                      style={{ color: TEXT_COLOR }}
+                    >
+                      Alamat Lengkap Bisnis
                     </Label>
                     <Textarea
+                      id="address"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Tulis alamat lengkap"
+                      placeholder="Nama jalan, Nomor gedung, RT/RW, Kelurahan, Kecamatan"
+                      className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
                       aria-invalid={!!fieldErrors.address}
+                      required
                     />
                     {fieldErrors.address && (
                       <p className="text-xs text-red-600">
@@ -1008,16 +961,89 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     )}
                   </motion.div>
 
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <motion.div variants={variants} className="space-y-2">
+                      <Label
+                        htmlFor="city"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
+                      >
+                        Kota
+                      </Label>
+                      <Input
+                        id="city"
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="Contoh: Jakarta"
+                        className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                        aria-invalid={!!fieldErrors.city}
+                        required
+                      />
+                      {fieldErrors.city && (
+                        <p className="text-xs text-red-600">
+                          {fieldErrors.city}
+                        </p>
+                      )}
+                    </motion.div>
+                    <motion.div variants={variants} className="space-y-2">
+                      <Label
+                        htmlFor="province"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
+                      >
+                        Provinsi
+                      </Label>
+                      <Input
+                        id="province"
+                        value={province}
+                        onChange={(e) => setProvince(e.target.value)}
+                        placeholder="Contoh: DKI Jakarta"
+                        className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                        aria-invalid={!!fieldErrors.province}
+                        required
+                      />
+                      {fieldErrors.province && (
+                        <p className="text-xs text-red-600">
+                          {fieldErrors.province}
+                        </p>
+                      )}
+                    </motion.div>
+                    <motion.div variants={variants} className="space-y-2">
+                      <Label
+                        htmlFor="postal_code"
+                        className="text-sm font-semibold"
+                        style={{ color: TEXT_COLOR }}
+                      >
+                        Kode Pos
+                      </Label>
+                      <Input
+                        id="postal_code"
+                        value={postalCode}
+                        inputMode="numeric"
+                        onChange={(e) => setPostalCode(e.target.value)}
+                        placeholder="Contoh: 12345"
+                        className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg transition-all duration-200`}
+                        aria-invalid={!!fieldErrors.postal_code}
+                        required
+                      />
+                      {fieldErrors.postal_code && (
+                        <p className="text-xs text-red-600">
+                          {fieldErrors.postal_code}
+                        </p>
+                      )}
+                    </motion.div>
+                  </div>
+
                   {/* Floating next button (sticky di dalam scroll container) */}
-                  <div className="sticky bottom-28 z-30 flex justify-end">
+                  <div className="sticky bottom-0 z-30 flex justify-end py-4 bg-white/50 backdrop-blur-sm">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={() => setActiveTab("dokumen")}
-                      className="flex items-center gap-2 shadow-md bg-white/90 backdrop-blur-md border"
+                      className={`flex items-center gap-2 shadow-md bg-white/90 backdrop-blur-md border hover:bg-gray-50`}
+                      style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
                     >
-                      Lanjut ke Dokumen
-                      <FaArrowRight />
+                      Lanjut ke Dokumen <FaArrowRight />
                     </Button>
                   </div>
                 </>
@@ -1026,58 +1052,72 @@ export default function AuthForm({ mode }: AuthFormProps) {
               {/* ======= REGISTER: DOKUMEN ======= */}
               {isRegister && activeTab === "dokumen" && (
                 <>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold">Dokumen</h3>
-                    <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row items-center justify-between">
+                    <h3 className="text-lg font-bold" style={{ color: TEXT_COLOR }}>
+                      Dokumen Pendukung Bisnis Anda
+                    </h3>
+                    <div className="flex gap-2 mt-4 sm:mt-0">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => setActiveTab("data")}
+                        className={`hover:bg-gray-50`}
+                        style={{ color: PRIMARY_COLOR, borderColor: PRIMARY_COLOR }}
                       >
-                        Kembali ke Data Diri
+                        Kembali ke Informasi Bisnis
                       </Button>
                       <Button
                         type="button"
                         onClick={addDocRow}
-                        className="flex items-center gap-2"
+                        className={`flex items-center gap-2 bg-[${ACCENT_COLOR}] text-white hover:bg-opacity-90`}
                       >
-                        <FaPlus /> Tambah Baris
+                        <FaPlus /> Tambah Dokumen
                       </Button>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
+                  <p className="text-sm" style={{ color: SECONDARY_TEXT }}>
+                    Unggah dokumen penting seperti KTP Penanggung Jawab, NPWP Perusahaan, atau SIUP.
+                  </p>
+
+                  <div className="space-y-4">
                     {documents.map((doc, idx) => {
-                      const firstMedia: MediaItem | undefined = doc.media?.[0];
+                      const firstMedia: { original_url: string } | undefined = doc.media?.[0];
                       const existingUrl = firstMedia?.original_url ?? "";
 
                       return (
                         <div
                           key={idx}
-                          className="grid grid-cols-1 sm:grid-cols-12 gap-3 border rounded-lg p-3"
+                          className={`grid grid-cols-1 md:grid-cols-12 gap-3 border rounded-lg p-4 bg-white shadow-sm`}
+                          style={{ borderColor: LIGHT_PRIMARY_BG }}
                         >
-                          <div className="sm:col-span-5">
-                            <Label>Nama File</Label>
+                          <div className="md:col-span-5 space-y-1">
+                            <Label className="text-sm font-medium" style={{ color: TEXT_COLOR }}>Nama Dokumen</Label>
                             <Input
                               value={doc.key ?? ""}
                               onChange={(e) =>
                                 updateDocKey(idx, e.target.value)
                               }
-                              placeholder="Contoh: KTP / KK / NPWP"
+                              placeholder="Contoh: KTP Penanggung Jawab, SIUP, Akta Pendirian"
+                              className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg`}
                             />
+                            {/* Tambahkan pesan error spesifik jika diperlukan */}
+                            {/* {fieldErrors.document_key && <p className="text-xs text-red-600">{fieldErrors.document_key}</p>} */}
                           </div>
 
-                          <div className="sm:col-span-5">
-                            <Label>File</Label>
+                          <div className="md:col-span-5 space-y-1">
+                            <Label className="text-sm font-medium" style={{ color: TEXT_COLOR }}>Unggah File</Label>
                             <Input
                               type="file"
                               onChange={(e) =>
                                 updateDocFile(idx, e.target.files?.[0] || null)
                               }
+                              className={`border-gray-200 focus:border-[${PRIMARY_COLOR}] focus:ring-2 focus:ring-[${PRIMARY_COLOR}]/20 rounded-lg`}
                             />
                             {existingUrl && (
                               <a
-                                className="text-xs text-blue-600 mt-1 inline-block"
+                                className={`text-xs mt-1 inline-block hover:underline`}
+                                style={{ color: PRIMARY_COLOR }}
                                 href={existingUrl}
                                 target="_blank"
                                 rel="noreferrer"
@@ -1086,18 +1126,19 @@ export default function AuthForm({ mode }: AuthFormProps) {
                               </a>
                             )}
                             {doc.document && doc.document instanceof File && (
-                              <p className="text-xs text-muted-foreground mt-1">
+                              <p className="text-xs mt-1" style={{ color: SECONDARY_TEXT }}>
                                 File baru: {doc.document.name}
                               </p>
                             )}
                           </div>
 
-                          <div className="sm:col-span-2 flex items-end">
+                          <div className="md:col-span-2 flex items-end">
                             <Button
                               type="button"
                               variant="outline"
                               onClick={() => removeDocRow(idx)}
-                              className="flex items-center gap-2"
+                              className={`w-full flex items-center justify-center gap-2 hover:bg-red-50`}
+                              style={{ color: '#DC2626', borderColor: '#DC2626' }}
                             >
                               <FaTrash /> Hapus
                             </Button>
@@ -1107,16 +1148,15 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     })}
                   </div>
 
-                  <p className="text-xs text-gray-500">
-                    * Pengiriman file dokumen akan diaktifkan saat endpoint
-                    multipart siap.
+                  <p className="text-xs" style={{ color: SECONDARY_TEXT }}>
+                    * Pastikan nama dokumen jelas dan file yang diunggah berformat PDF, JPG, atau PNG.
                   </p>
                 </>
               )}
             </div>
 
             {/* Sticky Footer (Submit) */}
-            <div className="sticky bottom-0 z-20 bg-white/90 backdrop-blur-md border-t border-red-100">
+            <div className="sticky bottom-0 z-20 bg-white/90 backdrop-blur-md border-t" style={{ borderColor: LIGHT_PRIMARY_BG }}>
               <div className="px-8 pt-4">
                 {error && (
                   <motion.div
@@ -1132,7 +1172,8 @@ export default function AuthForm({ mode }: AuthFormProps) {
               <div className="px-8 pb-8">
                 <Button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl py-3 rounded-lg font-semibold"
+                  className={`w-full flex items-center justify-center gap-3 bg-gradient-to-r text-white hover:opacity-90 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl py-3 rounded-lg font-semibold`}
+                  style={{ background: `linear-gradient(to right, ${PRIMARY_COLOR}, ${ACCENT_COLOR})` }}
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -1142,9 +1183,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                     </div>
                   ) : (
                     <>
-                      {isLogin
-                        ? "Masuk ke Dashboard"
-                        : "Daftar sebagai Anggota"}
+                      {isLogin ? "Masuk ke Dashboard" : "Daftarkan Bisnis Anda"}
                       <FaArrowRight className="text-sm" />
                     </>
                   )}
@@ -1153,20 +1192,22 @@ export default function AuthForm({ mode }: AuthFormProps) {
             </div>
           </motion.form>
 
-          <motion.div
+          {/* <motion.div
             variants={variants}
-            className="text-center text-sm bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-red-100"
+            className={`text-center text-sm bg-white/60 backdrop-blur-sm rounded-lg p-4 border`}
+            style={{ borderColor: LIGHT_PRIMARY_BG }}
           >
-            <span className="text-gray-600">
-              {isLogin ? "Belum memiliki akun admin?" : "Sudah memiliki akun?"}{" "}
+            <span style={{ color: SECONDARY_TEXT }}>
+              {isLogin ? "Belum memiliki akun bisnis?" : "Sudah memiliki akun bisnis?"}{" "}
             </span>
             <a
               href={isLogin ? "/auth/register" : "/auth/login"}
-              className="font-semibold text-red-600 hover:text-red-700 hover:underline transition-colors duration-200"
+              className={`font-semibold hover:underline transition-colors duration-200`}
+              style={{ color: ACCENT_COLOR }}
             >
               {isLogin ? "Daftar sekarang" : "Masuk ke sistem"}
             </a>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
       </div>
     </div>

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Koperasi Merah Putih",
+  title: "Indotoliz Berniaga",
   description: "Mewujudkan kemandirian dan kesejahteraan anggota melalui unit usaha simpan pinjam dan marketplace yang terintegrasi.",
   icons: {
     icon: "/logo-koperasi-merah-putih-online.webp",

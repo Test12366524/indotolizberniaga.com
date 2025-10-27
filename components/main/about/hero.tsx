@@ -83,7 +83,7 @@ const Hero = () => {
             <div className="relative">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden shadow-2xl">
                 <Image
-                  src="/hero-tentang-kami.webp"
+                  src="/hero-indotoliz.webp"
                   alt="Marketplace Indotoliz Berniaga"
                   fill
                   className="object-cover"

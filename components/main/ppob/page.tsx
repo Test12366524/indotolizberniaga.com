@@ -222,15 +222,16 @@ export default function PPOBPage() {
             {/* Right Column: Why Us & Promo */}
             <div className="space-y-8">
               <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-200 text-center">
-                <div className="relative h-48 mb-6">
+                <div className="relative w-full h-60 mb-6 rounded-3xl overflow-hidden border border-gray-200">
                   <Image
                     src="/ppob.webp"
-                    alt="Ilustrasi Pembayaran Digital"
-                    layout="fill"
-                    objectFit="contain"
+                    alt="Pembayaran Digital"
+                    fill
+                    className="object-cover rounded-3xl"
+                    priority
                   />
                 </div>
-                <h3 className="text-2xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
+                <h3 className="text-xl font-bold mb-4" style={{ color: TEXT_COLOR }}>
                   Kenapa Bertransaksi di Indotoliz?
                 </h3>
                 <div className="space-y-5 text-left">

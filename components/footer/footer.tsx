@@ -66,7 +66,7 @@ export default function Footer() {
                 {/* Logo & Company Name */}
                 <div className="flex items-center gap-4 mb-4">
                   <Image
-                    src="/logo-indotoliz-berniaga.webp" // Ganti dengan logo Indotoliz
+                    src="/logo-only-indotoliz.png" // Ganti dengan logo Indotoliz
                     alt="Indotoliz Berniaga Logo"
                     width={75}
                     height={75}

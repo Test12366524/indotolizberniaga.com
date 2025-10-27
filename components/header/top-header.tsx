@@ -4,7 +4,6 @@
 import Link from "next/link";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect, useMemo } from "react";
-// ✨ 1. Impor ikon MessageSquare
 import {
   Menu,
   X,
@@ -12,6 +11,7 @@ import {
   User,
   Globe,
   MessageSquare,
+  Zap, // Mengganti Sparkles atau ikon umum lainnya jika diperlukan
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -28,6 +28,7 @@ interface TranslationContent {
   ppob: string;
   tagline: string;
   switchLanguage: string;
+  shopNow: string; // Tambah untuk mobile footer CTA
 }
 
 interface Translations {
@@ -51,6 +52,12 @@ export default function Header() {
     [cartItems]
   );
 
+  // === DEFINISI WARNA BRAND ===
+  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
+  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Sorotan
+  const TEXT_COLOR = "#343A40"; // Warna teks profesional
+  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+
   const translations: Translations = {
     id: {
       home: "Beranda",
@@ -60,19 +67,21 @@ export default function Header() {
       about: "Tentang Kami",
       news: "Artikel",
       testimonials: "Testimoni",
-      tagline: "Koperasi Merah Putih",
+      tagline: "Marketplace Elektronik & Solusi Digital",
       switchLanguage: "Ganti ke English",
+      shopNow: "Belanja Sekarang",
     },
     en: {
       home: "Home",
       products: "Products",
-      service: "Layanan",
+      service: "Services",
       ppob: "PPOB",
       about: "About Us",
       news: "Articles",
       testimonials: "Testimonials",
-      tagline: "Koperasi Merah Putih",
+      tagline: "Electronics Marketplace & Digital Solutions",
       switchLanguage: "Switch to Bahasa",
+      shopNow: "Shop Now",
     },
   };
 
@@ -82,52 +91,46 @@ export default function Header() {
     { name: t.about, href: "/about" },
     { name: t.products, href: "/product" },
     { name: t.ppob, href: "/ppob" },
-    { name: t.service, href: "/service" },
     { name: t.news, href: "/news" },
+    { name: t.testimonials, href: "/testimonials" },
   ];
 
+  // Colors untuk mobile menu, disesuaikan dengan brand
   const menuItemColors = [
     {
       name: t.about,
       href: "/about",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
+      hoverBg: "hover:bg-gray-100", // Ubah sesuai skema
+      activeBg: `bg-[${PRIMARY_COLOR}1A]`, // Warna aktif yang lebih lembut
+      textColor: TEXT_COLOR,
     },
     {
       name: t.products,
       href: "/product",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
-    },
-    {
-      name: t.service,
-      href: "/service",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
+      hoverBg: "hover:bg-gray-100",
+      activeBg: `bg-[${PRIMARY_COLOR}1A]`,
+      textColor: TEXT_COLOR,
     },
     {
       name: t.ppob,
-      href: "/how-to-order",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
+      href: "/ppob",
+      hoverBg: "hover:bg-gray-100",
+      activeBg: `bg-[${PRIMARY_COLOR}1A]`,
+      textColor: TEXT_COLOR,
     },
     {
       name: t.news,
       href: "/news",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
+      hoverBg: "hover:bg-gray-100",
+      activeBg: `bg-[${PRIMARY_COLOR}1A]`,
+      textColor: TEXT_COLOR,
     },
     {
       name: t.testimonials,
       href: "/testimonials",
-      hoverBg: "hover:bg-[#F3F4F6]",
-      activeBg: "bg-[#F3F4F6]",
-      textColor: "text-[#6B7280]",
+      hoverBg: "hover:bg-gray-100",
+      activeBg: `bg-[${PRIMARY_COLOR}1A]`,
+      textColor: TEXT_COLOR,
     },
   ];
 
@@ -139,7 +142,7 @@ export default function Header() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedLanguage = localStorage.getItem("yameiya-language");
+      const savedLanguage = localStorage.getItem("indotoliz-language"); // Ganti yameiya
       if (savedLanguage === "id" || savedLanguage === "en") {
         setLanguage(savedLanguage);
       }
@@ -153,7 +156,7 @@ export default function Header() {
     setLanguage(newLang);
     switchLang(newLang);
     if (typeof window !== "undefined") {
-      localStorage.setItem("yameiya-language", newLang);
+      localStorage.setItem("indotoliz-language", newLang); // Ganti yameiya
       window.dispatchEvent(
         new CustomEvent("languageChanged", { detail: newLang })
       );
@@ -161,8 +164,8 @@ export default function Header() {
   };
 
   const handleCartClick = () => {
-    window.location.assign("/cart");
-    window.dispatchEvent(new CustomEvent("openCart"));
+    router.push("/cart"); // Gunakan router.push
+    // window.dispatchEvent(new CustomEvent("openCart")); // Ini lebih ke event internal, tidak perlu di sini
   };
 
   const handleUserClick = () => {
@@ -195,18 +198,18 @@ export default function Header() {
               <div className="relative">
                 <div className="flex items-center gap-1">
                   <Image
-                    src="/logo-koperasi-merah-putih-online.webp"
-                    alt="Koperasi Merah Putih Logo"
+                    src="/logo-only-indotoliz.png" // Pastikan path logo benar
+                    alt="Indotoliz Berniaga Logo"
                     width={50}
                     height={50}
                     className="flex-shrink-0 object-contain"
                   />
                   <div className="hidden sm:flex flex-col leading-tight">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                      Koperasi Merah Putih
+                    <h2 className="text-lg font-semibold" style={{ color: TEXT_COLOR }}>
+                      Indotoliz Berniaga
                     </h2>
-                    <p className="text-xs text-gray-600 mt-[-5px]">
-                      Simpan Pinjam & Marketplace
+                    <p className="text-xs mt-[-5px]" style={{ color: SECONDARY_TEXT }}>
+                      {t.tagline}
                     </p>
                   </div>
                 </div>
@@ -221,9 +224,10 @@ export default function Header() {
                   href={item.href}
                   className={`relative font-semibold transition-all duration-300 py-3 px-4 rounded-xl ${
                     isActiveLink(item.href)
-                      ? "bg-[#E53935]/10 text-[#E53935] shadow-sm"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? `bg-[${PRIMARY_COLOR}1A] text-[${PRIMARY_COLOR}] shadow-sm` // Aktif dengan warna Biru Stabil transparan
+                      : `text-[${SECONDARY_TEXT}] hover:bg-gray-100` // Teks abu-abu sekunder saat tidak aktif
                   }`}
+                  style={{ color: isActiveLink(item.href) ? PRIMARY_COLOR : SECONDARY_TEXT }} // Inline style for dynamic color
                 >
                   {item.name}
                 </Link>
@@ -235,11 +239,12 @@ export default function Header() {
               {/* Language Toggle - Desktop */}
               <button
                 onClick={toggleLanguage}
-                className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-[#6B6B6B]/10 hover:bg-[#6B6B6B]/20 transition-all duration-300 shadow-sm"
+                className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 shadow-sm`}
+                style={{ backgroundColor: `${PRIMARY_COLOR}10`, color: PRIMARY_COLOR }}
                 title={t.switchLanguage}
               >
-                <Globe className="w-4 h-4 text-[#6B6B6B]" />
-                <span className="text-sm font-bold text-[#6B6B6B]">
+                <Globe className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
+                <span className="text-sm font-bold">
                   {language.toUpperCase()}
                 </span>
               </button>
@@ -250,19 +255,8 @@ export default function Header() {
                 className="p-3 rounded-xl hover:bg-gray-100 transition-all duration-300"
                 aria-label="User"
               >
-                <User className="w-5 h-5 text-[#6B6B6B]" />
+                <User className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
               </button>
-
-              {/* ✨ BARU: Ikon Chat, hanya muncul jika sudah login */}
-              {status === "authenticated" && (
-                <button
-                  onClick={() => router.push("/chat")}
-                  className="p-3 rounded-xl hover:bg-gray-100 transition-all duration-300"
-                  aria-label="Chat"
-                >
-                  <MessageSquare className="w-5 h-5 text-[#6B6B6B]" />
-                </button>
-              )}
 
               {/* Cart */}
               <button
@@ -270,9 +264,12 @@ export default function Header() {
                 className="relative p-3 rounded-xl hover:bg-gray-100 transition-all duration-300"
                 aria-label="Cart"
               >
-                <ShoppingCart className="w-5 h-5 text-[#6B6B6B]" />
+                <ShoppingCart className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#E53935] text-white text-xs font-bold min-w-[20px] h-[20px] rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                  <span
+                    className={`absolute -top-1 -right-1 text-white text-xs font-bold min-w-[20px] h-[20px] rounded-full flex items-center justify-center border-2 border-white shadow-lg`}
+                    style={{ backgroundColor: ACCENT_COLOR }} // Warna jingga untuk notifikasi cart
+                  >
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
@@ -285,9 +282,9 @@ export default function Header() {
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
               >
                 {isMobileMenuOpen ? (
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                 ) : (
-                  <Menu className="w-5 h-5 text-gray-600" />
+                  <Menu className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
                 )}
               </button>
             </div>
@@ -309,25 +306,29 @@ export default function Header() {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Mobile Header */}
-          <div className="p-6 border-b border-[#6B6B6B]/20 bg-gradient-to-r from-[#E53935]/10 to-[#FFFFFF]/10">
+          <div className="p-6 border-b border-gray-200" style={{ backgroundColor: `${PRIMARY_COLOR}1A` }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#E53935]/80 rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-white font-bold">Y</span>
-                </div>
+                <Image
+                  src="/logo-indotoliz-berniaga.png" // Pastikan path logo benar
+                  alt="Indotoliz Berniaga Logo"
+                  width={40}
+                  height={40}
+                  className="flex-shrink-0 object-contain"
+                />
                 <div>
-                  <h2 className="font-bold bg-gradient-to-r from-[#E53935] to-[#6B6B6B] bg-clip-text text-transparent">
-                    Koperasi Merah Putih
+                  <h2 className="font-bold bg-gradient-to-r from-[#0077B6] to-[#FF6B35] text-transparent bg-clip-text">
+                    Indotoliz Berniaga
                   </h2>
-                  <p className="text-xs text-[#6B6B6B]/70">{t.tagline}</p>
+                  <p className="text-xs" style={{ color: SECONDARY_TEXT }}>{t.tagline}</p>
                 </div>
               </div>
               <button
                 onClick={toggleMobileMenu}
-                className="p-2 rounded-lg hover:bg-[#E53935]/10 transition-colors"
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                 aria-label="Close mobile menu"
               >
-                <X className="w-5 h-5 text-[#6B6B6B]" />
+                <X className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
               </button>
             </div>
           </div>
@@ -341,8 +342,8 @@ export default function Header() {
                 onClick={toggleMobileMenu}
                 className={`flex items-center gap-4 p-4 rounded-2xl font-semibold transition-all duration-300 group ${
                   isActiveLink(item.href)
-                    ? `${item.activeBg} text-gray-700 border-2 border-gray-300 shadow-md`
-                    : `text-gray-700 ${item.hoverBg} hover:shadow-sm`
+                    ? `text-[${TEXT_COLOR}] ${item.activeBg} border-2 border-[${PRIMARY_COLOR}33] shadow-md`
+                    : `text-[${SECONDARY_TEXT}] ${item.hoverBg} hover:shadow-sm`
                 }`}
                 style={{
                   animationDelay: `${index * 50}ms`,
@@ -354,13 +355,13 @@ export default function Header() {
                 <div
                   className={`w-3 h-3 rounded-full transition-all duration-300 shadow-sm ${
                     isActiveLink(item.href)
-                      ? "bg-gray-600"
+                      ? `bg-[${ACCENT_COLOR}]` // Aktif dengan warna jingga
                       : "bg-gray-300 group-hover:bg-gray-500"
                   }`}
                 />
                 <span className="flex-1">{item.name}</span>
                 {isActiveLink(item.href) && (
-                  <div className="w-1 h-6 bg-gray-600 rounded-full shadow-sm" />
+                  <div className="w-1 h-6 rounded-full shadow-sm" style={{ backgroundColor: ACCENT_COLOR }} />
                 )}
               </Link>
             ))}
@@ -368,21 +369,25 @@ export default function Header() {
             {/* Language Toggle - Mobile */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-4 p-4 w-full rounded-2xl text-[#6B6B6B] hover:bg-[#E53935]/10 font-semibold transition-all duration-300 mt-6 border-2 border-[#6B6B6B]/30 bg-[#FFFFFF]/10"
+              className={`flex items-center gap-4 p-4 w-full rounded-2xl font-semibold transition-all duration-300 mt-6 border-2 border-[${PRIMARY_COLOR}33]`}
+              style={{ backgroundColor: `${PRIMARY_COLOR}10`, color: PRIMARY_COLOR }}
             >
-              <Globe className="w-5 h-5 text-[#6B6B6B]" />
+              <Globe className="w-5 h-5" style={{ color: PRIMARY_COLOR }} />
               <span className="flex-1 text-left">{t.switchLanguage}</span>
-              <span className="text-sm font-bold text-white bg-[#E53935] px-3 py-1 rounded-lg shadow-md">
+              <span className={`text-sm font-bold text-white px-3 py-1 rounded-lg shadow-md`} style={{ backgroundColor: PRIMARY_COLOR }}>
                 {language === "id" ? "EN" : "ID"}
               </span>
             </button>
           </div>
 
           {/* Mobile Footer */}
-          <div className="p-6 border-t border-[#6B6B6B]/20 bg-gradient-to-r from-[#E53935]/10 to-[#FFFFFF]/10">
+          <div className="p-6 border-t border-gray-200" style={{ backgroundColor: `${PRIMARY_COLOR}1A` }}>
             <div className="flex items-center justify-center gap-4">
-              <button className="flex-1 bg-[#E53935]/80 text-white py-4 rounded-2xl font-bold hover:from-[#E53935]/70 hover:to-[#6B6B6B]/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-                Belanja Sekarang
+              <button
+                className={`flex-1 text-white py-4 rounded-2xl font-bold transition-all duration-300 shadow-lg transform hover:scale-105`}
+                style={{ backgroundColor: ACCENT_COLOR }} // CTA warna jingga
+              >
+                {t.shopNow}
               </button>
             </div>
           </div>
