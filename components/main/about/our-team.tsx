@@ -11,24 +11,14 @@ export default function TeamSection() {
   // Struktur tim yang relevan dengan E-commerce/Tech
   const team = [
     {
-      name: "Ayu Pratama",
+      name: "Hadi Purwanto",
       role: "CEO & Pendiri",
-      image: "/avatars/1.jpeg",
+      image: "/hadi.jpeg",
     },
     {
-      name: "Rina Cahya",
-      role: "Chief Technology Officer (CTO)",
-      image: "/avatars/2.jpeg",
-    },
-    {
-      name: "Nanda Putri",
-      role: "Head of Marketplace Operations",
-      image: "/avatars/3.jpeg",
-    },
-    {
-      name: "Dewi Lestari",
-      role: "Logistics & Supply Chain Manager",
-      image: "/avatars/4.jpeg",
+      name: "Sardina",
+      role: "Logistic",
+      image: "/sardina.jpeg",
     },
   ];
 

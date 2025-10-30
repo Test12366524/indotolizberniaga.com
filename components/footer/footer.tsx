@@ -109,16 +109,16 @@ export default function Footer() {
                   <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
                     <MapPin className="w-4.5 h-4.5" style={{ color: PRIMARY_COLOR }} />
                     <span>
-                      Jl. Teknologi Digital No. 1, Jakarta Selatan, 12790
+                      Jl Ahmad Yani,Kab Tolitoli Sulawesi Tengah 
                     </span>
                   </div>
                   <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
                     <Phone className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
-                    <span>+62 812 3456 7890 (WA Support)</span>
+                    <span>+62 852 4134 9524(WA Support)</span>
                   </div>
                   <div className="flex items-center gap-3" style={{ color: SECONDARY_TEXT }}>
                     <Mail className="w-4 h-4" style={{ color: PRIMARY_COLOR }} />
-                    <span>support@indotoliz.co.id</span>
+                    <span>indotolizberniaga@gmail.com</span>
                   </div>
                 </div>
               </div>

@@ -82,7 +82,7 @@ export const productApi = apiSlice.injectEndpoints({
     // 🔍 Get Product by Slug
     getProductBySlug: builder.query<Product, string>({
       query: (slug) => ({
-        url: `/shop/products/${slug}`,
+        url: `/public/products/${slug}`,
         method: "GET",
       }),
       transformResponse: (response: {

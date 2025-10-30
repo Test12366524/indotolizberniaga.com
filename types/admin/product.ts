@@ -1,5 +1,15 @@
 export interface Product {
   id: number;
+  category?:{
+    id: number;
+    name: string;
+    slug: string;
+  };
+  merk?:{
+    id: number;
+    name: string;
+    slug: string;
+  };
   shop_id: number;
   product_category_id: number;
   product_merk_id: number;

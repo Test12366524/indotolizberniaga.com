@@ -94,9 +94,25 @@ export const sellerService = apiSlice.injectEndpoints({
       transformResponse: (response: { code: number; message: string; data: SellerListResponse }) => response.data,
       providesTags: ["Seller"],
     }),
+    getSellerShopList: builder.query<
+      SellerListResponse,
+      { page: number; paginate: number }
+    >({
+      query: ({ page, paginate }) => ({
+        url: `/public/shops`,
+        method: "GET",
+        params: {
+          page,
+          paginate,
+        },
+      }),
+      transformResponse: (response: { code: number; message: string; data: SellerListResponse }) => response.data,
+      providesTags: ["Seller"],
+    }),
   }),
 });
 
 export const {
   useGetSellerListQuery,
+  useGetSellerShopListQuery,
 } = sellerService;

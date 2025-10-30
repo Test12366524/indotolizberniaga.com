@@ -9,10 +9,12 @@ import {
   Search,
   Grid3X3,
   List,
-  Zap, // Mengganti Sparkles dengan Zap (lebih tech)
+  Zap,
   Package,
   MessageCircle,
-  Truck, // Mengganti Package untuk Empty State
+  Truck,
+  ChevronLeft, // Ikon untuk galeri slider
+  ChevronRight, // Ikon untuk galeri slider
 } from "lucide-react";
 import Image from "next/image";
 import { Product } from "@/types/admin/product";
@@ -25,13 +27,47 @@ import DotdLoader from "@/components/loader/3dot";
 // ==== Cart (tanpa sidebar)
 import useCart from "@/hooks/use-cart";
 import { useGetPublicProductCategoryListQuery } from "@/services/public/public-category.service";
-import { useGetSellerListQuery } from "@/services/admin/seller.service";
+import { useGetSellerShopListQuery } from "@/services/admin/seller.service";
 import { Combobox } from "@/components/ui/combo-box";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 type ViewMode = "grid" | "list";
+
+// --- FUNGSI HELPER BARU ---
+const getAllImages = (product: any): string[] => {
+  const images = [];
+  // 1. Gambar utama
+  if (typeof product.image === "string" && product.image) {
+    images.push(product.image);
+  }
+  // 2. Gambar tambahan (image_2 sampai image_7)
+  for (let i = 2; i <= 7; i++) {
+    const key = `image_${i}`;
+    if (typeof product[key] === "string" && product[key]) {
+      images.push(product[key]);
+    }
+  }
+  return images;
+};
+
+// --- FUNGSI HELPER YANG ADA ---
+const toNumber = (val: number | string): number => {
+    if (typeof val === "number") return val;
+    const parsed = parseFloat(val);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+const getImageUrl = (p: Product): string => {
+  if (typeof p.image === "string" && p.image) return p.image;
+  const media = (p as unknown as { media?: Array<{ original_url: string }> })
+    .media;
+  if (Array.isArray(media) && media.length > 0 && media[0]?.original_url) {
+    return media[0].original_url;
+  }
+  return "/api/placeholder/400/400";
+};
+
 
 export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,25 +90,24 @@ export default function ProductsPage() {
   const userRole = session?.user?.roles[0]?.name ?? "";
 
   // Definisi Warna Brand
-  const PRIMARY_COLOR = "#0077B6"; // Biru Stabil: Kepercayaan, Teknologi
-  const ACCENT_COLOR = "#FF6B35"; // Jingga Energi: CTA, Promosi
-  const TEXT_COLOR = "#343A40"; // Warna teks profesional
-  const SECONDARY_TEXT = "#6C757D"; // Abu-abu sekunder
+  const PRIMARY_COLOR = "#0077B6";
+  const ACCENT_COLOR = "#FF6B35";
+  const TEXT_COLOR = "#343A40";
+  const SECONDARY_TEXT = "#6C757D";
 
-  // Ambil kategori publik (top-level). Sesuaikan paginate jika perlu.
+  // Ambil kategori publik
   const {
     data: categoryResp,
     isLoading: isCategoryLoading,
     isError: isCategoryError,
   } = useGetPublicProductCategoryListQuery({
     page: 1,
-    paginate: 100,
+    paginate: 10,
   });
 
   const { data: sellerResp, isLoading: isSellerLoading } =
-    useGetSellerListQuery({ page: 1, paginate: 100 });
+    useGetSellerShopListQuery({ page: 1, paginate: 10 });
 
-  // state untuk query pada Combobox (opsional; karena service belum ada search)
   const [sellerQuery, setSellerQuery] = useState("");
 
   const sellers = useMemo(() => sellerResp?.data ?? [], [sellerResp]);
@@ -88,7 +123,6 @@ export default function ProductsPage() {
     });
   }, [sellers, sellerQuery]);
 
-  // helper: seller terpilih
   const selectedSeller = useMemo(
     () => sellers.find((s) => s.id === filter.sellerId) ?? null,
     [sellers, filter.sellerId]
@@ -127,6 +161,16 @@ export default function ProductsPage() {
   } = useGetProductBySlugQuery(selectedSlug ?? "", {
     skip: !selectedSlug,
   });
+  // --- STATE BARU UNTUK GAMBAR UTAMA DI MODAL ---
+  const [mainImageUrl, setMainImageUrl] = useState<string>(""); 
+
+  // Reset main image state ketika detailProduct berubah/modal dibuka
+  useEffect(() => {
+    if (detailProduct) {
+      setMainImageUrl(getImageUrl(detailProduct));
+    }
+  }, [detailProduct]);
+  // -----------------------------------------------------
 
   const toggleWishlist = (productId: number) => {
     setWishlist((prev) =>
@@ -136,11 +180,10 @@ export default function ProductsPage() {
     );
   };
 
-  // === Add to cart via zustand (persist ke localStorage)
   const addToCart = (product: Product) => {
     addItem(product);
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("cartUpdated")); // kompatibel dgn logic globalmu
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
     }
   };
 
@@ -156,28 +199,10 @@ export default function ProductsPage() {
     };
   }, [isModalOpen]);
 
-  // Helpers
-  const getImageUrl = (p: Product): string => {
-    if (typeof p.image === "string" && p.image) return p.image;
-    const media = (p as unknown as { media?: Array<{ original_url: string }> })
-      .media;
-    if (Array.isArray(media) && media.length > 0 && media[0]?.original_url) {
-      return media[0].original_url;
-    }
-    return "/api/placeholder/400/400";
-  };
-
-  const toNumber = (val: number | string): number => {
-    if (typeof val === "number") return val;
-    const parsed = parseFloat(val);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-
-  // === Client-side filter & sort (hanya pada page aktif dari API) ===
+  // === Client-side filter & sort ===
   const filteredProducts = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
 
-    // nama toko seller terpilih (kalau ada)
     const selectedShopName = selectedSeller?.shop?.name ?? "";
 
     return products.filter((p) => {
@@ -195,9 +220,11 @@ export default function ProductsPage() {
         (filter.priceRange === "100k-200k" &&
           price >= 100_000 &&
           price <= 200_000) ||
-        (filter.priceRange === "above-200k" && price > 200_000);
+        (filter.priceRange === "200k-500k" &&
+          price > 200_000 &&
+          price <= 500_000) ||
+        (filter.priceRange === "above-500k" && price > 500_000);
 
-      // NEW: filter seller berbasis nama shop (merk_name)
       const matchSeller =
         !filter.sellerId ||
         (selectedShopName &&
@@ -225,15 +252,12 @@ export default function ProductsPage() {
       case "rating":
         return arr.sort((a, b) => toNumber(b.rating) - toNumber(a.rating));
       case "newest":
-        // tidak ada field tanggal urut khusus; dibiarkan apa adanya
         return arr;
       default:
-        // featured: tidak ada flag; biarkan urutan dari API
         return arr;
     }
   }, [filteredProducts, filter.sort]);
 
-  // === Loading & Error states sederhana (UI tetap) ===
   if (isError) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -254,9 +278,9 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white to-[#0077B6]/10">
-      {/* ===================== Header / Hero ===================== */}
+      {/* ===================== Header / Hero (Tetap sama) ===================== */}
       <section className="relative pt-24 pb-12 px-6 lg:px-12 overflow-hidden bg-white">
-        {/* background aksen (Menggunakan Biru Stabil dan Jingga Energi) */}
+        {/* background aksen */}
         <div className="absolute -top-24 -left-24 w-[40rem] h-[40rem] rounded-full bg-[#0077B6]/10 blur-3xl opacity-50" />
         <div className="absolute top-1/3 right-[-10%] w-[28rem] h-[28rem] rounded-full bg-[#FF6B35]/10 blur-3xl opacity-40" />
 
@@ -278,7 +302,6 @@ export default function ProductsPage() {
             keaslian dan harga terbaik di Indotoliz Berniaga.
           </p>
 
-          {/* Info Badge (Disesuaikan dengan tema E-commerce) */}
           <div className="flex flex-wrap justify-center gap-4 text-sm" style={{ color: SECONDARY_TEXT }}>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: PRIMARY_COLOR }} />
@@ -296,7 +319,7 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* ===================== Filters & Search (Marketplace Theme) ===================== */}
+      {/* ===================== Filters & Search (Tetap sama) ===================== */}
       <section className="px-6 lg:px-12 mb-8">
         <div className="container mx-auto">
           <div className="bg-white rounded-3xl p-6 shadow-lg border border-gray-200">
@@ -381,7 +404,7 @@ export default function ProductsPage() {
                   <option value="rating">Rating Tertinggi</option>
                 </select>
 
-                {/* Seller (Combobox) - tetap dipertahankan */}
+                {/* Seller (Combobox) */}
                 {userRole === "superadmin" && (
                   <div className="w-72 lg:w-40">
                     <Combobox
@@ -403,7 +426,6 @@ export default function ProductsPage() {
 
                 {/* Reset semua filter */}
                 <Button
-                  // Menggunakan warna sekunder/netral agar tidak terlalu dominan
                   className="h-12 border-2 text-white font-semibold rounded-2xl shadow-sm hover:opacity-90 transition-colors"
                   style={{ backgroundColor: PRIMARY_COLOR, color: 'white' }} 
                   size="lg"
@@ -429,7 +451,7 @@ export default function ProductsPage() {
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-xl transition-colors ${
                     viewMode === "grid"
-                      ? "bg-[#0077B6] text-white shadow-sm" // Biru Stabil
+                      ? "bg-[#0077B6] text-white shadow-sm"
                       : "text-gray-600 hover:text-[#0077B6]"
                   }`}
                 >
@@ -439,7 +461,7 @@ export default function ProductsPage() {
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-xl transition-colors ${
                     viewMode === "list"
-                      ? "bg-[#0077B6] text-white shadow-sm" // Biru Stabil
+                      ? "bg-[#0077B6] text-white shadow-sm"
                       : "text-gray-600 hover:text-[#0077B6]"
                   }`}
                 >
@@ -451,7 +473,7 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* Products Grid / List */}
+      {/* Products Grid / List (Tetap sama) */}
       <section className="px-6 lg:px-12 pb-12">
         <div className="container mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -494,7 +516,7 @@ export default function ProductsPage() {
                           onClick={() => toggleWishlist(product.id)}
                           className={`p-2 rounded-full shadow-lg transition-colors ${
                             wishlist.includes(product.id)
-                              ? "bg-[#0077B6] text-white" // Biru Stabil untuk Wishlist
+                              ? "bg-[#0077B6] text-white"
                               : "bg-white text-gray-500 hover:text-[#0077B6]"
                           }`}
                         >
@@ -508,7 +530,7 @@ export default function ProductsPage() {
                         </button>
                         <button
                           onClick={() => openProductModal(product)}
-                          className="p-2 bg-white text-gray-500 hover:text-[#FF6B35] rounded-full shadow-lg transition-colors" // Jingga Energi untuk Quick View
+                          className="p-2 bg-white text-gray-500 hover:text-[#FF6B35] rounded-full shadow-lg transition-colors"
                         >
                           <Eye className="w-5 h-5" />
                         </button>
@@ -553,17 +575,17 @@ export default function ProductsPage() {
                         <button
                           onClick={() => addToCart(product)}
                           className="group flex-1 h-12 rounded-2xl text-white font-semibold shadow-sm transition-colors inline-flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                          style={{ backgroundColor: ACCENT_COLOR }} // Jingga Energi untuk CTA utama
+                          style={{ backgroundColor: ACCENT_COLOR }}
                         >
                           <ShoppingCart className="w-5 h-5" />
                           <span>Tambah ke Keranjang</span>
                         </button>
 
                         <button
-                          onClick={() => router.push("/chat?to=1")} // sementara hardcode id=1
+                          onClick={() => router.push("/chat?to=1")}
                           aria-label="Chat penjual"
                           className="h-12 w-12 rounded-2xl bg-white shadow-sm transition-colors inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                          style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '2px solid' }} // Biru Stabil untuk CTA sekunder
+                          style={{ borderColor: PRIMARY_COLOR, color: PRIMARY_COLOR, border: '2px solid' }}
                           title="Chat penjual"
                         >
                           <MessageCircle className="w-5 h-5" />
@@ -612,7 +634,7 @@ export default function ProductsPage() {
                               onClick={() => toggleWishlist(product.id)}
                               className={`p-2 rounded-full transition-colors ${
                                 wishlist.includes(product.id)
-                                  ? "bg-[#0077B6] text-white" // Biru Stabil
+                                  ? "bg-[#0077B6] text-white"
                                   : "bg-gray-100 text-gray-500 hover:text-[#0077B6]"
                               }`}
                             >
@@ -660,14 +682,14 @@ export default function ProductsPage() {
                             <button
                               onClick={() => openProductModal(product)}
                               className="px-6 py-3 rounded-2xl transition-colors"
-                              style={{ borderColor: SECONDARY_TEXT, color: SECONDARY_TEXT, border: '1px solid' }} // Detail: Sekunder
+                              style={{ borderColor: SECONDARY_TEXT, color: SECONDARY_TEXT, border: '1px solid' }}
                             >
                               Detail
                             </button>
                             <button
                               onClick={() => addToCart(product)}
                               className="px-6 py-3 text-white rounded-2xl transition-colors flex items-center gap-2"
-                              style={{ backgroundColor: ACCENT_COLOR }} // Cart: Jingga Energi
+                              style={{ backgroundColor: ACCENT_COLOR }}
                             >
                               <ShoppingCart className="w-5 h-5" />
                               Tambah ke Keranjang
@@ -706,7 +728,7 @@ export default function ProductsPage() {
                   });
                 }}
                 className="text-white px-6 py-3 rounded-2xl transition-colors"
-                style={{ backgroundColor: PRIMARY_COLOR }} // Biru Stabil untuk Reset
+                style={{ backgroundColor: PRIMARY_COLOR }}
               >
                 Reset Filter
               </button>
@@ -715,7 +737,7 @@ export default function ProductsPage() {
         </div>
       </section>
 
-      {/* Pagination */}
+      {/* Pagination (Tetap sama) */}
       {totalPages > 1 && (
         <section className="px-6 lg:px-12 pb-4">
           <div className="container mx-auto">
@@ -773,7 +795,7 @@ export default function ProductsPage() {
       {/* Product Detail Modal (by slug) */}
       {isModalOpen && selectedSlug && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               {/* Header */}
               <div className="flex justify-between items-start mb-6">
@@ -809,22 +831,67 @@ export default function ProductsPage() {
               {/* Content */}
               {detailProduct && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Product Image */}
+                  {/* === PRODUCT IMAGE GALLERY === */}
                   <div className="relative">
-                    <Image
-                      src={getImageUrl(detailProduct)}
-                      alt={detailProduct.name}
-                      width={500}
-                      height={400}
-                      className="w-full h-96 object-cover rounded-2xl"
-                    />
+                    {/* 1. Main Cover Image */}
+                    <div className="mb-4 relative">
+                      <Image
+                        // Menggunakan state lokal untuk main image URL
+                        src={mainImageUrl}
+                        alt={detailProduct.name}
+                        width={500}
+                        height={400}
+                        className="w-full h-96 object-contain rounded-2xl border border-gray-200"
+                        priority={true}
+                      />
+                    </div>
+
+                    {/* 2. Thumbnails Slider */}
+                    <div className="relative">
+                      {/* Container untuk slide, overflow-hidden */}
+                      <div className="overflow-hidden">
+                        <div
+                          id="thumbnail-slider"
+                          className="flex gap-3 transition-transform duration-300 snap-x snap-mandatory"
+                          // Note: Anda perlu menambahkan logika JS/React untuk mengontrol transform X
+                          // Untuk kesederhanaan, saya akan membuat container ini scrollable
+                          style={{ overflowX: 'auto' }}
+                        >
+                          {getAllImages(detailProduct).map((imgUrl, index) => (
+                            <button
+                              key={index}
+                              onClick={() => setMainImageUrl(imgUrl)}
+                              className={`w-20 h-20 flex-shrink-0 snap-start rounded-xl overflow-hidden border-2 transition-colors focus:outline-none 
+                                ${mainImageUrl === imgUrl ? 'border-[#FF6B35]' : 'border-gray-200 hover:border-[#0077B6]'}`
+                              }
+                              title={`Lihat Gambar ${index + 1}`}
+                            >
+                              <Image
+                                src={imgUrl}
+                                alt={`${detailProduct.name} - ${index}`}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Navigation Buttons (Optional, hanya untuk indikasi) 
+                       * Implementasi geser penuh memerlukan useRef dan logika DOM *
+                      <button className="absolute left-[-15px] top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md z-10" aria-label="Previous image">
+                          <ChevronLeft className="w-5 h-5 text-gray-700" />
+                      </button>
+                      <button className="absolute right-[-15px] top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md z-10" aria-label="Next image">
+                          <ChevronRight className="w-5 h-5 text-gray-700" />
+                      </button>
+                      */}
+                    </div>
                   </div>
 
                   {/* Product Info */}
                   <div>
-                    <span className="text-sm font-medium" style={{ color: SECONDARY_TEXT }}>
-                      {detailProduct.category_name}
-                    </span>
                     <h3 className="text-3xl font-bold mt-2 mb-4" style={{ color: TEXT_COLOR }}>
                       {detailProduct.name}
                     </h3>
@@ -857,11 +924,11 @@ export default function ProductsPage() {
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
                         <span className="font-medium">Kategori:</span>
-                        <span>{detailProduct.category_name}</span>
+                        <span>{detailProduct.category?.name}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
                         <span className="font-medium">Merk/Toko:</span>
-                        <span>{detailProduct.merk_name}</span>
+                        <span>{detailProduct.merk?.name}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm" style={{ color: SECONDARY_TEXT }}>
                         <span className="font-medium">Stok Tersedia:</span>
@@ -886,7 +953,7 @@ export default function ProductsPage() {
                         }}
                         className="flex-1 text-white py-4 rounded-2xl font-semibold 
                              transition-colors flex items-center justify-center gap-2"
-                        style={{ backgroundColor: ACCENT_COLOR }} // Jingga Energi
+                        style={{ backgroundColor: ACCENT_COLOR }}
                       >
                         <ShoppingCart className="w-5 h-5" />
                         Tambah ke Keranjang
