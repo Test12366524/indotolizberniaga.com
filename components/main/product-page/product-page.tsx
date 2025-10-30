@@ -36,7 +36,7 @@ import { useRouter } from "next/navigation";
 type ViewMode = "grid" | "list";
 
 // --- FUNGSI HELPER BARU ---
-const getAllImages = (product: any): string[] => {
+const getAllImages = (product: Product): string[] => {
   const images = [];
   // 1. Gambar utama
   if (typeof product.image === "string" && product.image) {
@@ -44,9 +44,9 @@ const getAllImages = (product: any): string[] => {
   }
   // 2. Gambar tambahan (image_2 sampai image_7)
   for (let i = 2; i <= 7; i++) {
-    const key = `image_${i}`;
+    const key = `image_${i}` as keyof Product;
     if (typeof product[key] === "string" && product[key]) {
-      images.push(product[key]);
+      images.push(product[key] as string);
     }
   }
   return images;
